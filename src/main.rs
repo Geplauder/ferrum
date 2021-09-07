@@ -1,4 +1,8 @@
-use ferrum::{application::Application, settings::get_settings, telemetry::{get_subscriber, init_subscriber}};
+use ferrum::{
+    application::Application,
+    settings::get_settings,
+    telemetry::{get_subscriber, init_subscriber},
+};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
