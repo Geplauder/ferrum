@@ -1,0 +1,14 @@
+{
+    "application": {
+        "host": "0.0.0.0",
+        "port": 8000
+    },
+    "database": {
+        "username": "postgres",
+        "password": "password",
+        "host": "localhost",
+        "port": 5432,
+        "database_name": "ferrum",
+        "require_ssl": false
+    }
+}
