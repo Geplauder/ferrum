@@ -2,6 +2,7 @@ use std::{net::TcpListener, time::Duration};
 
 use actix_web::{dev::Server, web::Data, App, HttpServer};
 use sqlx::{postgres::PgPoolOptions, PgPool};
+use tracing_actix_web::TracingLogger;
 
 use crate::settings::{DatabaseSettings, Settings};
 
@@ -53,6 +54,7 @@ fn run(listener: TcpListener, db_pool: PgPool, base_url: String) -> Result<Serve
 
     let server = HttpServer::new(move || {
         App::new()
+            .wrap(TracingLogger::default())
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
     })
