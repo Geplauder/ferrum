@@ -7,7 +7,7 @@
         "username": "postgres",
         "password": "password",
         "host": "localhost",
-        "port": 5432,
+        "port": 5434,
         "database_name": "ferrum",
         "require_ssl": false
     }
