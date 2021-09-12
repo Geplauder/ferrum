@@ -51,6 +51,7 @@ impl DatabaseSettings {
 pub enum Environment {
     Local,
     Production,
+    Testing,
 }
 
 impl Environment {
@@ -58,6 +59,7 @@ impl Environment {
         match self {
             Environment::Local => "local",
             Environment::Production => "production",
+            Environment::Testing => "testing",
         }
     }
 }
@@ -69,6 +71,7 @@ impl TryFrom<String> for Environment {
         match value.to_lowercase().as_str() {
             "local" => Ok(Self::Local),
             "production" => Ok(Self::Production),
+            "testing" => Ok(Self::Testing),
             other => Err(format!("Unknown environment {:?}!", other)),
         }
     }
