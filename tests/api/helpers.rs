@@ -25,6 +25,7 @@ pub struct TestApplication {
     pub address: String,
     pub port: u16,
     pub db_pool: PgPool,
+    pub jwt_secret: String,
     pub test_user: TestUser,
 }
 
@@ -76,6 +77,7 @@ pub async fn spawn_app() -> TestApplication {
         db_pool: get_db_pool(&settings.database)
             .await
             .expect("Failed to connect to database"),
+        jwt_secret: settings.application.jwt_secret,
         test_user: TestUser::generate(),
     };
 

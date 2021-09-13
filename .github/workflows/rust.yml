@@ -39,7 +39,7 @@ jobs:
           key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}-${{ env.SQLX_FEATURES }}
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
-        if: steps.cache-sqlx-outputs.cache-hit == false
+        if: steps.cache-sqlx.outputs.cache-hit != 'true'
         with:
           command: install
           args: >
@@ -52,8 +52,8 @@ jobs:
 
       - name: Migrate database
         run: |
-          cargo sqlx database create
-          cargo sqlx migrate run
+          sqlx database create
+          sqlx migrate run
 
       - uses: actions-rs/cargo@v1
         with:
@@ -123,7 +123,7 @@ jobs:
           key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}-${{ env.SQLX_FEATURES }}
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
-        if: steps.cache-sqlx-outputs.cache-hit == false
+        if: steps.cache-sqlx.outputs.cache-hit != 'true'
         with:
           command: install
           args: >
@@ -136,8 +136,8 @@ jobs:
 
       - name: Migrate database
         run: |
-          cargo sqlx database create
-          cargo sqlx migrate run
+          sqlx database create
+          sqlx migrate run
 
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1

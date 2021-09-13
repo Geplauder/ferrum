@@ -1,4 +1,11 @@
+use ferrum::jwt::get_claims;
+
 use crate::helpers::spawn_app;
+
+#[derive(serde::Deserialize)]
+struct LoginResponse {
+    token: String,
+}
 
 #[actix_rt::test]
 async fn login_returns_200_for_valid_json_data() {
@@ -15,6 +22,17 @@ async fn login_returns_200_for_valid_json_data() {
 
     // Assert
     assert_eq!(200, response.status().as_u16());
+
+    let response_data = response.json::<LoginResponse>().await;
+    assert!(response_data.is_ok());
+
+    let response_data = response_data.unwrap();
+
+    let claims = get_claims(&response_data.token, &app.jwt_secret);
+    assert!(claims.is_some());
+
+    let claims = claims.unwrap();
+    assert_eq!(app.test_user.email, claims.email);
 }
 
 #[actix_rt::test]
