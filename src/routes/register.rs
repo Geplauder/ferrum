@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 
 use actix_http::StatusCode;
-use actix_web::{HttpResponse, ResponseError, web};
+use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::{types::Uuid, PgPool, Postgres, Transaction};
 

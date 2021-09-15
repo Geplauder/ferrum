@@ -1,4 +1,4 @@
-use argon2::{Argon2, PasswordHasher, password_hash::SaltString};
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use rand::rngs::OsRng;
 
 pub struct NewUser {
@@ -65,10 +65,10 @@ impl UserPassword {
 
             match argon.hash_password(value.as_bytes(), &salt) {
                 Ok(value) => Ok(Self(value.to_string())),
-                Err(_) => Err(format!("Hash could not be calculated!")),
+                Err(_) => Err("Hash could not be calculated!".to_string()),
             }
         } else {
-            Err(format!("Invalid user password!"))
+            Err("Invalid user password!".to_string())
         }
     }
 }
@@ -88,7 +88,7 @@ impl std::fmt::Display for UserPassword {
 #[cfg(test)]
 mod tests {
     use super::{UserEmail, UserName, UserPassword};
-    use fake::faker::internet::en::{SafeEmail, Username, Password};
+    use fake::faker::internet::en::{Password, SafeEmail, Username};
     use fake::Fake;
 
     #[test]
