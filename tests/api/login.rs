@@ -60,14 +60,22 @@ async fn login_returns_401_when_data_is_invalid() {
     // Arrange
     let app = spawn_app().await;
 
-    let body = serde_json::json!({
-        "email": app.test_user.email,
-        "password": "foobar",
-    });
+    let payloads = [
+        serde_json::json!({
+            "email": app.test_user.email,
+            "password": "foobar",
+        }),
+        serde_json::json!({
+            "email": "foo@bar.com",
+            "password": app.test_user.password,
+        }),
+    ];
 
-    // Act
-    let response = app.post_login(body).await;
+    for body in payloads {
+        // Act
+        let response = app.post_login(body).await;
 
-    // Assert
-    assert_eq!(401, response.status().as_u16());
+        // Assert
+        assert_eq!(401, response.status().as_u16());
+    }
 }
