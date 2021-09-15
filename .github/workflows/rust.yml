@@ -5,13 +5,15 @@ on: [push, pull_request]
 env:
   CARGO_TERM_COLOR: always
   APP_ENV: testing
+  SQLX_VERSION: 0.5.7
+  SQLX_FEATURES: postgres
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
     env:
-      SQLX_OFFLINE: true
+      DATABASE_URL: "postgres://postgres:password@127.0.0.1:5432/ferrum"
     services:
       postgres:
         image: postgres:12
@@ -28,6 +30,23 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Install sqlx-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: >
+            sqlx-cli
+            --force
+            --version=${{ env.SQLX_VERSION }}
+            --features=${{ env.SQLX_FEATURES }}
+            --no-default-features
+            --locked
+
+      - name: Migrate database
+        run: |
+          cargo sqlx database create
+          cargo sqlx migrate run
+
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -68,7 +87,7 @@ jobs:
     name: Code coverage
     runs-on: ubuntu-latest
     env:
-      SQLX_OFFLINE: true
+      DATABASE_URL: "postgres://postgres:password@127.0.0.1:5432/ferrum"
     services:
       postgres:
         image: postgres:12
@@ -87,6 +106,23 @@ jobs:
         with:
           toolchain: stable
           override: true
+
+      - name: Install sqlx-cli
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: >
+            sqlx-cli
+            --force
+            --version=${{ env.SQLX_VERSION }}
+            --features=${{ env.SQLX_FEATURES }}
+            --no-default-features
+            --locked
+
+      - name: Migrate database
+        run: |
+          cargo sqlx database create
+          cargo sqlx migrate run
 
       - name: Run cargo-tarpaulin
         uses: actions-rs/tarpaulin@v0.1
