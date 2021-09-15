@@ -1,10 +1,18 @@
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use rand::rngs::OsRng;
+use uuid::Uuid;
 
 pub struct NewUser {
     pub name: UserName,
     pub email: UserEmail,
     pub password: UserPassword,
+}
+
+#[derive(sqlx::FromRow, serde::Serialize)]
+pub struct User {
+    pub id: Uuid,
+    pub username: String,
+    pub email: String,
 }
 
 pub struct UserEmail(String);

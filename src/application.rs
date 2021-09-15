@@ -6,7 +6,7 @@ use tracing_actix_web::TracingLogger;
 
 use crate::{
     jwt::Jwt,
-    routes::{health_check, login, register},
+    routes::{health_check, login, register, users},
     settings::{DatabaseSettings, Settings},
 };
 
@@ -70,12 +70,13 @@ fn run(
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())
-            .route("/health_check", web::get().to(health_check))
-            .route("/register", web::post().to(register))
-            .route("/login", web::post().to(login))
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             .app_data(jwt.clone())
+            .route("/health_check", web::get().to(health_check))
+            .route("/register", web::post().to(register))
+            .route("/login", web::post().to(login))
+            .route("/users", web::get().to(users))
     })
     .listen(listener)?
     .run();

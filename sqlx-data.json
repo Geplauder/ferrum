@@ -46,5 +46,37 @@
         false
       ]
     }
+  },
+  "bd96d647afc230b64ba79bb909c48926d7ca3b3e787348c2bb0153e7ebb1e801": {
+    "query": "\n        SELECT id, username, email\n        FROM users\n        WHERE id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "email",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
   }
 }

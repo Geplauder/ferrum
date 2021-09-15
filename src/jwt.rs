@@ -1,6 +1,6 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use actix_web::{FromRequest, HttpResponse, ResponseError};
+use actix_web::{web::Data, FromRequest, HttpResponse, ResponseError};
 use futures::future::{err, ok, Ready};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
@@ -96,7 +96,7 @@ impl FromRequest for AuthorizationService {
             .and_then(|x| x.to_str().ok())
             .map(|x| x.replace("Bearer ", ""));
 
-        let jwt = request.app_data::<Jwt>().unwrap();
+        let jwt = request.app_data::<Data<Jwt>>().unwrap();
 
         match token.as_ref().and_then(|token| {
             get_claims(token, &jwt.secret).map(|claims| AuthorizationService { claims })
