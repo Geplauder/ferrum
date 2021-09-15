@@ -25,6 +25,17 @@ pub struct TestApplication {
     pub db_pool: PgPool,
 }
 
+impl TestApplication {
+    pub async fn post_register(&self, body: serde_json::Value) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(&format!("{}/register", &self.address))
+            .json(&body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+}
+
 pub async fn spawn_app() -> TestApplication {
     Lazy::force(&TRACING);
 

@@ -4,10 +4,7 @@ use actix_web::{dev::Server, web, web::Data, App, HttpServer};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing_actix_web::TracingLogger;
 
-use crate::{
-    routes::health_check,
-    settings::{DatabaseSettings, Settings},
-};
+use crate::{routes::{health_check, register}, settings::{DatabaseSettings, Settings}};
 
 pub struct ApplicationBaseUrl(pub String);
 
@@ -59,6 +56,7 @@ fn run(listener: TcpListener, db_pool: PgPool, base_url: String) -> Result<Serve
         App::new()
             .wrap(TracingLogger::default())
             .route("/health_check", web::get().to(health_check))
+            .route("/register", web::post().to(register))
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
     })
