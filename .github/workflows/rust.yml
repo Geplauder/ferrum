@@ -30,8 +30,16 @@ jobs:
           profile: minimal
           toolchain: stable
           override: true
+      - name: Cache sqlx-cli
+        uses: actions/cache@v2
+        id: cache-sqlx
+        with:
+          path: |
+            ~/.cargo/bin/sqlx
+          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}-${{ env.SQLX_FEATURES }}
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
+        if: steps.cache-sqlx-outputs.cache-hit == false
         with:
           command: install
           args: >
@@ -106,9 +114,16 @@ jobs:
         with:
           toolchain: stable
           override: true
-
+      - name: Cache sqlx-cli
+        uses: actions/cache@v2
+        id: cache-sqlx
+        with:
+          path: |
+            ~/.cargo/bin/sqlx
+          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}-${{ env.SQLX_FEATURES }}
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
+        if: steps.cache-sqlx-outputs.cache-hit == false
         with:
           command: install
           args: >
