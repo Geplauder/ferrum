@@ -15,8 +15,8 @@
       "nullable": []
     }
   },
-  "bdfb0e6a5d83789dd239505695f51c279372921f11d8070dc3bb5e06590ac765": {
-    "query": "\n        SELECT id, password\n        FROM users\n        WHERE email = $1\n        ",
+  "90b76bc6f4e1d6193410f08a1383cd545cc4e59948a4f9be5e8173d50d1fefae": {
+    "query": "\n        SELECT id, email, password\n        FROM users\n        WHERE email = $1\n        ",
     "describe": {
       "columns": [
         {
@@ -26,6 +26,11 @@
         },
         {
           "ordinal": 1,
+          "name": "email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
           "name": "password",
           "type_info": "Text"
         }
@@ -36,6 +41,7 @@
         ]
       },
       "nullable": [
+        false,
         false,
         false
       ]

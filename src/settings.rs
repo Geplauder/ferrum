@@ -15,6 +15,7 @@ pub struct ApplicationSettings {
     pub host: String,
     pub port: u16,
     pub base_url: String,
+    pub jwt_secret: String,
 }
 
 #[derive(Deserialize, Clone)]

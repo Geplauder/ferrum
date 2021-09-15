@@ -1,5 +1,6 @@
 pub mod application;
 pub mod domain;
+pub mod jwt;
 pub mod routes;
 pub mod settings;
 pub mod telemetry;

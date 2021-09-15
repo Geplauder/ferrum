@@ -6,7 +6,7 @@ use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use sqlx::{types::Uuid, PgPool};
 
-use crate::{error_chain_fmt, telemetry::spawn_blocking_with_tracing};
+use crate::{error_chain_fmt, jwt::Jwt, telemetry::spawn_blocking_with_tracing};
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {
@@ -36,6 +36,8 @@ pub enum LoginError {
     ValidationError(String),
     #[error("Login failed")]
     LoginFailed(#[source] anyhow::Error),
+    #[error("Login failed")]
+    TokenError(#[source] jsonwebtoken::errors::Error),
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -51,6 +53,7 @@ impl ResponseError for LoginError {
         match self {
             LoginError::ValidationError(_) => StatusCode::BAD_REQUEST,
             LoginError::LoginFailed(_) => StatusCode::UNAUTHORIZED,
+            LoginError::TokenError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             LoginError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -60,22 +63,32 @@ impl ResponseError for LoginError {
 pub async fn login(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
+    jwt: web::Data<Jwt>,
 ) -> Result<HttpResponse, LoginError> {
     let login_user: LoginUser = body.0.try_into().map_err(LoginError::ValidationError)?;
 
-    let user_id = validate_credentials(login_user, &pool).await?;
+    let (user_id, user_email) = validate_credentials(login_user, &pool).await?;
     tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
 
-    Ok(HttpResponse::Ok().finish())
+    let token = jwt
+        .encode(user_id, user_email)
+        .map_err(LoginError::TokenError)?;
+
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "token": token,
+    })))
 }
 
 #[tracing::instrument(name = "Validate credentials", skip(login_user, pool))]
-async fn validate_credentials(login_user: LoginUser, pool: &PgPool) -> Result<Uuid, LoginError> {
+async fn validate_credentials(
+    login_user: LoginUser,
+    pool: &PgPool,
+) -> Result<(Uuid, String), LoginError> {
     let stored_user = get_stored_user(login_user.email.as_ref(), pool)
         .await
         .map_err(LoginError::UnexpectedError)?;
 
-    let (stored_user_id, stored_user_password) = match stored_user {
+    let (stored_user_id, stored_user_email, stored_user_password) = match stored_user {
         Some(value) => value,
         None => return Err(LoginError::LoginFailed(anyhow::anyhow!(""))),
     };
@@ -87,17 +100,17 @@ async fn validate_credentials(login_user: LoginUser, pool: &PgPool) -> Result<Uu
     .context("Failed to spawn blocking task.")
     .map_err(LoginError::UnexpectedError)??;
 
-    Ok(stored_user_id)
+    Ok((stored_user_id, stored_user_email))
 }
 
 #[tracing::instrument(name = "Get stored user", skip(email, pool))]
 async fn get_stored_user(
     email: &str,
     pool: &PgPool,
-) -> Result<Option<(Uuid, String)>, anyhow::Error> {
+) -> Result<Option<(Uuid, String, String)>, anyhow::Error> {
     let row = sqlx::query!(
         r#"
-        SELECT id, password
+        SELECT id, email, password
         FROM users
         WHERE email = $1
         "#,
@@ -106,7 +119,7 @@ async fn get_stored_user(
     .fetch_optional(pool)
     .await
     .context("Failed to retrieve stored user.")?
-    .map(|row| (row.id, row.password));
+    .map(|row| (row.id, row.email, row.password));
 
     Ok(row)
 }
