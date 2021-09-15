@@ -31,10 +31,13 @@ async fn register_persists_the_new_user() {
     app.post_register(body).await;
 
     // Assert
-    let saved_user = sqlx::query!("SELECT username, email FROM users")
-        .fetch_one(&app.db_pool)
-        .await
-        .expect("Failed to fetch saved user");
+    let saved_user = sqlx::query!(
+        "SELECT username, email FROM users WHERE email = $1",
+        "foo@bar.com"
+    )
+    .fetch_one(&app.db_pool)
+    .await
+    .expect("Failed to fetch saved user");
 
     assert_eq!("foobar", saved_user.username);
     assert_eq!("foo@bar.com", saved_user.email);

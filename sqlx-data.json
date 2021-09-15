@@ -14,5 +14,31 @@
       },
       "nullable": []
     }
+  },
+  "bdfb0e6a5d83789dd239505695f51c279372921f11d8070dc3bb5e06590ac765": {
+    "query": "\n        SELECT id, password\n        FROM users\n        WHERE email = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "password",
+          "type_info": "Text"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false
+      ]
+    }
   }
 }

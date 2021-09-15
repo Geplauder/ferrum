@@ -1,3 +1,5 @@
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+use fake::Fake;
 use ferrum::{
     application::{get_db_pool, Application},
     settings::{get_settings, DatabaseSettings},
@@ -23,12 +25,22 @@ pub struct TestApplication {
     pub address: String,
     pub port: u16,
     pub db_pool: PgPool,
+    pub test_user: TestUser,
 }
 
 impl TestApplication {
     pub async fn post_register(&self, body: serde_json::Value) -> reqwest::Response {
         reqwest::Client::new()
             .post(&format!("{}/register", &self.address))
+            .json(&body)
+            .send()
+            .await
+            .expect("Failed to execute request.")
+    }
+
+    pub async fn post_login(&self, body: serde_json::Value) -> reqwest::Response {
+        reqwest::Client::new()
+            .post(&format!("{}/login", &self.address))
             .json(&body)
             .send()
             .await
@@ -58,13 +70,21 @@ pub async fn spawn_app() -> TestApplication {
 
     let _ = tokio::spawn(application.run_until_stopped());
 
-    TestApplication {
+    let test_application = TestApplication {
         address: format!("http://localhost:{}", application_port),
         port: application_port,
         db_pool: get_db_pool(&settings.database)
             .await
             .expect("Failed to connect to database"),
-    }
+        test_user: TestUser::generate(),
+    };
+
+    test_application
+        .test_user
+        .store(&test_application.db_pool)
+        .await;
+
+    test_application
 }
 
 async fn configure_database(settings: &DatabaseSettings) -> PgPool {
@@ -88,4 +108,42 @@ async fn configure_database(settings: &DatabaseSettings) -> PgPool {
         .expect("Failed to migrate the database");
 
     connection_pool
+}
+
+pub struct TestUser {
+    id: Uuid,
+    pub name: String,
+    pub email: String,
+    pub password: String,
+}
+
+impl TestUser {
+    pub fn generate() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            name: Uuid::new_v4().to_string(),
+            password: Uuid::new_v4().to_string(),
+            email: fake::faker::internet::en::SafeEmail().fake(),
+        }
+    }
+
+    async fn store(&self, pool: &PgPool) {
+        let salt = SaltString::generate(&mut rand::thread_rng());
+
+        let password_hash = Argon2::default()
+            .hash_password(self.password.as_bytes(), &salt)
+            .unwrap()
+            .to_string();
+
+        sqlx::query!(
+            "INSERT INTO users (id, username, email, password) VALUES ($1, $2, $3, $4)",
+            self.id,
+            self.name,
+            self.email,
+            password_hash
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to store test user.");
+    }
 }

@@ -84,7 +84,7 @@ pub async fn register(
     name = "Saving a new user to the database",
     skip(transaction, new_user)
 )]
-pub async fn insert_user(
+async fn insert_user(
     transaction: &mut Transaction<'_, Postgres>,
     new_user: &NewUser,
 ) -> Result<(), sqlx::Error> {

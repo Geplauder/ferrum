@@ -5,7 +5,7 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing_actix_web::TracingLogger;
 
 use crate::{
-    routes::{health_check, register},
+    routes::{health_check, login, register},
     settings::{DatabaseSettings, Settings},
 };
 
@@ -60,6 +60,7 @@ fn run(listener: TcpListener, db_pool: PgPool, base_url: String) -> Result<Serve
             .wrap(TracingLogger::default())
             .route("/health_check", web::get().to(health_check))
             .route("/register", web::post().to(register))
+            .route("/login", web::post().to(login))
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
     })
