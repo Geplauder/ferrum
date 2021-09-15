@@ -8,7 +8,7 @@ pub struct NewUser {
     pub password: UserPassword,
 }
 
-#[derive(sqlx::FromRow, serde::Serialize)]
+#[derive(sqlx::FromRow, serde::Serialize, serde::Deserialize)]
 pub struct User {
     pub id: Uuid,
     pub username: String,

@@ -2,6 +2,7 @@ use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use fake::Fake;
 use ferrum::{
     application::{get_db_pool, Application},
+    jwt::Jwt,
     settings::{get_settings, DatabaseSettings},
     telemetry::{get_subscriber, init_subscriber},
 };
@@ -27,6 +28,7 @@ pub struct TestApplication {
     pub db_pool: PgPool,
     pub jwt_secret: String,
     pub test_user: TestUser,
+    pub test_user_token: String,
 }
 
 impl TestApplication {
@@ -46,6 +48,16 @@ impl TestApplication {
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+
+    pub async fn get_users(&self, bearer: Option<String>) -> reqwest::Response {
+        let mut client = reqwest::Client::new().get(&format!("{}/users", &self.address));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
     }
 }
 
@@ -71,6 +83,10 @@ pub async fn spawn_app() -> TestApplication {
 
     let _ = tokio::spawn(application.run_until_stopped());
 
+    let jwt = Jwt::new(settings.application.jwt_secret.to_owned());
+
+    let test_user = TestUser::generate();
+
     let test_application = TestApplication {
         address: format!("http://localhost:{}", application_port),
         port: application_port,
@@ -78,7 +94,10 @@ pub async fn spawn_app() -> TestApplication {
             .await
             .expect("Failed to connect to database"),
         jwt_secret: settings.application.jwt_secret,
-        test_user: TestUser::generate(),
+        test_user_token: jwt
+            .encode(test_user.id.to_owned(), test_user.email.to_owned())
+            .unwrap(),
+        test_user,
     };
 
     test_application
@@ -113,7 +132,7 @@ async fn configure_database(settings: &DatabaseSettings) -> PgPool {
 }
 
 pub struct TestUser {
-    id: Uuid,
+    pub id: Uuid,
     pub name: String,
     pub email: String,
     pub password: String,
