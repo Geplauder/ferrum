@@ -79,12 +79,6 @@ impl AsRef<str> for UserPassword {
     }
 }
 
-impl std::fmt::Display for UserPassword {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::{UserEmail, UserName, UserPassword};
@@ -110,6 +104,15 @@ mod tests {
         let email = "@bar.com".to_string();
 
         assert!(UserEmail::parse(email).is_err());
+    }
+
+    #[test]
+    fn email_display_trait_implementation_is_valid() {
+        let email = "foo@bar.com".to_string();
+
+        let user_email = UserEmail::parse(email).unwrap();
+
+        assert_eq!("foo@bar.com", user_email.to_string());
     }
 
     #[derive(Debug, Clone)]
@@ -142,6 +145,15 @@ mod tests {
         let name = (0..=33).map(|_| "x").collect::<String>();
 
         assert!(UserName::parse(name).is_err());
+    }
+
+    #[test]
+    fn name_display_trait_implementation_is_valid() {
+        let name = "foobar".to_string();
+
+        let user_name = UserName::parse(name).unwrap();
+
+        assert_eq!("foobar", user_name.to_string());
     }
 
     #[derive(Debug, Clone)]
