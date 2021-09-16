@@ -6,7 +6,7 @@ use tracing_actix_web::TracingLogger;
 
 use crate::{
     jwt::Jwt,
-    routes::{health_check, login, register, users},
+    routes::{health_check, login, register, servers, users},
     settings::{DatabaseSettings, Settings},
 };
 
@@ -77,6 +77,7 @@ fn run(
             .route("/register", web::post().to(register))
             .route("/login", web::post().to(login))
             .route("/users", web::get().to(users))
+            .route("/servers", web::post().to(servers::create))
     })
     .listen(listener)?
     .run();

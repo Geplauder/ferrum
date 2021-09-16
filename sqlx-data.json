@@ -47,6 +47,20 @@
       ]
     }
   },
+  "a1fea900c45238b9e31fa71f1948ef7b37c172de78e2b793723a904b5043cabb": {
+    "query": "\n        INSERT INTO servers (id, name, owner_id)\n        VALUES ($1, $2, $3)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "bfad0f1033b76edc2d37b1f33d9f36dc38065e08b70a2877fd980400c50bd1e1": {
     "query": "\n        SELECT id, username, email, updated_at, created_at\n        FROM users\n        WHERE id = $1\n        ",
     "describe": {
