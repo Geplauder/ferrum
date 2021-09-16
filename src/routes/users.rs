@@ -41,7 +41,7 @@ async fn get_user_data(user_id: Uuid, pool: &PgPool) -> Result<User, UsersError>
     let user = sqlx::query_as!(
         User,
         r#"
-        SELECT id, username, email
+        SELECT id, username, email, updated_at, created_at
         FROM users
         WHERE id = $1
         "#,

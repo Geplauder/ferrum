@@ -411,6 +411,7 @@ dependencies = [
  "libc",
  "num-integer",
  "num-traits 0.2.14",
+ "serde 1.0.130",
  "time 0.1.43",
  "winapi",
 ]
@@ -638,6 +639,7 @@ dependencies = [
  "actix-web-httpauth",
  "anyhow",
  "argon2",
+ "chrono",
  "config",
  "fake",
  "futures",
