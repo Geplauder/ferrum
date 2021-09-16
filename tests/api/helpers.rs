@@ -59,6 +59,22 @@ impl TestApplication {
 
         client.send().await.expect("Failed to execute request.")
     }
+
+    pub async fn post_create_server(
+        &self,
+        body: serde_json::Value,
+        bearer: Option<String>,
+    ) -> reqwest::Response {
+        let mut client = reqwest::Client::new()
+            .post(&format!("{}/servers", &self.address))
+            .json(&body);
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
 }
 
 pub async fn spawn_app() -> TestApplication {

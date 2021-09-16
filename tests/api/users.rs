@@ -29,6 +29,7 @@ async fn users_returns_401_for_missing_or_invalid_bearer_token() {
         // Act
         let response = app.get_users(token).await;
 
+        // Assert
         assert_eq!(401, response.status().as_u16());
     }
 }
