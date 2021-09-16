@@ -78,6 +78,7 @@ fn run(
             .route("/login", web::post().to(login))
             .route("/users", web::get().to(users))
             .route("/servers", web::post().to(servers::create))
+            .route("/servers/{id}", web::put().to(servers::join))
     })
     .listen(listener)?
     .run();

@@ -104,5 +104,19 @@
         false
       ]
     }
+  },
+  "c7e4a5d6ab6847d62422066f5c8c66e60ab4af814c16e927ed7720b7a0808ab8": {
+    "query": "\n        INSERT INTO users_servers (id, user_id, server_id)\n        VALUES ($1, $2, $3)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
   }
 }

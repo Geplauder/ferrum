@@ -29,6 +29,7 @@ pub struct TestApplication {
     pub jwt_secret: String,
     pub test_user: TestUser,
     pub test_user_token: String,
+    pub test_server: TestServer,
 }
 
 impl TestApplication {
@@ -75,6 +76,21 @@ impl TestApplication {
 
         client.send().await.expect("Failed to execute request.")
     }
+
+    pub async fn put_join_server(
+        &self,
+        server_id: String,
+        bearer: Option<String>,
+    ) -> reqwest::Response {
+        let mut client =
+            reqwest::Client::new().put(&format!("{}/servers/{}", &self.address, server_id));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
 }
 
 pub async fn spawn_app() -> TestApplication {
@@ -102,6 +118,7 @@ pub async fn spawn_app() -> TestApplication {
     let jwt = Jwt::new(settings.application.jwt_secret.to_owned());
 
     let test_user = TestUser::generate();
+    let test_server = TestServer::generate(test_user.id);
 
     let test_application = TestApplication {
         address: format!("http://localhost:{}", application_port),
@@ -114,10 +131,16 @@ pub async fn spawn_app() -> TestApplication {
             .encode(test_user.id.to_owned(), test_user.email.to_owned())
             .unwrap(),
         test_user,
+        test_server,
     };
 
     test_application
         .test_user
+        .store(&test_application.db_pool)
+        .await;
+
+    test_application
+        .test_server
         .store(&test_application.db_pool)
         .await;
 
@@ -182,5 +205,33 @@ impl TestUser {
         .execute(pool)
         .await
         .expect("Failed to store test user.");
+    }
+}
+
+pub struct TestServer {
+    pub id: Uuid,
+    pub name: String,
+    pub owner_id: Uuid,
+}
+
+impl TestServer {
+    pub fn generate(owner_id: Uuid) -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            name: Uuid::new_v4().to_string(),
+            owner_id,
+        }
+    }
+
+    async fn store(&self, pool: &PgPool) {
+        sqlx::query!(
+            "INSERT INTO servers (id, name, owner_id) VALUES ($1, $2, $3)",
+            self.id,
+            self.name,
+            self.owner_id
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to store test server.");
     }
 }
