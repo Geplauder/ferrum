@@ -47,6 +47,20 @@
       ]
     }
   },
+  "9f5e3a0f3a9a40c0e474054289e7b8963409b7d8aa8fae9bcfeb497a22a6c16f": {
+    "query": "\n        INSERT INTO users_servers (id, user_id, server_id) VALUES ($1, $2, $3)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "a1fea900c45238b9e31fa71f1948ef7b37c172de78e2b793723a904b5043cabb": {
     "query": "\n        INSERT INTO servers (id, name, owner_id)\n        VALUES ($1, $2, $3)\n        ",
     "describe": {

@@ -63,9 +63,13 @@ pub async fn create(
         .await
         .context("Failed to acquire a postgres connection from pool")?;
 
-    insert_server(&mut transaction, &new_server, auth.claims.id)
+    let server_id = insert_server(&mut transaction, &new_server, auth.claims.id)
         .await
         .context("Failed to insert new server in the database.")?;
+
+    add_user_to_server(&mut transaction, auth.claims.id, server_id)
+        .await
+        .context("Failed to insert new users_servers entry to the database.")?;
 
     transaction
         .commit()
@@ -83,7 +87,7 @@ async fn insert_server(
     transaction: &mut Transaction<'_, Postgres>,
     new_server: &NewServer,
     user_id: Uuid,
-) -> Result<(), sqlx::Error> {
+) -> Result<Uuid, sqlx::Error> {
     let id = Uuid::new_v4();
 
     sqlx::query!(
@@ -94,6 +98,31 @@ async fn insert_server(
         id,
         new_server.name.as_ref(),
         user_id,
+    )
+    .execute(transaction)
+    .await?;
+
+    Ok(id)
+}
+
+#[tracing::instrument(
+    name = "Saving a new users_servers entry to the database",
+    skip(transaction, user_id, server_id)
+)]
+async fn add_user_to_server(
+    transaction: &mut Transaction<'_, Postgres>,
+    user_id: Uuid,
+    server_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    let id = Uuid::new_v4();
+
+    sqlx::query!(
+        r#"
+        INSERT INTO users_servers (id, user_id, server_id) VALUES ($1, $2, $3)
+        "#,
+        id,
+        user_id,
+        server_id,
     )
     .execute(transaction)
     .await?;

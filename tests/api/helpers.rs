@@ -131,8 +131,6 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
         settings.database.database_name = Uuid::new_v4().to_string();
         settings.application.port = 0;
 
-        println!("{:?}", settings.database.database_name);
-
         settings
     };
 
