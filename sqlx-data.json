@@ -15,6 +15,50 @@
       "nullable": []
     }
   },
+  "7cf0fc55c77ebabba3062941631c53d83be1cd9b1f2809557a252bef6b7e74d8": {
+    "query": "\n        SELECT users.id, users.username, users.email, users.created_at, users.updated_at\n        FROM users_servers\n        INNER JOIN users ON users_servers.user_id = users.id\n        WHERE users_servers.server_id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "90b76bc6f4e1d6193410f08a1383cd545cc4e59948a4f9be5e8173d50d1fefae": {
     "query": "\n        SELECT id, email, password\n        FROM users\n        WHERE email = $1\n        ",
     "describe": {

@@ -90,6 +90,21 @@ impl TestApplication {
         client.send().await.expect("Failed to execute request.")
     }
 
+    pub async fn get_server_users(
+        &self,
+        server_id: String,
+        bearer: Option<String>,
+    ) -> reqwest::Response {
+        let mut client =
+            reqwest::Client::new().get(&format!("{}/servers/{}/users", &self.address, server_id));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
+
     pub async fn post_create_server(
         &self,
         body: serde_json::Value,
@@ -246,7 +261,7 @@ impl TestUser {
         }
     }
 
-    async fn store(&self, pool: &PgPool) {
+    pub async fn store(&self, pool: &PgPool) {
         let salt = SaltString::generate(&mut rand::thread_rng());
 
         let password_hash = Argon2::default()
@@ -283,6 +298,18 @@ impl TestServer {
         }
     }
 
+    pub async fn add_user(&self, user_id: Uuid, pool: &PgPool) {
+        sqlx::query!(
+            "INSERT INTO users_servers (id, user_id, server_id) VALUES ($1, $2, $3)",
+            Uuid::new_v4(),
+            user_id,
+            self.id,
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to store test server owner relation.");
+    }
+
     async fn store(&self, pool: &PgPool) {
         sqlx::query!(
             "INSERT INTO servers (id, name, owner_id) VALUES ($1, $2, $3)",
@@ -294,14 +321,6 @@ impl TestServer {
         .await
         .expect("Failed to store test server.");
 
-        sqlx::query!(
-            "INSERT INTO users_servers (id, user_id, server_id) VALUES ($1, $2, $3)",
-            Uuid::new_v4(),
-            self.owner_id,
-            self.id,
-        )
-        .execute(pool)
-        .await
-        .expect("Failed to store test server owner relation.");
+        self.add_user(self.owner_id, pool).await;
     }
 }

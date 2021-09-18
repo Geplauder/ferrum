@@ -33,18 +33,16 @@ impl ResponseError for JoinError {
 }
 
 pub async fn join(
-    path: web::Path<String>,
+    server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, JoinError> {
-    let server_id = Uuid::parse_str(&path).map_err(JoinError::ValidationError)?;
-
     let mut transaction = pool
         .begin()
         .await
         .context("Failed to acquire a postgres connection from the pool")?;
 
-    insert_user_server(&mut transaction, auth.claims.id, server_id).await?;
+    insert_user_server(&mut transaction, auth.claims.id, *server_id).await?;
 
     transaction
         .commit()
