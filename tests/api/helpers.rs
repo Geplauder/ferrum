@@ -22,14 +22,21 @@ static TRACING: Lazy<()> = Lazy::new(|| {
     };
 });
 
+pub enum BootstrapType {
+    Default,
+    User,
+    UserAndOwnServer,
+    UserAndOtherServer,
+}
+
 pub struct TestApplication {
     pub address: String,
     pub port: u16,
     pub db_pool: PgPool,
     pub jwt_secret: String,
-    pub test_user: TestUser,
-    pub test_user_token: String,
-    pub test_server: TestServer,
+    pub test_user: Option<TestUser>,
+    pub test_user_token: Option<String>,
+    pub test_server: Option<TestServer>,
 }
 
 impl TestApplication {
@@ -103,7 +110,7 @@ impl TestApplication {
     }
 }
 
-pub async fn spawn_app() -> TestApplication {
+pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
     Lazy::force(&TRACING);
 
     let settings = {
@@ -111,6 +118,8 @@ pub async fn spawn_app() -> TestApplication {
 
         settings.database.database_name = Uuid::new_v4().to_string();
         settings.application.port = 0;
+
+        println!("{:?}", settings.database.database_name);
 
         settings
     };
@@ -127,32 +136,61 @@ pub async fn spawn_app() -> TestApplication {
 
     let jwt = Jwt::new(settings.application.jwt_secret.to_owned());
 
-    let test_user = TestUser::generate();
-    let test_server = TestServer::generate(test_user.id);
-
-    let test_application = TestApplication {
+    let mut test_application = TestApplication {
         address: format!("http://localhost:{}", application_port),
         port: application_port,
         db_pool: get_db_pool(&settings.database)
             .await
             .expect("Failed to connect to database"),
         jwt_secret: settings.application.jwt_secret,
-        test_user_token: jwt
-            .encode(test_user.id.to_owned(), test_user.email.to_owned())
-            .unwrap(),
-        test_user,
-        test_server,
+        test_user_token: None,
+        test_user: None,
+        test_server: None,
     };
 
-    test_application
-        .test_user
-        .store(&test_application.db_pool)
-        .await;
+    match bootstrap_type {
+        BootstrapType::Default => (),
+        BootstrapType::User => {
+            let test_user = TestUser::generate();
+            test_user.store(&test_application.db_pool).await;
 
-    test_application
-        .test_server
-        .store(&test_application.db_pool)
-        .await;
+            test_application.test_user_token = Some(
+                jwt.encode(test_user.id.to_owned(), test_user.email.to_owned())
+                    .unwrap(),
+            );
+            test_application.test_user = Some(test_user);
+        }
+        BootstrapType::UserAndOwnServer => {
+            let test_user = TestUser::generate();
+            test_user.store(&test_application.db_pool).await;
+
+            let test_server = TestServer::generate(test_user.id);
+            test_server.store(&test_application.db_pool).await;
+
+            test_application.test_user_token = Some(
+                jwt.encode(test_user.id.to_owned(), test_user.email.to_owned())
+                    .unwrap(),
+            );
+            test_application.test_user = Some(test_user);
+            test_application.test_server = Some(test_server);
+        }
+        BootstrapType::UserAndOtherServer => {
+            let test_user = TestUser::generate();
+            test_user.store(&test_application.db_pool).await;
+
+            let dummy_user = TestUser::generate();
+            dummy_user.store(&test_application.db_pool).await;
+            let test_server = TestServer::generate(dummy_user.id);
+            test_server.store(&test_application.db_pool).await;
+
+            test_application.test_user_token = Some(
+                jwt.encode(test_user.id.to_owned(), test_user.email.to_owned())
+                    .unwrap(),
+            );
+            test_application.test_user = Some(test_user);
+            test_application.test_server = Some(test_server);
+        }
+    }
 
     test_application
 }
@@ -243,5 +281,15 @@ impl TestServer {
         .execute(pool)
         .await
         .expect("Failed to store test server.");
+
+        sqlx::query!(
+            "INSERT INTO users_servers (id, user_id, server_id) VALUES ($1, $2, $3)",
+            Uuid::new_v4(),
+            self.owner_id,
+            self.id,
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to store test server owner relation.");
     }
 }

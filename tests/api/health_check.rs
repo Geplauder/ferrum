@@ -1,9 +1,9 @@
-use crate::helpers::spawn_app;
+use crate::helpers::{spawn_app, BootstrapType};
 
 #[actix_rt::test]
 async fn health_check_works() {
     // Arrange
-    let application = spawn_app().await;
+    let application = spawn_app(BootstrapType::Default).await;
     let client = reqwest::Client::new();
 
     // Act

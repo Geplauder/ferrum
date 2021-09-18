@@ -1,9 +1,9 @@
-use crate::helpers::spawn_app;
+use crate::helpers::{spawn_app, BootstrapType};
 
 #[actix_rt::test]
 async fn register_returns_200_for_valid_json_data() {
     // Arrange
-    let app = spawn_app().await;
+    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "email": "foo@bar.com",
@@ -20,7 +20,7 @@ async fn register_returns_200_for_valid_json_data() {
 #[actix_rt::test]
 async fn register_persists_the_new_user() {
     // Arrange
-    let app = spawn_app().await;
+    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "email": "foo@bar.com",
@@ -31,13 +31,10 @@ async fn register_persists_the_new_user() {
     app.post_register(body).await;
 
     // Assert
-    let saved_user = sqlx::query!(
-        "SELECT username, email FROM users WHERE email = $1",
-        "foo@bar.com"
-    )
-    .fetch_one(&app.db_pool)
-    .await
-    .expect("Failed to fetch saved user");
+    let saved_user = sqlx::query!("SELECT username, email FROM users",)
+        .fetch_one(&app.db_pool)
+        .await
+        .expect("Failed to fetch saved user");
 
     assert_eq!("foobar", saved_user.username);
     assert_eq!("foo@bar.com", saved_user.email);
@@ -46,7 +43,7 @@ async fn register_persists_the_new_user() {
 #[actix_rt::test]
 async fn register_fails_if_there_is_a_database_error() {
     // Arrange
-    let app = spawn_app().await;
+    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "email": "foo@bar.com",
@@ -68,7 +65,7 @@ async fn register_fails_if_there_is_a_database_error() {
 #[actix_rt::test]
 async fn register_returns_400_when_data_is_missing() {
     // Arrange
-    let app = spawn_app().await;
+    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "password": "foobar123"
@@ -84,7 +81,7 @@ async fn register_returns_400_when_data_is_missing() {
 #[actix_rt::test]
 async fn register_returns_400_when_data_is_invalid() {
     // Arrange
-    let app = spawn_app().await;
+    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "email": "foobar.com",

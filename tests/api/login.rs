@@ -1,6 +1,6 @@
 use ferrum::jwt::get_claims;
 
-use crate::helpers::spawn_app;
+use crate::helpers::{spawn_app, BootstrapType};
 
 #[derive(serde::Deserialize)]
 struct LoginResponse {
@@ -10,11 +10,11 @@ struct LoginResponse {
 #[actix_rt::test]
 async fn login_returns_200_for_valid_json_data() {
     // Arrange
-    let app = spawn_app().await;
+    let app = spawn_app(BootstrapType::User).await;
 
     let body = serde_json::json!({
-        "email": app.test_user.email,
-        "password": app.test_user.password,
+        "email": app.test_user.as_ref().unwrap().email,
+        "password": app.test_user.as_ref().unwrap().password,
     });
 
     // Act
@@ -32,17 +32,17 @@ async fn login_returns_200_for_valid_json_data() {
     assert!(claims.is_some());
 
     let claims = claims.unwrap();
-    assert_eq!(app.test_user.email, claims.email);
+    assert_eq!(app.test_user.unwrap().email, claims.email);
 }
 
 #[actix_rt::test]
 async fn login_fails_if_there_is_a_database_error() {
     // Arrange
-    let app = spawn_app().await;
+    let app = spawn_app(BootstrapType::User).await;
 
     let body = serde_json::json!({
-        "email": app.test_user.email,
-        "password": app.test_user.password,
+        "email": app.test_user.as_ref().unwrap().email,
+        "password": app.test_user.as_ref().unwrap().password,
     });
 
     sqlx::query!("ALTER TABLE users DROP COLUMN email;")
@@ -60,10 +60,10 @@ async fn login_fails_if_there_is_a_database_error() {
 #[actix_rt::test]
 async fn login_returns_400_when_data_is_missing() {
     // Arrange
-    let app = spawn_app().await;
+    let app = spawn_app(BootstrapType::User).await;
 
     let body = serde_json::json!({
-        "email": app.test_user.email,
+        "email": app.test_user.as_ref().unwrap().email,
     });
 
     // Act
@@ -76,16 +76,16 @@ async fn login_returns_400_when_data_is_missing() {
 #[actix_rt::test]
 async fn login_returns_401_when_data_is_invalid() {
     // Arrange
-    let app = spawn_app().await;
+    let app = spawn_app(BootstrapType::User).await;
 
     let payloads = [
         serde_json::json!({
-            "email": app.test_user.email,
+            "email": app.test_user.as_ref().unwrap().email,
             "password": "foobar",
         }),
         serde_json::json!({
             "email": "foo@bar.com",
-            "password": app.test_user.password,
+            "password": app.test_user.as_ref().unwrap().password,
         }),
     ];
 
