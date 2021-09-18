@@ -61,6 +61,16 @@ impl TestApplication {
         client.send().await.expect("Failed to execute request.")
     }
 
+    pub async fn get_user_servers(&self, bearer: Option<String>) -> reqwest::Response {
+        let mut client = reqwest::Client::new().get(&format!("{}/users/servers", &self.address));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
+
     pub async fn post_create_server(
         &self,
         body: serde_json::Value,
