@@ -26,8 +26,8 @@ impl ResponseError for UsersError {
     }
 }
 
-#[tracing::instrument(name = "Get user information", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
-pub async fn users(
+#[tracing::instrument(name = "Get current user information", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+pub async fn current_user(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, UsersError> {

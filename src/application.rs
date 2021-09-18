@@ -76,7 +76,7 @@ fn run(
             .route("/health_check", web::get().to(health_check))
             .route("/register", web::post().to(register))
             .route("/login", web::post().to(login))
-            .route("/users", web::get().to(users))
+            .route("/users", web::get().to(users::current_user))
             .route("/servers", web::post().to(servers::create))
             .route("/servers/{id}", web::put().to(servers::join))
     })

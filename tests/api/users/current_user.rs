@@ -3,7 +3,7 @@ use ferrum::domain::users::User;
 use crate::helpers::spawn_app;
 
 #[actix_rt::test]
-async fn users_returns_200_for_valid_bearer_token() {
+async fn current_user_returns_200_for_valid_bearer_token() {
     // Arrange
     let app = spawn_app().await;
 
@@ -21,7 +21,7 @@ async fn users_returns_200_for_valid_bearer_token() {
 }
 
 #[actix_rt::test]
-async fn users_returns_401_for_missing_or_invalid_bearer_token() {
+async fn current_user_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
     let app = spawn_app().await;
 
@@ -35,7 +35,7 @@ async fn users_returns_401_for_missing_or_invalid_bearer_token() {
 }
 
 #[actix_rt::test]
-async fn users_fails_if_there_is_a_database_error() {
+async fn current_user_fails_if_there_is_a_database_error() {
     // Arrange
     let app = spawn_app().await;
 

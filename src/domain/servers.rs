@@ -1,5 +1,17 @@
+use chrono::{DateTime, Utc};
+use uuid::Uuid;
+
 pub struct NewServer {
     pub name: ServerName,
+}
+
+#[derive(sqlx::FromRow, serde::Serialize, serde::Deserialize)]
+pub  struct Server {
+    pub id: Uuid,
+    pub name: String,
+    pub owner_id: Uuid,
+    pub updated_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 }
 
 pub struct ServerName(String);
