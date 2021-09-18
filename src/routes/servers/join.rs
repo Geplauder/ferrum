@@ -74,20 +74,13 @@ async fn insert_user_server(
     .await
     {
         Ok(_) => Ok(()),
-        Err(error) => match error.as_database_error() {
-            Some(database_error) => {
-                if let Some(value) = database_error.code() {
-                    if value == "23505" {
-                        return Err(JoinError::AlreadyJoinedError);
-                    } else {
-                        Err(error)
-                    }
-                } else {
-                    Err(error)
-                }
+        Err(error) => {
+            if error.as_database_error().unwrap().code().unwrap() == "23505" {
+                return Err(JoinError::AlreadyJoinedError);
+            } else {
+                Err(error)
             }
-            None => Err(error),
-        },
+        }
     }
     .context("Failed to insert new users_servers entry in the database")
     .map_err(JoinError::UnexpectedError)
