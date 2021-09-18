@@ -4,6 +4,7 @@ use ferrum::{
     telemetry::{get_subscriber, init_subscriber},
 };
 
+#[cfg(not(tarpaulin))]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let subscriber = get_subscriber("ferrum".into(), "info".into(), std::io::stdout);
@@ -16,3 +17,6 @@ async fn main() -> std::io::Result<()> {
 
     Ok(())
 }
+
+#[cfg(tarpaulin)]
+fn main() {}
