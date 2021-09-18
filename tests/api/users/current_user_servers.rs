@@ -9,15 +9,13 @@ async fn current_user_servers_returns_200_for_valid_bearer_token() {
 
     // Todo: Improve this
     app.put_join_server(
-        app.test_server.as_ref().unwrap().id.to_string(),
-        Some(app.test_user_token.as_ref().unwrap().to_owned()),
+        app.test_server().id.to_string(),
+        Some(app.test_user_token()),
     )
     .await;
 
     // Act
-    let response = app
-        .get_user_servers(Some(app.test_user_token.as_ref().unwrap().to_owned()))
-        .await;
+    let response = app.get_user_servers(Some(app.test_user_token())).await;
 
     // Assert
     assert_eq!(200, response.status().as_u16());
@@ -25,9 +23,9 @@ async fn current_user_servers_returns_200_for_valid_bearer_token() {
     let user_servers = response.json::<Vec<Server>>().await.unwrap();
     let user_server = user_servers.first().unwrap();
 
-    assert_eq!(app.test_server.as_ref().unwrap().id, user_server.id);
-    assert_eq!(app.test_server.as_ref().unwrap().name, user_server.name);
-    assert_eq!(app.test_user.unwrap().id, user_server.owner_id);
+    assert_eq!(app.test_server().id, user_server.id);
+    assert_eq!(app.test_server().name, user_server.name);
+    assert_eq!(app.test_user().id, user_server.owner_id);
 }
 
 #[actix_rt::test]
@@ -37,8 +35,8 @@ async fn current_user_servers_returns_401_for_missing_or_invalid_bearer_token() 
 
     // Todo: Improve this
     app.put_join_server(
-        app.test_server.as_ref().unwrap().id.to_string(),
-        Some(app.test_user_token.as_ref().unwrap().to_owned()),
+        app.test_server().id.to_string(),
+        Some(app.test_user_token()),
     )
     .await;
 
@@ -58,8 +56,8 @@ async fn current_user_servers_fails_if_there_is_a_database_error() {
 
     // Todo: Improve this
     app.put_join_server(
-        app.test_server.as_ref().unwrap().id.to_string(),
-        Some(app.test_user_token.as_ref().unwrap().to_owned()),
+        app.test_server().id.to_string(),
+        Some(app.test_user_token()),
     )
     .await;
 
@@ -69,9 +67,7 @@ async fn current_user_servers_fails_if_there_is_a_database_error() {
         .unwrap();
 
     // Act
-    let response = app
-        .get_user_servers(Some(app.test_user_token.as_ref().unwrap().to_owned()))
-        .await;
+    let response = app.get_user_servers(Some(app.test_user_token())).await;
 
     // Assert
     assert_eq!(500, response.status().as_u16());

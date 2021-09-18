@@ -34,12 +34,24 @@ pub struct TestApplication {
     pub port: u16,
     pub db_pool: PgPool,
     pub jwt_secret: String,
-    pub test_user: Option<TestUser>,
-    pub test_user_token: Option<String>,
-    pub test_server: Option<TestServer>,
+    test_user: Option<TestUser>,
+    test_user_token: Option<String>,
+    test_server: Option<TestServer>,
 }
 
 impl TestApplication {
+    pub fn test_user(&self) -> TestUser {
+        self.test_user.as_ref().unwrap().clone()
+    }
+
+    pub fn test_user_token(&self) -> String {
+        self.test_user_token.as_ref().unwrap().clone()
+    }
+
+    pub fn test_server(&self) -> TestServer {
+        self.test_server.as_ref().unwrap().clone()
+    }
+
     pub async fn post_register(&self, body: serde_json::Value) -> reqwest::Response {
         reqwest::Client::new()
             .post(&format!("{}/register", &self.address))
@@ -218,6 +230,7 @@ async fn configure_database(settings: &DatabaseSettings) -> PgPool {
     connection_pool
 }
 
+#[derive(Debug, Clone)]
 pub struct TestUser {
     pub id: Uuid,
     pub name: String,
@@ -256,6 +269,7 @@ impl TestUser {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct TestServer {
     pub id: Uuid,
     pub name: String,

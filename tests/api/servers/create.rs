@@ -10,7 +10,7 @@ async fn create_returns_200_for_valid_json_data() {
 
     // Act
     let response = app
-        .post_create_server(body, Some(app.test_user_token.as_ref().unwrap().to_owned()))
+        .post_create_server(body, Some(app.test_user_token()))
         .await;
 
     // Assert
@@ -26,7 +26,7 @@ async fn create_persists_the_new_server() {
     });
 
     // Act
-    app.post_create_server(body, Some(app.test_user_token.as_ref().unwrap().to_owned()))
+    app.post_create_server(body, Some(app.test_user_token()))
         .await;
 
     // Assert
@@ -36,7 +36,8 @@ async fn create_persists_the_new_server() {
         .expect("Failed to fetch saved server");
 
     assert_eq!("foobar", saved_server.name);
-    assert_eq!(app.test_user.unwrap().id, saved_server.owner_id);
+    assert_eq!(app.test_user().id, saved_server.owner_id);
+}
 }
 
 #[actix_rt::test]
@@ -54,7 +55,7 @@ async fn create_fails_if_there_is_a_database_error() {
 
     // Act
     let response = app
-        .post_create_server(body, Some(app.test_user_token.as_ref().unwrap().to_owned()))
+        .post_create_server(body, Some(app.test_user_token()))
         .await;
 
     // Assert
@@ -69,7 +70,7 @@ async fn create_returns_400_when_data_is_missing() {
 
     // Act
     let response = app
-        .post_create_server(body, Some(app.test_user_token.as_ref().unwrap().to_owned()))
+        .post_create_server(body, Some(app.test_user_token()))
         .await;
 
     // Assert
@@ -86,7 +87,7 @@ async fn create_returns_400_when_data_is_invalid() {
 
     // Act
     let response = app
-        .post_create_server(body, Some(app.test_user_token.as_ref().unwrap().to_owned()))
+        .post_create_server(body, Some(app.test_user_token()))
         .await;
 
     // Assert

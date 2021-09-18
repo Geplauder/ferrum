@@ -13,8 +13,8 @@ async fn login_returns_200_for_valid_json_data() {
     let app = spawn_app(BootstrapType::User).await;
 
     let body = serde_json::json!({
-        "email": app.test_user.as_ref().unwrap().email,
-        "password": app.test_user.as_ref().unwrap().password,
+        "email": app.test_user().email,
+        "password": app.test_user().password,
     });
 
     // Act
@@ -32,7 +32,7 @@ async fn login_returns_200_for_valid_json_data() {
     assert!(claims.is_some());
 
     let claims = claims.unwrap();
-    assert_eq!(app.test_user.unwrap().email, claims.email);
+    assert_eq!(app.test_user().email, claims.email);
 }
 
 #[actix_rt::test]
@@ -41,8 +41,8 @@ async fn login_fails_if_there_is_a_database_error() {
     let app = spawn_app(BootstrapType::User).await;
 
     let body = serde_json::json!({
-        "email": app.test_user.as_ref().unwrap().email,
-        "password": app.test_user.as_ref().unwrap().password,
+        "email": app.test_user().email,
+        "password": app.test_user().password,
     });
 
     sqlx::query!("ALTER TABLE users DROP COLUMN email;")
@@ -63,7 +63,7 @@ async fn login_returns_400_when_data_is_missing() {
     let app = spawn_app(BootstrapType::User).await;
 
     let body = serde_json::json!({
-        "email": app.test_user.as_ref().unwrap().email,
+        "email": app.test_user().email,
     });
 
     // Act
@@ -80,12 +80,12 @@ async fn login_returns_401_when_data_is_invalid() {
 
     let payloads = [
         serde_json::json!({
-            "email": app.test_user.as_ref().unwrap().email,
+            "email": app.test_user().email,
             "password": "foobar",
         }),
         serde_json::json!({
             "email": "foo@bar.com",
-            "password": app.test_user.as_ref().unwrap().password,
+            "password": app.test_user().password,
         }),
     ];
 
