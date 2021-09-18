@@ -5,8 +5,8 @@ pub struct NewServer {
     pub name: ServerName,
 }
 
-#[derive(sqlx::FromRow, serde::Serialize, serde::Deserialize)]
-pub  struct Server {
+#[derive(Debug, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
+pub struct Server {
     pub id: Uuid,
     pub name: String,
     pub owner_id: Uuid,

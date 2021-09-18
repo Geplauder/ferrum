@@ -77,6 +77,7 @@ fn run(
             .route("/register", web::post().to(register))
             .route("/login", web::post().to(login))
             .route("/users", web::get().to(users::current_user))
+            .route("/users/servers", web::get().to(users::current_user_servers))
             .route("/servers", web::post().to(servers::create))
             .route("/servers/{id}", web::put().to(servers::join))
     })

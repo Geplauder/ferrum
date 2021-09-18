@@ -118,5 +118,49 @@
       },
       "nullable": []
     }
+  },
+  "faa000e9c341eed90687fe4dacf5cd8dfa0c96e34ccfb6619c056be1df553236": {
+    "query": "\n        SELECT servers.*\n        FROM users_servers\n        INNER JOIN servers ON users_servers.server_id = servers.id\n        WHERE users_servers.user_id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "owner_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
   }
 }
