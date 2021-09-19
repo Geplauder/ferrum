@@ -205,6 +205,50 @@
       "nullable": []
     }
   },
+  "d0d244ecc79a3783e3400b6504aaa5e0debff1a8c132f197597552c05d93d71e": {
+    "query": "\n        SELECT *\n        FROM channels\n        WHERE channels.server_id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "server_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "f4d063f3346a9a54378fb6cee747440de1aee1708f5656dad3d0586ebd642ccb": {
     "query": "SELECT owner_id FROM servers WHERE id = $1",
     "describe": {

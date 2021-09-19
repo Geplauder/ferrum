@@ -83,6 +83,10 @@ fn run(
             .route("/servers/{id}/users", web::get().to(servers::get_users))
             .route(
                 "/servers/{id}/channels",
+                web::get().to(servers::get_channels),
+            )
+            .route(
+                "/servers/{id}/channels",
                 web::post().to(servers::create_channel),
             )
     })

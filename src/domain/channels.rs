@@ -1,5 +1,17 @@
+use chrono::{DateTime, Utc};
+use uuid::Uuid;
+
 pub struct NewChannel {
     pub name: ChannelName,
+}
+
+#[derive(Debug, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
+pub struct Channel {
+    pub id: Uuid,
+    pub server_id: Uuid,
+    pub name: String,
+    pub updated_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 }
 
 pub struct ChannelName(String);
