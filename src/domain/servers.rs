@@ -41,7 +41,6 @@ impl std::fmt::Display for ServerName {
 #[cfg(test)]
 mod tests {
     use super::ServerName;
-    use fake::faker::company::en::CompanyName;
     use fake::Fake;
 
     #[test]
@@ -74,7 +73,7 @@ mod tests {
 
     impl quickcheck::Arbitrary for ValidNameFixture {
         fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
-            let name = CompanyName().fake_with_rng(g);
+            let name = (4..65).fake_with_rng::<String, G>(g);
 
             Self(name)
         }

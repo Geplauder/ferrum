@@ -41,7 +41,6 @@ impl std::fmt::Display for ChannelName {
 #[cfg(test)]
 mod tests {
     use super::ChannelName;
-    use fake::faker::internet::en::Username;
     use fake::Fake;
 
     #[test]
@@ -74,7 +73,7 @@ mod tests {
 
     impl quickcheck::Arbitrary for ValidNameFixture {
         fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
-            let name = Username().fake_with_rng(g);
+            let name = (4..33).fake_with_rng::<String, G>(g);
 
             Self(name)
         }
