@@ -97,3 +97,32 @@ pub fn get_settings() -> Result<Settings, ConfigError> {
 
     settings.try_into()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn valid_environment_variable_are_accepted() {
+        for env in ["local", "production", "testing"] {
+            let env: Result<Environment, String> = env.to_string().try_into();
+
+            assert!(env.is_ok());
+        }
+    }
+
+    #[test]
+    fn invalid_environment_variable_is_rejected() {
+        let env: Result<Environment, String> = "foobar".to_string().try_into();
+
+        assert!(env.is_err());
+    }
+
+    #[test]
+    #[should_panic]
+    fn get_settings_fails_for_invalid_app_env_format() {
+        std::env::set_var("APP_ENV", "foobar");
+
+        get_settings().unwrap();
+    }
+}
