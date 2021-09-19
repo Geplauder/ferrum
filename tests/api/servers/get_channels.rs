@@ -83,6 +83,54 @@ async fn get_channels_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
+#[actix_rt::test]
+async fn get_channels_returns_401_when_user_does_not_have_access_to_server() {
+    // Arrange
+    let app = spawn_app(BootstrapType::UserAndOtherServer).await;
+    add_channel_to_server(&app.test_server(), &app.db_pool).await;
+
+    // Act
+    let response = app
+        .get_server_channels(
+            app.test_server().id.to_string(),
+            Some(app.test_user_token()),
+        )
+        .await;
+
+    // Assert
+    assert_eq!(401, response.status().as_u16());
+}
+
+#[actix_rt::test]
+async fn get_channels_returns_404_when_server_id_is_invalid() {
+    // Arrange
+    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
+    add_channel_to_server(&app.test_server(), &app.db_pool).await;
+
+    // Act
+    let response = app
+        .get_server_channels("foo".to_string(), Some(app.test_user_token()))
+        .await;
+
+    // Assert
+    assert_eq!(404, response.status().as_u16());
+}
+
+#[actix_rt::test]
+async fn get_channels_returns_401_when_server_id_is_not_found() {
+    // Arrange
+    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
+    add_channel_to_server(&app.test_server(), &app.db_pool).await;
+
+    // Act
+    let response = app
+        .get_server_channels(Uuid::new_v4().to_string(), Some(app.test_user_token()))
+        .await;
+
+    // Assert
+    assert_eq!(401, response.status().as_u16());
+}
+
 async fn add_channel_to_server(server: &TestServer, pool: &PgPool) {
     server
         .add_channel(Uuid::new_v4(), &Uuid::new_v4().to_string(), pool)

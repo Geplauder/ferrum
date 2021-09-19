@@ -1,12 +1,17 @@
+use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::users::User, error_chain_fmt, jwt::AuthorizationService};
+use crate::{
+    domain::users::User, error_chain_fmt, jwt::AuthorizationService, utilities::is_user_on_server,
+};
 
 #[derive(thiserror::Error)]
 pub enum GetUsersError {
+    #[error("Unauthorized")]
+    UnauthorizedError,
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -17,14 +22,28 @@ impl std::fmt::Debug for GetUsersError {
     }
 }
 
-impl ResponseError for GetUsersError {}
+impl ResponseError for GetUsersError {
+    fn status_code(&self) -> actix_http::StatusCode {
+        match *self {
+            GetUsersError::UnauthorizedError => StatusCode::UNAUTHORIZED,
+            GetUsersError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
 
 pub async fn get_users(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    _auth: AuthorizationService,
+    auth: AuthorizationService,
 ) -> Result<HttpResponse, GetUsersError> {
-    // TODO: Check if authenticated user is on server
+    let is_user_on_server = is_user_on_server(&pool, auth.claims.id, *server_id)
+        .await
+        .context("Failed to check if user is on server")?;
+
+    if is_user_on_server == false {
+        return Err(GetUsersError::UnauthorizedError);
+    }
+
     let server_users = get_server_users(*server_id, &pool).await?;
 
     Ok(HttpResponse::Ok().json(server_users))

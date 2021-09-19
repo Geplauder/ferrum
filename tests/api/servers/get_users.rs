@@ -1,5 +1,6 @@
 use ferrum::domain::users::User;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::helpers::{spawn_app, BootstrapType, TestServer, TestUser};
 
@@ -80,6 +81,54 @@ async fn get_users_fails_if_there_is_a_database_error() {
 
     // Assert
     assert_eq!(500, response.status().as_u16());
+}
+
+#[actix_rt::test]
+async fn get_users_returns_401_when_user_does_not_have_access_to_server() {
+    // Arrange
+    let app = spawn_app(BootstrapType::UserAndOtherServer).await;
+    add_user_to_server(&app.test_server(), &app.db_pool).await;
+
+    // Act
+    let response = app
+        .get_server_users(
+            app.test_server().id.to_string(),
+            Some(app.test_user_token()),
+        )
+        .await;
+
+    // Assert
+    assert_eq!(401, response.status().as_u16());
+}
+
+#[actix_rt::test]
+async fn get_users_returns_404_when_server_id_is_invalid() {
+    // Arrange
+    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
+    add_user_to_server(&app.test_server(), &app.db_pool).await;
+
+    // Act
+    let response = app
+        .get_server_users("foo".to_string(), Some(app.test_user_token()))
+        .await;
+
+    // Assert
+    assert_eq!(404, response.status().as_u16());
+}
+
+#[actix_rt::test]
+async fn get_users_returns_401_when_server_id_is_not_found() {
+    // Arrange
+    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
+    add_user_to_server(&app.test_server(), &app.db_pool).await;
+
+    // Act
+    let response = app
+        .get_server_users(Uuid::new_v4().to_string(), Some(app.test_user_token()))
+        .await;
+
+    // Assert
+    assert_eq!(401, response.status().as_u16());
 }
 
 async fn add_user_to_server(server: &TestServer, pool: &PgPool) {

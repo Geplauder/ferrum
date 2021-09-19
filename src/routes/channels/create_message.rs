@@ -10,6 +10,7 @@ use crate::{
     domain::messages::{MessageContent, NewMessage},
     error_chain_fmt,
     jwt::AuthorizationService,
+    utilities::does_user_have_access_to_channel,
 };
 
 #[derive(serde::Deserialize)]
@@ -65,7 +66,6 @@ pub async fn create_message(
         .try_into()
         .map_err(CreateMessageError::ValidationError)?;
 
-    // TODO: Check if user has access to that channel
     does_user_have_access_to_channel(&pool, *channel_id, auth.claims.id)
         .await
         .map_err(CreateMessageError::UnauthorizedError)?;
@@ -110,36 +110,6 @@ async fn insert_message(
         new_message.content.as_ref(),
     )
     .execute(transaction)
-    .await?;
-
-    Ok(())
-}
-
-#[tracing::instrument(
-    name = "Check if user has access to a channel",
-    skip(pool, channel_id, user_id)
-)]
-async fn does_user_have_access_to_channel(
-    pool: &PgPool,
-    channel_id: Uuid,
-    user_id: Uuid,
-) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"
-        WITH server_query AS (
-            SELECT servers.id as server_id
-            FROM servers
-            INNER JOIN channels ON channels.server_id = servers.id
-            WHERE channels.id = $1 LIMIT 1
-        )
-        SELECT users_servers.*
-        FROM users_servers
-        WHERE users_servers.user_id = $2 AND users_servers.server_id IN (SELECT server_id FROM server_query)
-        "#,
-        channel_id,
-        user_id,
-    )
-    .fetch_one(pool)
     .await?;
 
     Ok(())

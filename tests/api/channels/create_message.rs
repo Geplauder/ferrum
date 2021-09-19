@@ -101,7 +101,7 @@ async fn create_message_returns_404_when_channel_id_is_invalid() {
 }
 
 #[actix_rt::test]
-async fn create_message_returns_500_when_channel_id_is_not_found() {
+async fn create_message_returns_401_when_channel_id_is_not_found() {
     // Arrange
     let app = spawn_app(BootstrapType::UserAndOwnServer).await;
     let body = serde_json::json!({

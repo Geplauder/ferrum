@@ -6,6 +6,7 @@ pub mod jwt;
 pub mod routes;
 pub mod settings;
 pub mod telemetry;
+pub mod utilities;
 
 pub fn error_chain_fmt(
     e: &impl std::error::Error,

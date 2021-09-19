@@ -359,6 +359,27 @@
       ]
     }
   },
+  "ec3152faaa1fe57d011e5076741f10e68ad285a2f4e4020672fc26ebb9d5d3ed": {
+    "query": "\n        SELECT servers.id\n        FROM users_servers\n        INNER JOIN servers ON users_servers.server_id = servers.id\n        WHERE users_servers.user_id = $1 AND users_servers.server_id = $2\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "f4d063f3346a9a54378fb6cee747440de1aee1708f5656dad3d0586ebd642ccb": {
     "query": "SELECT owner_id FROM servers WHERE id = $1",
     "describe": {
