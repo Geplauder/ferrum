@@ -1,5 +1,19 @@
 {
   "db": "PostgreSQL",
+  "1bd5208d4788b381266c8d711e04f03d36fe02a0549e1c6f7b32ed6a386da77a": {
+    "query": "\n        INSERT INTO channels (id, server_id, name)\n        VALUES ($1, $2, $3)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "1e49128cf7937beb77dc23de679ac9fd1e37cea717614d6a704f5142f14c46ad": {
     "query": "\n    INSERT INTO users (id, username, email, password)\n    VALUES ($1, $2, $3, $4)\n    ",
     "describe": {
@@ -175,6 +189,26 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "f4d063f3346a9a54378fb6cee747440de1aee1708f5656dad3d0586ebd642ccb": {
+    "query": "SELECT owner_id FROM servers WHERE id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "owner_id",
+          "type_info": "Uuid"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false
+      ]
     }
   },
   "faa000e9c341eed90687fe4dacf5cd8dfa0c96e34ccfb6619c056be1df553236": {

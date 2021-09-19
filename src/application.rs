@@ -81,6 +81,10 @@ fn run(
             .route("/servers", web::post().to(servers::create))
             .route("/servers/{id}", web::put().to(servers::join))
             .route("/servers/{id}/users", web::get().to(servers::get_users))
+            .route(
+                "/servers/{id}/channels",
+                web::post().to(servers::create_channel),
+            )
     })
     .listen(listener)?
     .run();

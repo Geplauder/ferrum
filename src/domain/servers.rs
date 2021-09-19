@@ -76,8 +76,6 @@ mod tests {
         fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
             let name = CompanyName().fake_with_rng(g);
 
-            println!("{:?}", name);
-
             Self(name)
         }
     }
