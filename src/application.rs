@@ -6,7 +6,7 @@ use tracing_actix_web::TracingLogger;
 
 use crate::{
     jwt::Jwt,
-    routes::{health_check, login, register, servers, users},
+    routes::{channels, health_check, login, register, servers, users},
     settings::{DatabaseSettings, Settings},
 };
 
@@ -88,6 +88,10 @@ fn run(
             .route(
                 "/servers/{id}/channels",
                 web::post().to(servers::create_channel),
+            )
+            .route(
+                "/channels/{id}/messages",
+                web::post().to(channels::create_message),
             )
     })
     .listen(listener)?

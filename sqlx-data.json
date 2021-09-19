@@ -1,5 +1,20 @@
 {
   "db": "PostgreSQL",
+  "06d2cfb1bd098b7964302e7f1bc0714279d386523e137578294844d21f46d8db": {
+    "query": "\n        INSERT INTO messages (id, channel_id, user_id, content)\n        VALUES ($1, $2, $3, $4)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Uuid",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "1bd5208d4788b381266c8d711e04f03d36fe02a0549e1c6f7b32ed6a386da77a": {
     "query": "\n        INSERT INTO channels (id, server_id, name)\n        VALUES ($1, $2, $3)\n        ",
     "describe": {

@@ -1,3 +1,4 @@
+pub mod channels;
 mod health_check;
 mod login;
 mod register;
