@@ -36,8 +36,6 @@ pub enum LoginError {
     ValidationError(String),
     #[error("Login failed")]
     LoginFailed(#[source] anyhow::Error),
-    #[error("Login failed")]
-    TokenError(#[source] jsonwebtoken::errors::Error),
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -53,7 +51,6 @@ impl ResponseError for LoginError {
         match self {
             LoginError::ValidationError(_) => StatusCode::BAD_REQUEST,
             LoginError::LoginFailed(_) => StatusCode::UNAUTHORIZED,
-            LoginError::TokenError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             LoginError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -70,9 +67,7 @@ pub async fn login(
     let (user_id, user_email) = validate_credentials(login_user, &pool).await?;
     tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
 
-    let token = jwt
-        .encode(user_id, user_email)
-        .map_err(LoginError::TokenError)?;
+    let token = jwt.encode(user_id, user_email);
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "token": token,

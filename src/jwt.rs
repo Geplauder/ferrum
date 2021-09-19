@@ -25,7 +25,7 @@ impl Jwt {
         Self { secret }
     }
 
-    pub fn encode(&self, id: Uuid, email: String) -> Result<String, jsonwebtoken::errors::Error> {
+    pub fn encode(&self, id: Uuid, email: String) -> String {
         let now = SystemTime::now();
         let since_epoch = now.duration_since(UNIX_EPOCH).unwrap();
 
@@ -38,6 +38,7 @@ impl Jwt {
             },
             &EncodingKey::from_secret(self.secret.as_bytes()),
         )
+        .unwrap()
     }
 }
 

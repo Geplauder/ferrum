@@ -179,10 +179,8 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
             let test_user = TestUser::generate();
             test_user.store(&test_application.db_pool).await;
 
-            test_application.test_user_token = Some(
-                jwt.encode(test_user.id.to_owned(), test_user.email.to_owned())
-                    .unwrap(),
-            );
+            test_application.test_user_token =
+                Some(jwt.encode(test_user.id.to_owned(), test_user.email.to_owned()));
             test_application.test_user = Some(test_user);
         }
         BootstrapType::UserAndOwnServer => {
@@ -192,10 +190,8 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
             let test_server = TestServer::generate(test_user.id);
             test_server.store(&test_application.db_pool).await;
 
-            test_application.test_user_token = Some(
-                jwt.encode(test_user.id.to_owned(), test_user.email.to_owned())
-                    .unwrap(),
-            );
+            test_application.test_user_token =
+                Some(jwt.encode(test_user.id.to_owned(), test_user.email.to_owned()));
             test_application.test_user = Some(test_user);
             test_application.test_server = Some(test_server);
         }
@@ -208,10 +204,8 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
             let test_server = TestServer::generate(dummy_user.id);
             test_server.store(&test_application.db_pool).await;
 
-            test_application.test_user_token = Some(
-                jwt.encode(test_user.id.to_owned(), test_user.email.to_owned())
-                    .unwrap(),
-            );
+            test_application.test_user_token =
+                Some(jwt.encode(test_user.id.to_owned(), test_user.email.to_owned()));
             test_application.test_user = Some(test_user);
             test_application.test_server = Some(test_server);
         }
