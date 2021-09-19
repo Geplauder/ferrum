@@ -298,6 +298,7 @@ pub struct TestServer {
     pub id: Uuid,
     pub name: String,
     pub owner_id: Uuid,
+    pub default_channel_id: Uuid,
 }
 
 impl TestServer {
@@ -306,6 +307,7 @@ impl TestServer {
             id: Uuid::new_v4(),
             name: Uuid::new_v4().to_string(),
             owner_id,
+            default_channel_id: Uuid::new_v4(),
         }
     }
 
@@ -331,6 +333,16 @@ impl TestServer {
         .execute(pool)
         .await
         .expect("Failed to store test server.");
+
+        sqlx::query!(
+            "INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)",
+            self.default_channel_id,
+            self.id,
+            "general",
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to store default server channel.");
 
         self.add_user(self.owner_id, pool).await;
     }

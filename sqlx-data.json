@@ -29,6 +29,20 @@
       "nullable": []
     }
   },
+  "367c4be408fc282be1bee6eeea972e3f93d4e23bd66ceb4510f83bb91dbcf900": {
+    "query": "\n        INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "7cf0fc55c77ebabba3062941631c53d83be1cd9b1f2809557a252bef6b7e74d8": {
     "query": "\n        SELECT users.id, users.username, users.email, users.created_at, users.updated_at\n        FROM users_servers\n        INNER JOIN users ON users_servers.user_id = users.id\n        WHERE users_servers.server_id = $1\n        ",
     "describe": {

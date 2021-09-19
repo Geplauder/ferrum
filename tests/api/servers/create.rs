@@ -61,6 +61,27 @@ async fn create_also_joins_owner_to_the_server() {
 }
 
 #[actix_rt::test]
+async fn create_also_creates_default_server_channel() {
+    // Arrange
+    let app = spawn_app(BootstrapType::User).await;
+    let body = serde_json::json!({
+        "name": "foobar"
+    });
+
+    // Act
+    app.post_create_server(body, Some(app.test_user_token()))
+        .await;
+
+    // Assert
+    let saved_channel = sqlx::query!("SELECT server_id, name FROM channels")
+        .fetch_one(&app.db_pool)
+        .await
+        .expect("Failed to fetch saved default server channel.");
+
+    assert_eq!("general", saved_channel.name);
+}
+
+#[actix_rt::test]
 async fn create_fails_if_there_is_a_database_error() {
     // Arrange
     let app = spawn_app(BootstrapType::User).await;

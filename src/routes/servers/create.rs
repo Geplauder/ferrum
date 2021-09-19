@@ -67,6 +67,10 @@ pub async fn create(
         .await
         .context("Failed to insert new server in the database.")?;
 
+    add_default_channel_to_server(&mut transaction, server_id)
+        .await
+        .context("Failed to insert default server channel to the database.")?;
+
     add_user_to_server(&mut transaction, auth.claims.id, server_id)
         .await
         .context("Failed to insert new users_servers entry to the database.")?;
@@ -103,6 +107,30 @@ async fn insert_server(
     .await?;
 
     Ok(id)
+}
+
+#[tracing::instrument(
+    name = "Saving a new default server channel to the database",
+    skip(transaction, server_id)
+)]
+async fn add_default_channel_to_server(
+    transaction: &mut Transaction<'_, Postgres>,
+    server_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    let id = Uuid::new_v4();
+
+    sqlx::query!(
+        r#"
+        INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)
+        "#,
+        id,
+        server_id,
+        "general",
+    )
+    .execute(transaction)
+    .await?;
+
+    Ok(())
 }
 
 #[tracing::instrument(
