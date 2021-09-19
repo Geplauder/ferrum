@@ -118,7 +118,7 @@ async fn create_message_returns_500_when_channel_id_is_not_found() {
         .await;
 
     // Assert
-    assert_eq!(500, response.status().as_u16());
+    assert_eq!(401, response.status().as_u16());
 }
 
 #[actix_rt::test]

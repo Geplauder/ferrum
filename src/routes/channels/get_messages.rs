@@ -1,3 +1,4 @@
+use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::PgPool;
@@ -19,7 +20,14 @@ impl std::fmt::Debug for GetMessagesError {
     }
 }
 
-impl ResponseError for GetMessagesError {}
+impl ResponseError for GetMessagesError {
+    fn status_code(&self) -> actix_http::StatusCode {
+        match *self {
+            GetMessagesError::UnauthorizedError(_) => StatusCode::UNAUTHORIZED,
+            GetMessagesError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
+}
 
 #[tracing::instrument(name = "Get messages for channel", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn get_messages(

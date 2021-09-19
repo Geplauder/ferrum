@@ -7,7 +7,7 @@ use ferrum::{
     telemetry::{get_subscriber, init_subscriber},
 };
 use once_cell::sync::Lazy;
-use sqlx::{types::Uuid, Connection, Executor, PgConnection, PgPool};
+use sqlx::{postgres::PgPoolOptions, types::Uuid, Connection, Executor, PgConnection, PgPool};
 
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
@@ -187,6 +187,23 @@ impl TestApplication {
 
         client.send().await.expect("Failed to execute request.")
     }
+
+    pub async fn get_channel_messages(
+        &self,
+        channel_id: String,
+        bearer: Option<String>,
+    ) -> reqwest::Response {
+        let mut client = reqwest::Client::new().get(&format!(
+            "{}/channels/{}/messages",
+            &self.address, channel_id
+        ));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
 }
 
 pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
@@ -278,9 +295,12 @@ async fn configure_database(settings: &DatabaseSettings) -> PgPool {
         .await
         .expect("Failed to create database.");
 
-    let connection_pool = PgPool::connect_with(settings.with_db())
+    let connection_pool = PgPoolOptions::new()
+        .max_connections(1000)
+        .connect_with(settings.with_db())
         .await
         .expect("Failed to connect to Postgres.");
+
     sqlx::migrate!("./migrations")
         .run(&connection_pool)
         .await
