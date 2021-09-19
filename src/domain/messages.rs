@@ -1,5 +1,18 @@
+use chrono::{DateTime, Utc};
+use uuid::Uuid;
+
 pub struct NewMessage {
     pub content: MessageContent,
+}
+
+#[derive(sqlx::FromRow, serde::Serialize, serde::Deserialize)]
+pub struct Message {
+    pub id: Uuid,
+    pub channel_id: Uuid,
+    pub user_id: Uuid,
+    pub content: String,
+    pub updated_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 }
 
 pub struct MessageContent(String);

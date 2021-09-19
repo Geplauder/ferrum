@@ -91,6 +91,10 @@ fn run(
             )
             .route(
                 "/channels/{id}/messages",
+                web::get().to(channels::get_messages),
+            )
+            .route(
+                "/channels/{id}/messages",
                 web::post().to(channels::create_message),
             )
     })
