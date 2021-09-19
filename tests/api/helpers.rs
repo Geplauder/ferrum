@@ -135,6 +135,23 @@ impl TestApplication {
 
         client.send().await.expect("Failed to execute request.")
     }
+
+    pub async fn post_create_server_channel(
+        &self,
+        server_id: String,
+        body: serde_json::Value,
+        bearer: Option<String>,
+    ) -> reqwest::Response {
+        let mut client = reqwest::Client::new()
+            .post(&format!("{}/servers/{}/channels", &self.address, server_id))
+            .json(&body);
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
 }
 
 pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {

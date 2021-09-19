@@ -4,7 +4,7 @@ use crate::helpers::{spawn_app, BootstrapType};
 async fn create_returns_200_for_valid_json_data() {
     // Arrange
     let app = spawn_app(BootstrapType::User).await;
-    let body = serde_json::json !({
+    let body = serde_json::json!({
         "name": "foobar",
     });
 
