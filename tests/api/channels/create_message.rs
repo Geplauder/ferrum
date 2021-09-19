@@ -186,7 +186,6 @@ async fn create_message_returns_401_for_missing_or_invalid_bearer_token() {
 }
 
 #[actix_rt::test]
-#[ignore] // TODO: Remove when feature is implemented
 async fn create_message_returns_401_when_user_has_no_access_to_the_channel() {
     // Arrange
     let app = spawn_app(BootstrapType::UserAndOtherServer).await;

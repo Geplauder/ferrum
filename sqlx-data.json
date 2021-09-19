@@ -58,6 +58,51 @@
       "nullable": []
     }
   },
+  "3e19ae7f4dc3e0f6aea6c81374d60403b6801ce4e4cae640126d46649c6ceb2a": {
+    "query": "\n        WITH server_query AS (\n            SELECT servers.id as server_id\n            FROM servers\n            INNER JOIN channels ON channels.server_id = servers.id\n            WHERE channels.id = $1 LIMIT 1\n        )\n        SELECT users_servers.*\n        FROM users_servers\n        WHERE users_servers.user_id = $2 AND users_servers.server_id IN (SELECT server_id FROM server_query)\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "user_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "server_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "7cf0fc55c77ebabba3062941631c53d83be1cd9b1f2809557a252bef6b7e74d8": {
     "query": "\n        SELECT users.id, users.username, users.email, users.created_at, users.updated_at\n        FROM users_servers\n        INNER JOIN users ON users_servers.user_id = users.id\n        WHERE users_servers.server_id = $1\n        ",
     "describe": {
@@ -94,6 +139,56 @@
         ]
       },
       "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "8a0fa61820727382ec64109253953ccc015abc1f771b79ba9f8e2319b36e90dc": {
+    "query": "\n        SELECT *\n        FROM messages\n        WHERE messages.channel_id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "channel_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 3,
+          "name": "content",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 5,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
         false,
         false,
         false,
