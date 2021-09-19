@@ -105,6 +105,21 @@ impl TestApplication {
         client.send().await.expect("Failed to execute request.")
     }
 
+    pub async fn get_server_channels(
+        &self,
+        server_id: String,
+        bearer: Option<String>,
+    ) -> reqwest::Response {
+        let mut client = reqwest::Client::new()
+            .get(&format!("{}/servers/{}/channels", &self.address, server_id));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
+
     pub async fn post_create_server(
         &self,
         body: serde_json::Value,
@@ -323,6 +338,18 @@ impl TestServer {
         .expect("Failed to store test server owner relation.");
     }
 
+    pub async fn add_channel(&self, id: Uuid, channel_name: &str, pool: &PgPool) {
+        sqlx::query!(
+            "INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)",
+            id,
+            self.id,
+            channel_name,
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to store server channel.");
+    }
+
     async fn store(&self, pool: &PgPool) {
         sqlx::query!(
             "INSERT INTO servers (id, name, owner_id) VALUES ($1, $2, $3)",
@@ -334,16 +361,8 @@ impl TestServer {
         .await
         .expect("Failed to store test server.");
 
-        sqlx::query!(
-            "INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)",
-            self.default_channel_id,
-            self.id,
-            "general",
-        )
-        .execute(pool)
-        .await
-        .expect("Failed to store default server channel.");
-
+        self.add_channel(self.default_channel_id, "general", pool)
+            .await;
         self.add_user(self.owner_id, pool).await;
     }
 }

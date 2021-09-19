@@ -31,6 +31,11 @@ async fn create_channel_persists_the_new_channel() {
         "name": "foobar"
     });
 
+    sqlx::query!("DELETE FROM channels")
+        .execute(&app.db_pool)
+        .await
+        .unwrap();
+
     // Act
     app.post_create_server_channel(
         app.test_server().id.to_string(),
