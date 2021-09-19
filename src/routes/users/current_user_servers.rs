@@ -1,4 +1,3 @@
-use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::PgPool;
@@ -18,13 +17,7 @@ impl std::fmt::Debug for CurrentUserServersError {
     }
 }
 
-impl ResponseError for CurrentUserServersError {
-    fn status_code(&self) -> actix_http::StatusCode {
-        match *self {
-            CurrentUserServersError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-}
+impl ResponseError for CurrentUserServersError {}
 
 #[tracing::instrument(name = "Get current user servers", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn current_user_servers(

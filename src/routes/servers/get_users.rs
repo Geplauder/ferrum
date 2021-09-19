@@ -1,4 +1,3 @@
-use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::PgPool;
@@ -18,13 +17,7 @@ impl std::fmt::Debug for GetUsersError {
     }
 }
 
-impl ResponseError for GetUsersError {
-    fn status_code(&self) -> actix_http::StatusCode {
-        match *self {
-            GetUsersError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-}
+impl ResponseError for GetUsersError {}
 
 pub async fn get_users(
     server_id: web::Path<Uuid>,
