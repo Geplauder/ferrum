@@ -1,5 +1,6 @@
 use std::{net::TcpListener, time::Duration};
 
+use actix_cors::Cors;
 use actix_web::{dev::Server, web, web::Data, App, HttpServer};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing_actix_web::TracingLogger;
@@ -70,6 +71,12 @@ fn run(
     let server = HttpServer::new(move || {
         App::new()
             .wrap(TracingLogger::default())
+            .wrap(
+                Cors::default()
+                    .allow_any_header()
+                    .allow_any_method()
+                    .allow_any_origin(),
+            )
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             .app_data(jwt.clone())
