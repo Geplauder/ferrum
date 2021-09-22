@@ -1,5 +1,49 @@
 {
   "db": "PostgreSQL",
+  "06a4c0c57b7ba376aca30177ebc29694a8fc9f56125cacee950499d2aef3e35d": {
+    "query": "\n        SELECT *\n        FROM servers\n        WHERE servers.id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "owner_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "06d2cfb1bd098b7964302e7f1bc0714279d386523e137578294844d21f46d8db": {
     "query": "\n        INSERT INTO messages (id, channel_id, user_id, content)\n        VALUES ($1, $2, $3, $4)\n        ",
     "describe": {
