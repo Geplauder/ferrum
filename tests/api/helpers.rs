@@ -90,6 +90,17 @@ impl TestApplication {
         client.send().await.expect("Failed to execute request.")
     }
 
+    pub async fn get_server(&self, server_id: String, bearer: Option<String>) -> reqwest::Response {
+        let mut client =
+            reqwest::Client::new().get(&format!("{}/servers/{}", &self.address, server_id));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
+
     pub async fn get_server_users(
         &self,
         server_id: String,

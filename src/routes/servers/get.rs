@@ -12,7 +12,7 @@ use crate::{
 #[derive(thiserror::Error)]
 pub enum GetServerError {
     #[error("Unauthorized")]
-    UnauthorizedError(#[from] sqlx::Error),
+    UnauthorizedError,
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -26,7 +26,7 @@ impl std::fmt::Debug for GetServerError {
 impl ResponseError for GetServerError {
     fn status_code(&self) -> actix_http::StatusCode {
         match *self {
-            GetServerError::UnauthorizedError(_) => StatusCode::UNAUTHORIZED,
+            GetServerError::UnauthorizedError => StatusCode::UNAUTHORIZED,
             GetServerError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -38,9 +38,13 @@ pub async fn get(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, GetServerError> {
-    is_user_on_server(&pool, auth.claims.id, *server_id)
+    let is_user_on_server = is_user_on_server(&pool, auth.claims.id, *server_id)
         .await
-        .map_err(GetServerError::UnauthorizedError)?;
+        .context("Failed to check if user is on server")?;
+
+    if is_user_on_server == false {
+        return Err(GetServerError::UnauthorizedError);
+    }
 
     let server = get_server(*server_id, &pool)
         .await
@@ -50,7 +54,7 @@ pub async fn get(
 }
 
 #[tracing::instrument(name = "Get server", skip(server_id, pool))]
-async fn get_server(server_id: Uuid, pool: &PgPool) -> Result<Server, GetServerError> {
+async fn get_server(server_id: Uuid, pool: &PgPool) -> Result<Server, sqlx::Error> {
     let server = sqlx::query_as!(
         Server,
         r#"
