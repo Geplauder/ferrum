@@ -5,7 +5,12 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    domain::messages::Message, error_chain_fmt, jwt::AuthorizationService,
+    domain::{
+        messages::{Message, MessageResponse},
+        users::User,
+    },
+    error_chain_fmt,
+    jwt::AuthorizationService,
     utilities::does_user_have_access_to_channel,
 };
 
@@ -51,7 +56,7 @@ pub async fn get_messages(
 async fn get_channel_messages(
     channel_id: Uuid,
     pool: &PgPool,
-) -> Result<Vec<Message>, GetMessagesError> {
+) -> Result<Vec<MessageResponse>, GetMessagesError> {
     let messages = sqlx::query_as!(
         Message,
         r#"
@@ -65,5 +70,24 @@ async fn get_channel_messages(
     .await
     .context("Failed to retrieve channel messages.")?;
 
-    Ok(messages)
+    let mut data = vec![];
+
+    for message in &messages {
+        let user = sqlx::query_as!(
+            User,
+            r#"
+            SELECT id, username, email, created_at, updated_at
+            FROM users
+            WHERE users.id = $1
+            "#,
+            message.user_id,
+        )
+        .fetch_one(pool)
+        .await
+        .context("")?;
+
+        data.push(MessageResponse::new(message, &user));
+    }
+
+    Ok(data)
 }

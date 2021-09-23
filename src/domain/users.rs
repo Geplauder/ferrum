@@ -18,6 +18,14 @@ pub struct User {
     pub created_at: DateTime<Utc>,
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+pub struct UserResponse {
+    pub id: Uuid,
+    pub username: String,
+    pub updated_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
 pub struct UserEmail(String);
 
 impl UserEmail {

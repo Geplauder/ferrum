@@ -88,6 +88,50 @@
       "nullable": []
     }
   },
+  "35aaf3f9ff815f1903a19f926795cfcd6cfa3dd1e23d6b720ed81786deaa7a76": {
+    "query": "\n            SELECT id, username, email, created_at, updated_at\n            FROM users\n            WHERE users.id = $1\n            ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "367c4be408fc282be1bee6eeea972e3f93d4e23bd66ceb4510f83bb91dbcf900": {
     "query": "\n        INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)\n        ",
     "describe": {

@@ -1,4 +1,4 @@
-use ferrum::domain::messages::Message;
+use ferrum::domain::messages::MessageResponse;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -45,7 +45,7 @@ async fn get_messages_returns_valid_data_for_valid_request() {
             Some(app.test_user_token()),
         )
         .await
-        .json::<Vec<Message>>()
+        .json::<Vec<MessageResponse>>()
         .await
         .unwrap();
 
