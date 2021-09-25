@@ -44,21 +44,6 @@
       ]
     }
   },
-  "06d2cfb1bd098b7964302e7f1bc0714279d386523e137578294844d21f46d8db": {
-    "query": "\n        INSERT INTO messages (id, channel_id, user_id, content)\n        VALUES ($1, $2, $3, $4)\n        ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Uuid",
-          "Text"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "1bd5208d4788b381266c8d711e04f03d36fe02a0549e1c6f7b32ed6a386da77a": {
     "query": "\n        INSERT INTO channels (id, server_id, name)\n        VALUES ($1, $2, $3)\n        ",
     "describe": {
@@ -191,6 +176,59 @@
       ]
     }
   },
+  "49b4451a03e62411084ff7acb742b2fe784c08cbe41849f185280ccae4675b18": {
+    "query": "\n        INSERT INTO messages (id, channel_id, user_id, content)\n        VALUES ($1, $2, $3, $4)\n        RETURNING *\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "channel_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "user_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 3,
+          "name": "content",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 5,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Uuid",
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "7cf0fc55c77ebabba3062941631c53d83be1cd9b1f2809557a252bef6b7e74d8": {
     "query": "\n        SELECT users.id, users.username, users.email, users.created_at, users.updated_at\n        FROM users_servers\n        INNER JOIN users ON users_servers.user_id = users.id\n        WHERE users_servers.server_id = $1\n        ",
     "describe": {
@@ -311,6 +349,50 @@
         ]
       },
       "nullable": [
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "990ad92f0df1ee2cc79640a48e34bc19c50b191bbddacdf4e70703f16fd9366c": {
+    "query": "\n        SELECT id, username, email, created_at, updated_at\n        FROM users\n        WHERE users.id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
         false,
         false,
         false

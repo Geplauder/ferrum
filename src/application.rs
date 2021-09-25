@@ -7,7 +7,7 @@ use tracing_actix_web::TracingLogger;
 
 use crate::{
     jwt::Jwt,
-    routes::{channels, health_check, login, register, servers, users},
+    routes::{channels, health_check, login, register, servers, users, websocket},
     settings::{DatabaseSettings, Settings},
 };
 
@@ -80,6 +80,7 @@ fn run(
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             .app_data(jwt.clone())
+            .route("/ws", web::get().to(websocket))
             .route("/health_check", web::get().to(health_check))
             .route("/register", web::post().to(register))
             .route("/login", web::post().to(login))

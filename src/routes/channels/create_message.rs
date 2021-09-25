@@ -7,9 +7,13 @@ use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::{
-    domain::messages::{MessageContent, NewMessage},
+    domain::{
+        messages::{Message, MessageContent, MessageResponse, NewMessage},
+        users::User,
+    },
     error_chain_fmt,
     jwt::AuthorizationService,
+    routes::websocket::CHANNELS,
     utilities::does_user_have_access_to_channel,
 };
 
@@ -75,14 +79,22 @@ pub async fn create_message(
         .await
         .context("Failed to acquire a postgres connection from pool.")?;
 
-    insert_message(&mut transaction, &new_message, *channel_id, auth.claims.id)
-        .await
-        .context("Failed to insert a new channel message to the database.")?;
+    let message = insert_message(
+        &mut transaction,
+        &pool,
+        &new_message,
+        *channel_id,
+        auth.claims.id,
+    )
+    .await
+    .context("Failed to insert a new channel message to the database.")?;
 
     transaction
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new channel message.")?;
+
+    CHANNELS.lock().unwrap().send(&[auth.claims.id], message);
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -93,24 +105,39 @@ pub async fn create_message(
 )]
 async fn insert_message(
     transaction: &mut Transaction<'_, Postgres>,
+    pool: &PgPool,
     new_message: &NewMessage,
     channel_id: Uuid,
     user_id: Uuid,
-) -> Result<(), sqlx::Error> {
+) -> Result<MessageResponse, sqlx::Error> {
     let id = Uuid::new_v4();
 
-    sqlx::query!(
+    let message = sqlx::query_as!(
+        Message,
         r#"
         INSERT INTO messages (id, channel_id, user_id, content)
         VALUES ($1, $2, $3, $4)
+        RETURNING *
         "#,
         id,
         channel_id,
         user_id,
         new_message.content.as_ref(),
     )
-    .execute(transaction)
+    .fetch_one(transaction)
     .await?;
 
-    Ok(())
+    let user = sqlx::query_as!(
+        User,
+        r#"
+        SELECT id, username, email, created_at, updated_at
+        FROM users
+        WHERE users.id = $1
+        "#,
+        message.user_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    Ok(MessageResponse::new(&message, &user))
 }

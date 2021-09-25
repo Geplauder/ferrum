@@ -99,11 +99,33 @@ impl FromRequest for AuthorizationService {
 
         let jwt = request.app_data::<Data<Jwt>>().unwrap();
 
-        match token.as_ref().and_then(|token| {
+        if let Some(service) = token.as_ref().and_then(|token| {
             get_claims(token, &jwt.secret).map(|claims| AuthorizationService { claims })
         }) {
-            Some(service) => ok(service),
-            None => err(AuthorizationError::Unauthorized),
+            return ok(service);
         }
+
+        let token = request
+            .query_string()
+            .split('&')
+            .map(|parameter| {
+                let split: Vec<&str> = parameter.splitn(2, '=').collect();
+
+                (split[0], split[1])
+            })
+            .filter(|&(key, _)| key == "bearer")
+            .collect::<Vec<(&str, &str)>>();
+
+        if token.len() == 1 {
+            let (_, value) = token[0];
+
+            if let Some(service) =
+                get_claims(value, &jwt.secret).map(|claims| AuthorizationService { claims })
+            {
+                return ok(service);
+            }
+        }
+
+        err(AuthorizationError::Unauthorized)
     }
 }
