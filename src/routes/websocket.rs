@@ -1,4 +1,4 @@
-use actix::{Actor, Addr, AsyncContext, Handler, StreamHandler};
+use actix::{Actor, ActorContext, Addr, AsyncContext, Handler, StreamHandler};
 use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use uuid::Uuid;
@@ -6,7 +6,10 @@ use uuid::Uuid;
 use crate::{
     jwt::AuthorizationService,
     websocket::{
-        messages::{RegisterChannelsForUser, SerializedWebSocketMessage, WebSocketMessage},
+        messages::{
+            RegisterChannelsForUser, SerializedWebSocketMessage, WebSocketClose, WebSocketConnect,
+            WebSocketMessage,
+        },
         Server,
     },
 };
@@ -18,6 +21,13 @@ struct WebSocketSession {
 
 impl Actor for WebSocketSession {
     type Context = ws::WebsocketContext<Self>;
+
+    fn started(&mut self, ctx: &mut Self::Context) {
+        let address = ctx.address();
+
+        self.server
+            .do_send(WebSocketConnect::new(self.user_id, address.recipient()));
+    }
 }
 
 impl Handler<SerializedWebSocketMessage> for WebSocketSession {
@@ -30,21 +40,33 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession {
     fn handle(&mut self, item: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        if let Ok(ws::Message::Text(text)) = item {
-            let message = match serde_json::from_str::<WebSocketMessage>(&text) {
-                Ok(value) => value,
-                Err(_) => return,
-            };
+        match item {
+            Ok(ws::Message::Text(text)) => {
+                let message = match serde_json::from_str::<WebSocketMessage>(&text) {
+                    Ok(value) => value,
+                    Err(_) => return,
+                };
 
-            if let WebSocketMessage::Bootstrap(bootstrap) = message {
-                let address = ctx.address();
+                if let WebSocketMessage::Bootstrap(bootstrap) = message {
+                    let address = ctx.address();
 
-                self.server.do_send(RegisterChannelsForUser {
-                    user_id: self.user_id,
-                    addr: address.recipient(),
-                    channels: bootstrap.channels,
-                });
+                    self.server.do_send(RegisterChannelsForUser {
+                        user_id: self.user_id,
+                        addr: address.recipient(),
+                        channels: bootstrap.channels,
+                    });
+                }
             }
+            Ok(ws::Message::Close(reason)) => {
+                self.server.do_send(WebSocketClose::new(self.user_id));
+
+                ctx.close(reason);
+                ctx.stop();
+            }
+            Err(_) => {
+                ctx.stop();
+            }
+            _ => (),
         }
     }
 }
