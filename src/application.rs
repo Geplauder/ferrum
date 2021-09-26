@@ -1,5 +1,6 @@
 use std::{net::TcpListener, time::Duration};
 
+use actix::Actor;
 use actix_cors::Cors;
 use actix_web::{dev::Server, web, web::Data, App, HttpServer};
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -67,6 +68,7 @@ fn run(
     let db_pool = Data::new(db_pool);
     let base_url = Data::new(ApplicationBaseUrl(base_url));
     let jwt = Data::new(Jwt::new(jwt_secret));
+    let websocket_server = Data::new(crate::websocket::Server::default().start());
 
     let server = HttpServer::new(move || {
         App::new()
@@ -80,6 +82,7 @@ fn run(
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             .app_data(jwt.clone())
+            .app_data(websocket_server.clone())
             .route("/ws", web::get().to(websocket))
             .route("/health_check", web::get().to(health_check))
             .route("/register", web::post().to(register))

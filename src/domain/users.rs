@@ -18,7 +18,7 @@ pub struct User {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct UserResponse {
     pub id: Uuid,
     pub username: String,

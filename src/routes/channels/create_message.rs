@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
+use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
@@ -13,8 +14,11 @@ use crate::{
     },
     error_chain_fmt,
     jwt::AuthorizationService,
-    routes::websocket::CHANNELS,
     utilities::does_user_have_access_to_channel,
+    websocket::{
+        messages::{NewMessagePayload, SendMessageToChannel, WebSocketMessage},
+        Server,
+    },
 };
 
 #[derive(serde::Deserialize)]
@@ -58,11 +62,12 @@ impl ResponseError for CreateMessageError {
     }
 }
 
-#[tracing::instrument(name = "Create a new channel message", skip(body, pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Create a new channel message", skip(body, pool, auth, server), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn create_message(
     channel_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
+    server: web::Data<Addr<Server>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateMessageError> {
     let new_message: NewMessage = body
@@ -94,7 +99,10 @@ pub async fn create_message(
         .await
         .context("Failed to commit SQL transaction to store a new channel message.")?;
 
-    CHANNELS.lock().unwrap().send(&[auth.claims.id], message);
+    server.do_send(SendMessageToChannel::new(
+        *channel_id,
+        WebSocketMessage::NewMessage(NewMessagePayload { message }),
+    ));
 
     Ok(HttpResponse::Ok().finish())
 }

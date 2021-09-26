@@ -17,7 +17,7 @@ pub struct Message {
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MessageResponse {
     pub id: Uuid,
     pub channel_id: Uuid,
