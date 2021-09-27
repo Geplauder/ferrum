@@ -5,7 +5,7 @@ use crate::helpers::{spawn_app, BootstrapType, TestApplication};
 
 impl TestApplication {
     pub async fn get_users(&self, bearer: Option<String>) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client = awc::Client::new().get(&format!("{}/users", &self.address));
+        let mut client = self.http_client().get(&format!("{}/users", &self.address));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);

@@ -11,7 +11,7 @@ impl TestApplication {
         channel_id: String,
         bearer: Option<String>,
     ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client = awc::Client::new().get(&format!(
+        let mut client = self.http_client().get(&format!(
             "{}/channels/{}/messages",
             &self.address, channel_id
         ));

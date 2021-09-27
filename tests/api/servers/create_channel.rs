@@ -10,8 +10,9 @@ impl TestApplication {
         body: serde_json::Value,
         bearer: Option<String>,
     ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client =
-            awc::Client::new().post(&format!("{}/servers/{}/channels", &self.address, server_id));
+        let mut client = self
+            .http_client()
+            .post(&format!("{}/servers/{}/channels", &self.address, server_id));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);

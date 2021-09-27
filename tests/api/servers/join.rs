@@ -8,8 +8,9 @@ impl TestApplication {
         server_id: String,
         bearer: Option<String>,
     ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client =
-            awc::Client::new().put(&format!("{}/servers/{}", &self.address, server_id));
+        let mut client = self
+            .http_client()
+            .put(&format!("{}/servers/{}", &self.address, server_id));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);

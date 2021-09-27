@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use actix::{Actor, Addr};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use awc::ws::WebsocketsRequest;
@@ -45,6 +47,12 @@ pub struct TestApplication {
 }
 
 impl TestApplication {
+    pub fn http_client(&self) -> awc::Client {
+        awc::Client::builder()
+            .timeout(Duration::from_secs(15))
+            .finish()
+    }
+
     pub fn test_user(&self) -> TestUser {
         self.test_user.as_ref().unwrap().clone()
     }
@@ -58,7 +66,7 @@ impl TestApplication {
     }
 
     pub async fn websocket(&self, bearer: Option<String>) -> WebsocketsRequest {
-        let client = awc::Client::new();
+        let client = self.http_client();
 
         match bearer {
             Some(bearer) => client.ws(&format!("{}/ws?bearer={}", &self.ws_address, bearer)),

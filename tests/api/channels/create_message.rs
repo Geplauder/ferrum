@@ -14,7 +14,7 @@ impl TestApplication {
         body: serde_json::Value,
         bearer: Option<String>,
     ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client = awc::Client::new().post(&format!(
+        let mut client = self.http_client().post(&format!(
             "{}/channels/{}/messages",
             &self.address, channel_id
         ));
