@@ -1,3 +1,6 @@
+use std::time::Duration;
+
+use actix::{Actor, Addr};
 use actix_http::{encoding::Decoder, Payload};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use fake::Fake;
@@ -6,6 +9,7 @@ use ferrum::{
     jwt::Jwt,
     settings::{get_settings, DatabaseSettings},
     telemetry::{get_subscriber, init_subscriber},
+    websocket::Server,
 };
 use once_cell::sync::Lazy;
 use sqlx::{postgres::PgPoolOptions, types::Uuid, Connection, Executor, PgConnection, PgPool};
@@ -32,9 +36,11 @@ pub enum BootstrapType {
 
 pub struct TestApplication {
     pub address: String,
+    pub ws_address: String,
     pub port: u16,
     pub db_pool: PgPool,
     pub jwt_secret: String,
+    pub websocket_server: Addr<Server>,
     test_user: Option<TestUser>,
     test_user_token: Option<String>,
     test_server: Option<TestServer>,
@@ -53,11 +59,22 @@ impl TestApplication {
         self.test_server.as_ref().unwrap().clone()
     }
 
+    pub async fn websocket(&self, bearer: Option<String>) -> awc::ws::WebsocketsRequest {
+        let client = awc::Client::new();
+
+        match bearer {
+            Some(bearer) => client.ws(&format!("{}/ws?bearer={}", &self.ws_address, bearer)),
+            None => client.ws(&self.ws_address),
+        }
+    }
+
     pub async fn post_register(
         &self,
         body: serde_json::Value,
     ) -> awc::ClientResponse<Decoder<Payload>> {
-        awc::Client::new()
+        awc::Client::builder()
+            .timeout(Duration::from_secs(15))
+            .finish()
             .post(&format!("{}/register", &self.address))
             .send_json(&body)
             .await
@@ -68,7 +85,9 @@ impl TestApplication {
         &self,
         body: serde_json::Value,
     ) -> awc::ClientResponse<Decoder<Payload>> {
-        awc::Client::new()
+        awc::Client::builder()
+            .timeout(Duration::from_secs(15))
+            .finish()
             .post(&format!("{}/login", &self.address))
             .send_json(&body)
             .await
@@ -247,7 +266,9 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
 
     configure_database(&settings.database).await;
 
-    let application = Application::build(settings.clone())
+    let websocket_server = Server::default().start();
+
+    let application = Application::build(settings.clone(), websocket_server.clone())
         .await
         .expect("Failed to build application");
 
@@ -259,11 +280,13 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
 
     let mut test_application = TestApplication {
         address: format!("http://localhost:{}", application_port),
+        ws_address: format!("ws://localhost:{}", application_port),
         port: application_port,
         db_pool: get_db_pool(&settings.database)
             .await
             .expect("Failed to connect to database"),
         jwt_secret: settings.application.jwt_secret,
+        websocket_server: websocket_server,
         test_user_token: None,
         test_user: None,
         test_server: None,

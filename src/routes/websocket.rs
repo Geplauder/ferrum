@@ -14,9 +14,9 @@ use crate::{
     },
 };
 
-struct WebSocketSession {
-    user_id: Uuid,
-    server: Addr<Server>,
+pub struct WebSocketSession {
+    pub user_id: Uuid,
+    pub server: Addr<Server>,
 }
 
 impl Actor for WebSocketSession {

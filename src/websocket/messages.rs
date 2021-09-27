@@ -18,6 +18,7 @@ pub struct NewMessagePayload {
 #[rtype(result = "()")]
 #[serde(tag = "type", content = "payload")]
 pub enum WebSocketMessage {
+    Empty,
     Bootstrap(BootstrapPayload),
     NewMessage(NewMessagePayload),
 }
