@@ -1,8 +1,26 @@
+use actix_http::{encoding::Decoder, Payload};
 use ferrum::domain::channels::Channel;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::helpers::{spawn_app, BootstrapType, TestServer};
+use crate::helpers::{spawn_app, BootstrapType, TestApplication, TestServer};
+
+impl TestApplication {
+    pub async fn get_server_channels(
+        &self,
+        server_id: String,
+        bearer: Option<String>,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client =
+            awc::Client::new().get(&format!("{}/servers/{}/channels", &self.address, server_id));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
+}
 
 #[actix_rt::test]
 async fn get_channels_returns_200_for_valid_request() {

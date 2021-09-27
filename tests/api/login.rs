@@ -1,6 +1,24 @@
+use std::time::Duration;
+
+use actix_http::{encoding::Decoder, Payload};
 use ferrum::jwt::get_claims;
 
-use crate::helpers::{spawn_app, BootstrapType};
+use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+
+impl TestApplication {
+    pub async fn post_login(
+        &self,
+        body: serde_json::Value,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        awc::Client::builder()
+            .timeout(Duration::from_secs(15))
+            .finish()
+            .post(&format!("{}/login", &self.address))
+            .send_json(&body)
+            .await
+            .expect("Failed to execute request.")
+    }
+}
 
 #[derive(serde::Deserialize)]
 struct LoginResponse {

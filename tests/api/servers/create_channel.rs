@@ -1,6 +1,28 @@
+use actix_http::{encoding::Decoder, Payload};
 use uuid::Uuid;
 
-use crate::helpers::{spawn_app, BootstrapType};
+use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+
+impl TestApplication {
+    pub async fn post_create_server_channel(
+        &self,
+        server_id: String,
+        body: serde_json::Value,
+        bearer: Option<String>,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client =
+            awc::Client::new().post(&format!("{}/servers/{}/channels", &self.address, server_id));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client
+            .send_json(&body)
+            .await
+            .expect("Failed to execute request.")
+    }
+}
 
 #[actix_rt::test]
 async fn create_channel_returns_200_for_valid_request_data() {

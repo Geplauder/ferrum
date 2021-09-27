@@ -1,4 +1,25 @@
-use crate::helpers::{spawn_app, BootstrapType};
+use actix_http::{encoding::Decoder, Payload};
+
+use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+
+impl TestApplication {
+    pub async fn post_create_server(
+        &self,
+        body: serde_json::Value,
+        bearer: Option<String>,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client = awc::Client::new().post(&format!("{}/servers", &self.address));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client
+            .send_json(&body)
+            .await
+            .expect("Failed to execute request.")
+    }
+}
 
 #[actix_rt::test]
 async fn create_returns_200_for_valid_json_data() {

@@ -1,7 +1,25 @@
+use actix_http::{encoding::Decoder, Payload};
 use ferrum::domain::servers::Server;
 use uuid::Uuid;
 
-use crate::helpers::{spawn_app, BootstrapType};
+use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+
+impl TestApplication {
+    pub async fn get_server(
+        &self,
+        server_id: String,
+        bearer: Option<String>,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client =
+            awc::Client::new().get(&format!("{}/servers/{}", &self.address, server_id));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
+}
 
 #[actix_rt::test]
 async fn get_server_returns_200_for_valid_request() {

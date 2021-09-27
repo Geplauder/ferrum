@@ -1,11 +1,34 @@
 use std::time::Duration;
 
-use actix_http::ws;
+use actix_http::{encoding::Decoder, ws, Payload};
 use ferrum::websocket::messages::{BootstrapPayload, WebSocketMessage};
 use futures::{select, FutureExt, SinkExt, StreamExt};
 use uuid::Uuid;
 
-use crate::helpers::{spawn_app, BootstrapType};
+use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+
+impl TestApplication {
+    pub async fn post_create_channel_message(
+        &self,
+        channel_id: String,
+        body: serde_json::Value,
+        bearer: Option<String>,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client = awc::Client::new().post(&format!(
+            "{}/channels/{}/messages",
+            &self.address, channel_id
+        ));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client
+            .send_json(&body)
+            .await
+            .expect("Failed to execute request.")
+    }
+}
 
 #[actix_rt::test]
 async fn create_message_returns_200_for_valid_request_data() {

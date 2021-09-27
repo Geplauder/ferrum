@@ -1,6 +1,22 @@
+use actix_http::{encoding::Decoder, Payload};
 use ferrum::domain::servers::Server;
 
-use crate::helpers::{spawn_app, BootstrapType};
+use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+
+impl TestApplication {
+    pub async fn get_user_servers(
+        &self,
+        bearer: Option<String>,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client = awc::Client::new().get(&format!("{}/users/servers", &self.address));
+
+        if let Some(bearer) = bearer {
+            client = client.bearer_auth(bearer);
+        }
+
+        client.send().await.expect("Failed to execute request.")
+    }
+}
 
 #[actix_rt::test]
 async fn current_user_servers_returns_200_for_valid_bearer_token() {

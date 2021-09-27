@@ -1,4 +1,23 @@
-use crate::helpers::{spawn_app, BootstrapType};
+use std::time::Duration;
+
+use actix_http::{encoding::Decoder, Payload};
+
+use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+
+impl TestApplication {
+    pub async fn post_register(
+        &self,
+        body: serde_json::Value,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        awc::Client::builder()
+            .timeout(Duration::from_secs(15))
+            .finish()
+            .post(&format!("{}/register", &self.address))
+            .send_json(&body)
+            .await
+            .expect("Failed to execute request.")
+    }
+}
 
 #[actix_rt::test]
 async fn register_returns_200_for_valid_json_data() {

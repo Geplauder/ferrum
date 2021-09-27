@@ -1,8 +1,6 @@
-use std::time::Duration;
-
 use actix::{Actor, Addr};
-use actix_http::{encoding::Decoder, Payload};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+use awc::ws::WebsocketsRequest;
 use fake::Fake;
 use ferrum::{
     application::{get_db_pool, Application},
@@ -59,196 +57,13 @@ impl TestApplication {
         self.test_server.as_ref().unwrap().clone()
     }
 
-    pub async fn websocket(&self, bearer: Option<String>) -> awc::ws::WebsocketsRequest {
+    pub async fn websocket(&self, bearer: Option<String>) -> WebsocketsRequest {
         let client = awc::Client::new();
 
         match bearer {
             Some(bearer) => client.ws(&format!("{}/ws?bearer={}", &self.ws_address, bearer)),
             None => client.ws(&self.ws_address),
         }
-    }
-
-    pub async fn post_register(
-        &self,
-        body: serde_json::Value,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        awc::Client::builder()
-            .timeout(Duration::from_secs(15))
-            .finish()
-            .post(&format!("{}/register", &self.address))
-            .send_json(&body)
-            .await
-            .expect("Failed to execute request.")
-    }
-
-    pub async fn post_login(
-        &self,
-        body: serde_json::Value,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        awc::Client::builder()
-            .timeout(Duration::from_secs(15))
-            .finish()
-            .post(&format!("{}/login", &self.address))
-            .send_json(&body)
-            .await
-            .expect("Failed to execute request.")
-    }
-
-    pub async fn get_users(&self, bearer: Option<String>) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client = awc::Client::new().get(&format!("{}/users", &self.address));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client.send().await.expect("Failed to execute request.")
-    }
-
-    pub async fn get_user_servers(
-        &self,
-        bearer: Option<String>,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client = awc::Client::new().get(&format!("{}/users/servers", &self.address));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client.send().await.expect("Failed to execute request.")
-    }
-
-    pub async fn get_server(
-        &self,
-        server_id: String,
-        bearer: Option<String>,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client =
-            awc::Client::new().get(&format!("{}/servers/{}", &self.address, server_id));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client.send().await.expect("Failed to execute request.")
-    }
-
-    pub async fn get_server_users(
-        &self,
-        server_id: String,
-        bearer: Option<String>,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client =
-            awc::Client::new().get(&format!("{}/servers/{}/users", &self.address, server_id));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client.send().await.expect("Failed to execute request.")
-    }
-
-    pub async fn get_server_channels(
-        &self,
-        server_id: String,
-        bearer: Option<String>,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client =
-            awc::Client::new().get(&format!("{}/servers/{}/channels", &self.address, server_id));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client.send().await.expect("Failed to execute request.")
-    }
-
-    pub async fn post_create_server(
-        &self,
-        body: serde_json::Value,
-        bearer: Option<String>,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client = awc::Client::new().post(&format!("{}/servers", &self.address));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client
-            .send_json(&body)
-            .await
-            .expect("Failed to execute request.")
-    }
-
-    pub async fn put_join_server(
-        &self,
-        server_id: String,
-        bearer: Option<String>,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client =
-            awc::Client::new().put(&format!("{}/servers/{}", &self.address, server_id));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client.send().await.expect("Failed to execute request.")
-    }
-
-    pub async fn post_create_server_channel(
-        &self,
-        server_id: String,
-        body: serde_json::Value,
-        bearer: Option<String>,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client =
-            awc::Client::new().post(&format!("{}/servers/{}/channels", &self.address, server_id));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client
-            .send_json(&body)
-            .await
-            .expect("Failed to execute request.")
-    }
-
-    pub async fn post_create_channel_message(
-        &self,
-        channel_id: String,
-        body: serde_json::Value,
-        bearer: Option<String>,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client = awc::Client::new().post(&format!(
-            "{}/channels/{}/messages",
-            &self.address, channel_id
-        ));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client
-            .send_json(&body)
-            .await
-            .expect("Failed to execute request.")
-    }
-
-    pub async fn get_channel_messages(
-        &self,
-        channel_id: String,
-        bearer: Option<String>,
-    ) -> awc::ClientResponse<Decoder<Payload>> {
-        let mut client = awc::Client::new().get(&format!(
-            "{}/channels/{}/messages",
-            &self.address, channel_id
-        ));
-
-        if let Some(bearer) = bearer {
-            client = client.bearer_auth(bearer);
-        }
-
-        client.send().await.expect("Failed to execute request.")
     }
 }
 
