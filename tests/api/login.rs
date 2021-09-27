@@ -18,7 +18,7 @@ async fn login_returns_200_for_valid_json_data() {
     });
 
     // Act
-    let response = app.post_login(body).await;
+    let mut response = app.post_login(body).await;
 
     // Assert
     assert_eq!(200, response.status().as_u16());

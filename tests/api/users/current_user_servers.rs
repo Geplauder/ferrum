@@ -15,7 +15,7 @@ async fn current_user_servers_returns_200_for_valid_bearer_token() {
     .await;
 
     // Act
-    let response = app.get_user_servers(Some(app.test_user_token())).await;
+    let mut response = app.get_user_servers(Some(app.test_user_token())).await;
 
     // Assert
     assert_eq!(200, response.status().as_u16());

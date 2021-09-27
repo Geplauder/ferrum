@@ -1,3 +1,4 @@
+use actix_http::{encoding::Decoder, Payload};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use fake::Fake;
 use ferrum::{
@@ -52,26 +53,30 @@ impl TestApplication {
         self.test_server.as_ref().unwrap().clone()
     }
 
-    pub async fn post_register(&self, body: serde_json::Value) -> reqwest::Response {
-        reqwest::Client::new()
+    pub async fn post_register(
+        &self,
+        body: serde_json::Value,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        awc::Client::new()
             .post(&format!("{}/register", &self.address))
-            .json(&body)
-            .send()
+            .send_json(&body)
             .await
             .expect("Failed to execute request.")
     }
 
-    pub async fn post_login(&self, body: serde_json::Value) -> reqwest::Response {
-        reqwest::Client::new()
+    pub async fn post_login(
+        &self,
+        body: serde_json::Value,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        awc::Client::new()
             .post(&format!("{}/login", &self.address))
-            .json(&body)
-            .send()
+            .send_json(&body)
             .await
             .expect("Failed to execute request.")
     }
 
-    pub async fn get_users(&self, bearer: Option<String>) -> reqwest::Response {
-        let mut client = reqwest::Client::new().get(&format!("{}/users", &self.address));
+    pub async fn get_users(&self, bearer: Option<String>) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client = awc::Client::new().get(&format!("{}/users", &self.address));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
@@ -80,8 +85,11 @@ impl TestApplication {
         client.send().await.expect("Failed to execute request.")
     }
 
-    pub async fn get_user_servers(&self, bearer: Option<String>) -> reqwest::Response {
-        let mut client = reqwest::Client::new().get(&format!("{}/users/servers", &self.address));
+    pub async fn get_user_servers(
+        &self,
+        bearer: Option<String>,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client = awc::Client::new().get(&format!("{}/users/servers", &self.address));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
@@ -90,9 +98,13 @@ impl TestApplication {
         client.send().await.expect("Failed to execute request.")
     }
 
-    pub async fn get_server(&self, server_id: String, bearer: Option<String>) -> reqwest::Response {
+    pub async fn get_server(
+        &self,
+        server_id: String,
+        bearer: Option<String>,
+    ) -> awc::ClientResponse<Decoder<Payload>> {
         let mut client =
-            reqwest::Client::new().get(&format!("{}/servers/{}", &self.address, server_id));
+            awc::Client::new().get(&format!("{}/servers/{}", &self.address, server_id));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
@@ -105,9 +117,9 @@ impl TestApplication {
         &self,
         server_id: String,
         bearer: Option<String>,
-    ) -> reqwest::Response {
+    ) -> awc::ClientResponse<Decoder<Payload>> {
         let mut client =
-            reqwest::Client::new().get(&format!("{}/servers/{}/users", &self.address, server_id));
+            awc::Client::new().get(&format!("{}/servers/{}/users", &self.address, server_id));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
@@ -120,9 +132,9 @@ impl TestApplication {
         &self,
         server_id: String,
         bearer: Option<String>,
-    ) -> reqwest::Response {
-        let mut client = reqwest::Client::new()
-            .get(&format!("{}/servers/{}/channels", &self.address, server_id));
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client =
+            awc::Client::new().get(&format!("{}/servers/{}/channels", &self.address, server_id));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
@@ -135,25 +147,26 @@ impl TestApplication {
         &self,
         body: serde_json::Value,
         bearer: Option<String>,
-    ) -> reqwest::Response {
-        let mut client = reqwest::Client::new()
-            .post(&format!("{}/servers", &self.address))
-            .json(&body);
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client = awc::Client::new().post(&format!("{}/servers", &self.address));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
         }
 
-        client.send().await.expect("Failed to execute request.")
+        client
+            .send_json(&body)
+            .await
+            .expect("Failed to execute request.")
     }
 
     pub async fn put_join_server(
         &self,
         server_id: String,
         bearer: Option<String>,
-    ) -> reqwest::Response {
+    ) -> awc::ClientResponse<Decoder<Payload>> {
         let mut client =
-            reqwest::Client::new().put(&format!("{}/servers/{}", &self.address, server_id));
+            awc::Client::new().put(&format!("{}/servers/{}", &self.address, server_id));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
@@ -167,16 +180,18 @@ impl TestApplication {
         server_id: String,
         body: serde_json::Value,
         bearer: Option<String>,
-    ) -> reqwest::Response {
-        let mut client = reqwest::Client::new()
-            .post(&format!("{}/servers/{}/channels", &self.address, server_id))
-            .json(&body);
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client =
+            awc::Client::new().post(&format!("{}/servers/{}/channels", &self.address, server_id));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
         }
 
-        client.send().await.expect("Failed to execute request.")
+        client
+            .send_json(&body)
+            .await
+            .expect("Failed to execute request.")
     }
 
     pub async fn post_create_channel_message(
@@ -184,27 +199,28 @@ impl TestApplication {
         channel_id: String,
         body: serde_json::Value,
         bearer: Option<String>,
-    ) -> reqwest::Response {
-        let mut client = reqwest::Client::new()
-            .post(&format!(
-                "{}/channels/{}/messages",
-                &self.address, channel_id
-            ))
-            .json(&body);
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client = awc::Client::new().post(&format!(
+            "{}/channels/{}/messages",
+            &self.address, channel_id
+        ));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
         }
 
-        client.send().await.expect("Failed to execute request.")
+        client
+            .send_json(&body)
+            .await
+            .expect("Failed to execute request.")
     }
 
     pub async fn get_channel_messages(
         &self,
         channel_id: String,
         bearer: Option<String>,
-    ) -> reqwest::Response {
-        let mut client = reqwest::Client::new().get(&format!(
+    ) -> awc::ClientResponse<Decoder<Payload>> {
+        let mut client = awc::Client::new().get(&format!(
             "{}/channels/{}/messages",
             &self.address, channel_id
         ));

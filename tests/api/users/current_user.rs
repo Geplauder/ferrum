@@ -8,7 +8,7 @@ async fn current_user_returns_200_for_valid_bearer_token() {
     let app = spawn_app(BootstrapType::User).await;
 
     // Act
-    let response = app.get_users(Some(app.test_user_token())).await;
+    let mut response = app.get_users(Some(app.test_user_token())).await;
 
     // Assert
     assert_eq!(200, response.status().as_u16());

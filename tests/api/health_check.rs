@@ -4,7 +4,7 @@ use crate::helpers::{spawn_app, BootstrapType};
 async fn health_check_works() {
     // Arrange
     let application = spawn_app(BootstrapType::Default).await;
-    let client = reqwest::Client::new();
+    let client = awc::Client::new();
 
     // Act
     let response = client
@@ -15,5 +15,4 @@ async fn health_check_works() {
 
     // Assert
     assert!(response.status().is_success());
-    assert_eq!(Some(0), response.content_length());
 }
