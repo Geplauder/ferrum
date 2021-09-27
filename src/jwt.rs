@@ -87,6 +87,7 @@ impl FromRequest for AuthorizationService {
     type Error = AuthorizationError;
     type Future = Ready<Result<AuthorizationService, Self::Error>>;
 
+    // TODO: Cleanup authorization logic
     fn from_request(
         request: &actix_web::HttpRequest,
         _payload: &mut actix_http::Payload,
@@ -111,8 +112,13 @@ impl FromRequest for AuthorizationService {
             .map(|parameter| {
                 let split: Vec<&str> = parameter.splitn(2, '=').collect();
 
-                (split[0], split[1])
+                if split.len() != 2 {
+                    return None;
+                }
+
+                Some((split[0], split[1]))
             })
+            .flatten()
             .filter(|&(key, _)| key == "bearer")
             .collect::<Vec<(&str, &str)>>();
 
