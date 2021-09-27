@@ -32,6 +32,7 @@ impl ResponseError for JoinError {
     }
 }
 
+#[tracing::instrument(name = "Join server", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn join(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
@@ -52,6 +53,7 @@ pub async fn join(
     Ok(HttpResponse::Ok().finish())
 }
 
+#[tracing::instrument(name = "Join server", skip(transaction, user_id, server_id))]
 async fn insert_user_server(
     transaction: &mut Transaction<'_, Postgres>,
     user_id: Uuid,

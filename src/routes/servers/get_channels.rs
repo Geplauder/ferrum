@@ -32,6 +32,7 @@ impl ResponseError for GetChannelsError {
     }
 }
 
+#[tracing::instrument(name = "Get server channels", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn get_channels(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
@@ -50,6 +51,7 @@ pub async fn get_channels(
     Ok(HttpResponse::Ok().json(server_channels))
 }
 
+#[tracing::instrument(name = "Get server channels", skip(server_id, pool))]
 async fn get_server_channels(
     server_id: Uuid,
     pool: &PgPool,

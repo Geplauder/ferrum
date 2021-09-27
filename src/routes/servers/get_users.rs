@@ -31,6 +31,7 @@ impl ResponseError for GetUsersError {
     }
 }
 
+#[tracing::instrument(name = "Get server users", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn get_users(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
@@ -49,6 +50,7 @@ pub async fn get_users(
     Ok(HttpResponse::Ok().json(server_users))
 }
 
+#[tracing::instrument(name = "Get server users", skip(server_id, pool))]
 async fn get_server_users(server_id: Uuid, pool: &PgPool) -> Result<Vec<User>, GetUsersError> {
     let users = sqlx::query_as!(
         User,
