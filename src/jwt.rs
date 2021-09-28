@@ -87,7 +87,6 @@ impl FromRequest for AuthorizationService {
     type Error = AuthorizationError;
     type Future = Ready<Result<AuthorizationService, Self::Error>>;
 
-    // TODO: Cleanup authorization logic
     fn from_request(
         request: &actix_web::HttpRequest,
         _payload: &mut actix_http::Payload,
@@ -104,32 +103,6 @@ impl FromRequest for AuthorizationService {
             get_claims(token, &jwt.secret).map(|claims| AuthorizationService { claims })
         }) {
             return ok(service);
-        }
-
-        let token = request
-            .query_string()
-            .split('&')
-            .map(|parameter| {
-                let split: Vec<&str> = parameter.splitn(2, '=').collect();
-
-                if split.len() != 2 {
-                    return None;
-                }
-
-                Some((split[0], split[1]))
-            })
-            .flatten()
-            .filter(|&(key, _)| key == "bearer")
-            .collect::<Vec<(&str, &str)>>();
-
-        if token.len() == 1 {
-            let (_, value) = token[0];
-
-            if let Some(service) =
-                get_claims(value, &jwt.secret).map(|claims| AuthorizationService { claims })
-            {
-                return ok(service);
-            }
         }
 
         err(AuthorizationError::Unauthorized)

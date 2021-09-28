@@ -4,37 +4,39 @@ use actix_web_actors::ws;
 use uuid::Uuid;
 
 use crate::{
-    jwt::AuthorizationService,
+    jwt::get_claims,
     websocket::{
-        messages::{
-            RegisterChannelsForUser, SerializedWebSocketMessage, WebSocketClose, WebSocketConnect,
-            WebSocketMessage,
-        },
+        messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose, WebSocketMessage},
         Server,
     },
 };
 
 pub struct WebSocketSession {
-    pub user_id: Uuid,
+    pub user_id: Option<Uuid>,
     pub server: Addr<Server>,
+    pub channels: Vec<Uuid>,
 }
 
 impl Actor for WebSocketSession {
     type Context = ws::WebsocketContext<Self>;
-
-    fn started(&mut self, ctx: &mut Self::Context) {
-        let address = ctx.address();
-
-        self.server
-            .do_send(WebSocketConnect::new(self.user_id, address.recipient()));
-    }
 }
 
 impl Handler<SerializedWebSocketMessage> for WebSocketSession {
     type Result = ();
 
     fn handle(&mut self, msg: SerializedWebSocketMessage, ctx: &mut Self::Context) -> Self::Result {
-        ctx.text(msg.0);
+        match msg {
+            SerializedWebSocketMessage::Ready(channels) => {
+                self.channels = channels;
+
+                ctx.text(serde_json::to_string(&WebSocketMessage::Ready).unwrap());
+            }
+            SerializedWebSocketMessage::Data(data, channel) => {
+                if self.channels.contains(&channel) {
+                    ctx.text(data);
+                }
+            }
+        }
     }
 }
 
@@ -47,18 +49,26 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
                     Err(_) => return,
                 };
 
-                if let WebSocketMessage::Bootstrap(bootstrap) = message {
+                if let WebSocketMessage::Identify(identify) = message {
+                    // Use proper jwt secret
+                    let claims = match get_claims(&identify.bearer, "foo") {
+                        Some(value) => value,
+                        None => return,
+                    };
+
                     let address = ctx.address();
 
-                    self.server.do_send(RegisterChannelsForUser {
-                        user_id: self.user_id,
+                    self.user_id = Some(claims.id);
+                    self.server.do_send(IdentifyUser {
+                        user_id: claims.id,
                         addr: address.recipient(),
-                        channels: bootstrap.channels,
                     });
                 }
             }
             Ok(ws::Message::Close(reason)) => {
-                self.server.do_send(WebSocketClose::new(self.user_id));
+                if let Some(user_id) = self.user_id {
+                    self.server.do_send(WebSocketClose::new(user_id));
+                }
 
                 ctx.close(reason);
                 ctx.stop();
@@ -75,12 +85,12 @@ pub async fn websocket(
     request: HttpRequest,
     stream: web::Payload,
     server: web::Data<Addr<Server>>,
-    auth: AuthorizationService,
 ) -> Result<HttpResponse, actix_web::Error> {
     let response = ws::start(
         WebSocketSession {
-            user_id: auth.claims.id,
+            user_id: None,
             server: server.get_ref().clone(),
+            channels: vec![],
         },
         &request,
         stream,

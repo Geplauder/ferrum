@@ -5,8 +5,8 @@ use uuid::Uuid;
 use crate::domain::messages::MessageResponse;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct BootstrapPayload {
-    pub channels: Vec<Uuid>,
+pub struct IdentifyPayload {
+    pub bearer: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -19,13 +19,21 @@ pub struct NewMessagePayload {
 #[serde(tag = "type", content = "payload")]
 pub enum WebSocketMessage {
     Empty,
-    Bootstrap(BootstrapPayload),
+    Ready,
+    Identify(IdentifyPayload),
     NewMessage(NewMessagePayload),
 }
 
+// #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
+// #[rtype(result = "()")]
+// pub struct SerializedWebSocketMessage(pub String, pub Uuid);
+
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
-pub struct SerializedWebSocketMessage(pub String);
+pub enum SerializedWebSocketMessage {
+    Ready(Vec<Uuid>),
+    Data(String, Uuid),
+}
 
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
@@ -54,9 +62,14 @@ impl WebSocketClose {
 
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
-pub struct RegisterChannelsForUser {
+pub struct IdentifyUser {
     pub user_id: Uuid,
     pub addr: Recipient<SerializedWebSocketMessage>,
+}
+
+#[derive(Debug, actix::prelude::Message)]
+#[rtype(result = "()")]
+pub struct ReadyUser {
     pub channels: Vec<Uuid>,
 }
 

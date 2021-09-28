@@ -485,6 +485,24 @@
       "nullable": []
     }
   },
+  "ca7ef747c524724cd5b3671fce51452ed0aad28b4b381540ddf817b85565567a": {
+    "query": "\n                WITH server_query AS (SELECT servers.id as server_id\n                    FROM users_servers\n                    INNER JOIN servers ON servers.id = users_servers.server_id\n                )\n                SELECT channels.id\n                FROM channels\n                WHERE channels.server_id IN (SELECT server_id FROM server_query)\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false
+      ]
+    }
+  },
   "d0d244ecc79a3783e3400b6504aaa5e0debff1a8c132f197597552c05d93d71e": {
     "query": "\n        SELECT *\n        FROM channels\n        WHERE channels.server_id = $1\n        ",
     "describe": {

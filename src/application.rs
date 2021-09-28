@@ -1,6 +1,6 @@
 use std::{net::TcpListener, time::Duration};
 
-use actix::Addr;
+use actix::Actor;
 use actix_cors::Cors;
 use actix_web::{dev::Server, web, web::Data, App, HttpServer};
 use sqlx::{postgres::PgPoolOptions, PgPool};
@@ -20,10 +20,7 @@ pub struct Application {
 }
 
 impl Application {
-    pub async fn build(
-        settings: Settings,
-        websocket_server: Addr<crate::websocket::Server>,
-    ) -> Result<Self, std::io::Error> {
+    pub async fn build(settings: Settings) -> Result<Self, std::io::Error> {
         let db_pool = get_db_pool(&settings.database)
             .await
             .expect("Could not connect to database.");
@@ -35,6 +32,8 @@ impl Application {
 
         let listener = TcpListener::bind(&address)?;
         let port = listener.local_addr().unwrap().port();
+
+        let websocket_server = crate::websocket::Server::new(db_pool.clone());
 
         let server = run(
             listener,
@@ -68,12 +67,12 @@ fn run(
     db_pool: PgPool,
     base_url: String,
     jwt_secret: String,
-    websocket_server: Addr<crate::websocket::Server>,
+    websocket_server: crate::websocket::Server,
 ) -> Result<Server, std::io::Error> {
     let db_pool = Data::new(db_pool);
     let base_url = Data::new(ApplicationBaseUrl(base_url));
     let jwt = Data::new(Jwt::new(jwt_secret));
-    let websocket_server = Data::new(websocket_server);
+    let websocket_server = Data::new(websocket_server.start());
 
     let server = HttpServer::new(move || {
         App::new()
