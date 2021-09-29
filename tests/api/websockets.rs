@@ -96,3 +96,23 @@ async fn websocket_does_not_receive_ready_message_after_missing_or_invalid_beare
         );
     }
 }
+
+#[actix_rt::test]
+async fn websocket_responds_to_ping_with_pong() {
+    // Arrange
+    let app = spawn_app(BootstrapType::User).await;
+
+    let (_response, mut connection) = app.websocket().await;
+
+    // Act
+    send_websocket_message(&mut connection, WebSocketMessage::Ping).await;
+
+    // Assert
+    let message = get_next_websocket_message(&mut connection).await;
+
+    match message {
+        Some(WebSocketMessage::Pong) => (),
+        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
+        None => assert!(false, "Received no message"),
+    }
+}
