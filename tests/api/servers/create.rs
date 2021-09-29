@@ -1,6 +1,9 @@
 use actix_http::{encoding::Decoder, Payload};
+use ferrum::websocket::messages::WebSocketMessage;
 
-use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+use crate::helpers::{
+    get_next_websocket_message, send_websocket_message, spawn_app, BootstrapType, TestApplication,
+};
 
 impl TestApplication {
     pub async fn post_create_server(
@@ -172,5 +175,41 @@ async fn create_returns_401_for_missing_or_invalid_bearer_token() {
 
         // Assert
         assert_eq!(401, response.status().as_u16());
+    }
+}
+
+#[actix_rt::test]
+async fn create_sends_new_server_to_owner_per_websocket() {
+    // Arrange
+    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
+    let body = serde_json::json!({
+        "name": "foobar"
+    });
+
+    let (_response, mut connection) = app.websocket().await;
+
+    send_websocket_message(
+        &mut connection,
+        WebSocketMessage::Identify {
+            bearer: app.test_user_token(),
+        },
+    )
+    .await;
+
+    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+
+    // Act
+    app.post_create_server(body, Some(app.test_user_token()))
+        .await;
+
+    // Assert
+    let message = get_next_websocket_message(&mut connection).await;
+
+    match message {
+        Some(WebSocketMessage::NewServer { server: new_server }) => {
+            assert_eq!("foobar", new_server.name)
+        }
+        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
+        None => assert!(false, "Received no message"),
     }
 }

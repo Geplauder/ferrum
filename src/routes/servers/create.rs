@@ -86,11 +86,11 @@ pub async fn create(
         .await
         .context("Failed to commit SQL transaction to store a new server.")?;
 
-    websocket_server.do_send(messages::NewServer {
-        user_id: auth.claims.id,
+    websocket_server.do_send(messages::NewServer::new(
+        auth.claims.id,
         server,
-        channels: vec![channel],
-    });
+        vec![channel],
+    ));
 
     Ok(HttpResponse::Ok().finish())
 }

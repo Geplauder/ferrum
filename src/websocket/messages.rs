@@ -12,18 +12,10 @@ pub enum WebSocketMessage {
     Ping,
     Pong,
     Ready,
-    Identify {
-        bearer: String,
-    },
-    NewMessage {
-        message: MessageResponse,
-    },
-    NewChannel {
-        channel: Channel,
-    },
-    NewServer {
-        server: Server,
-    },
+    Identify { bearer: String },
+    NewMessage { message: MessageResponse },
+    NewChannel { channel: Channel },
+    NewServer { server: Server },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
@@ -98,6 +90,10 @@ pub struct NewServer {
 
 impl NewServer {
     pub fn new(user_id: Uuid, server: Server, channels: Vec<Channel>) -> Self {
-        Self { user_id, server, channels }
+        Self {
+            user_id,
+            server,
+            channels,
+        }
     }
 }
