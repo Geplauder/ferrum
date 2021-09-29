@@ -5,7 +5,7 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::messages::{
-    IdentifyUser, SendMessageToChannel, SerializedWebSocketMessage, WebSocketClose,
+    IdentifyUser, NewChannel, SendMessageToChannel, SerializedWebSocketMessage, WebSocketClose,
     WebSocketMessage,
 };
 
@@ -92,5 +92,44 @@ impl Handler<SendMessageToChannel> for Server {
 
     fn handle(&mut self, msg: SendMessageToChannel, _ctx: &mut Self::Context) -> Self::Result {
         self.send_message_to_channel(msg.channel_id, msg.message);
+    }
+}
+
+impl Handler<NewChannel> for Server {
+    type Result = ();
+
+    fn handle(&mut self, msg: NewChannel, ctx: &mut Self::Context) -> Self::Result {
+        let db_pool = self.db_pool.clone();
+        let users = self.users.clone();
+
+        async move {
+            let affected_users = sqlx::query!(
+                r#"
+                WITH server_query AS (
+                    SELECT servers.id as server_id
+                    FROM servers
+                    INNER JOIN channels ON channels.server_id = servers.id
+                    WHERE channels.id = $1 LIMIT 1
+                )
+                SELECT users_servers.user_id
+                FROM users_servers
+                WHERE users_servers.server_id IN (SELECT server_id FROM server_query)
+                "#,
+                msg.channel.id,
+            )
+            .fetch_all(&db_pool)
+            .await
+            .unwrap();
+
+            for user in &affected_users {
+                if let Some(recipient) = users.get(&user.user_id) {
+                    recipient
+                        .do_send(SerializedWebSocketMessage::AddChannel(msg.channel.clone()))
+                        .unwrap();
+                }
+            }
+        }
+        .into_actor(self)
+        .wait(ctx)
     }
 }

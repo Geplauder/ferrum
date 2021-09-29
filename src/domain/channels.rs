@@ -5,7 +5,7 @@ pub struct NewChannel {
     pub name: ChannelName,
 }
 
-#[derive(Debug, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
 pub struct Channel {
     pub id: Uuid,
     pub server_id: Uuid,

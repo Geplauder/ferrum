@@ -1,16 +1,13 @@
 use std::convert::{TryFrom, TryInto};
 
+use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::{
-    domain::channels::{ChannelName, NewChannel},
-    error_chain_fmt,
-    jwt::AuthorizationService,
-};
+use crate::{domain::channels::{Channel, ChannelName, NewChannel}, error_chain_fmt, jwt::AuthorizationService, websocket::{messages, Server}};
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {
@@ -53,11 +50,12 @@ impl ResponseError for CreateChannelError {
     }
 }
 
-#[tracing::instrument(name = "Create a new server channel", skip(body, pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, channel_name = %body.name))]
+#[tracing::instrument(name = "Create a new server channel", skip(body, pool, websocket_server, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, channel_name = %body.name))]
 pub async fn create_channel(
     server_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
+    websocket_server: web::Data<Addr<Server>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateChannelError> {
     let new_channel: NewChannel = body
@@ -78,7 +76,7 @@ pub async fn create_channel(
         .await
         .context("Failed to acquire a postgres connection from pool.")?;
 
-    insert_channel(&mut transaction, &new_channel, *server_id)
+    let channel = insert_channel(&mut transaction, &new_channel, *server_id)
         .await
         .context("Failed to insert new server channel to the database.")?;
 
@@ -86,6 +84,8 @@ pub async fn create_channel(
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new server channel.")?;
+
+    websocket_server.do_send(messages::NewChannel::new(channel));
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -114,20 +114,22 @@ async fn insert_channel(
     transaction: &mut Transaction<'_, Postgres>,
     new_channel: &NewChannel,
     server_id: Uuid,
-) -> Result<(), sqlx::Error> {
+) -> Result<Channel, sqlx::Error> {
     let id = Uuid::new_v4();
 
-    sqlx::query!(
+    let channel = sqlx::query_as!(
+        Channel,
         r#"
         INSERT INTO channels (id, server_id, name)
         VALUES ($1, $2, $3)
+        RETURNING *
         "#,
         id,
         server_id,
         new_channel.name.as_ref(),
     )
-    .execute(transaction)
+    .fetch_one(transaction)
     .await?;
 
-    Ok(())
+    Ok(channel)
 }

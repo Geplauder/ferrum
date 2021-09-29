@@ -44,20 +44,6 @@
       ]
     }
   },
-  "1bd5208d4788b381266c8d711e04f03d36fe02a0549e1c6f7b32ed6a386da77a": {
-    "query": "\n        INSERT INTO channels (id, server_id, name)\n        VALUES ($1, $2, $3)\n        ",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Text"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "1e49128cf7937beb77dc23de679ac9fd1e37cea717614d6a704f5142f14c46ad": {
     "query": "\n    INSERT INTO users (id, username, email, password)\n    VALUES ($1, $2, $3, $4)\n    ",
     "describe": {
@@ -172,6 +158,26 @@
         false,
         false,
         false,
+        false
+      ]
+    }
+  },
+  "42901c04ff96bed2d9ea1c72a004ae9053acbf87b8fc7c8e3de6ae4f371e9143": {
+    "query": "\n                WITH server_query AS (\n                    SELECT servers.id as server_id\n                    FROM servers\n                    INNER JOIN channels ON channels.server_id = servers.id\n                    WHERE channels.id = $1 LIMIT 1\n                )\n                SELECT users_servers.user_id\n                FROM users_servers\n                WHERE users_servers.server_id IN (SELECT server_id FROM server_query)\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "user_id",
+          "type_info": "Uuid"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
         false
       ]
     }
@@ -315,6 +321,52 @@
       },
       "nullable": [
         false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "8d60ff03e5995f554dc73afd2b1bc0d15e6f46b024044c3d83afe49637bd2bae": {
+    "query": "\n        INSERT INTO channels (id, server_id, name)\n        VALUES ($1, $2, $3)\n        RETURNING *\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "server_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text"
+        ]
+      },
+      "nullable": [
         false,
         false,
         false,

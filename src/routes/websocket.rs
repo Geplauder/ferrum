@@ -31,6 +31,11 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
 
                 ctx.text(serde_json::to_string(&WebSocketMessage::Ready).unwrap());
             }
+            SerializedWebSocketMessage::AddChannel(channel) => {
+                self.channels.push(channel.id);
+
+                ctx.text(serde_json::to_string(&WebSocketMessage::NewChannel { channel }).unwrap());
+            }
             SerializedWebSocketMessage::Data(data, channel) => {
                 if self.channels.contains(&channel) {
                     ctx.text(data);

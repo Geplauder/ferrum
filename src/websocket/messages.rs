@@ -2,7 +2,7 @@ use actix::Recipient;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::messages::MessageResponse;
+use crate::domain::{channels::Channel, messages::MessageResponse};
 
 #[derive(Debug, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
@@ -12,12 +12,14 @@ pub enum WebSocketMessage {
     Ready,
     Identify { bearer: String },
     NewMessage { message: MessageResponse },
+    NewChannel { channel: Channel },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub enum SerializedWebSocketMessage {
     Ready(Vec<Uuid>),
+    AddChannel(Channel),
     Data(String, Uuid),
 }
 
@@ -59,5 +61,17 @@ impl SendMessageToChannel {
             channel_id,
             message,
         }
+    }
+}
+
+#[derive(Debug, actix::prelude::Message)]
+#[rtype(result = "()")]
+pub struct NewChannel {
+    pub channel: Channel,
+}
+
+impl NewChannel {
+    pub fn new(channel: Channel) -> Self {
+        Self { channel }
     }
 }
