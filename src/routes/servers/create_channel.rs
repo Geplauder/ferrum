@@ -7,7 +7,12 @@ use anyhow::Context;
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::{domain::channels::{Channel, ChannelName, NewChannel}, error_chain_fmt, jwt::AuthorizationService, websocket::{messages, Server}};
+use crate::{
+    domain::channels::{Channel, ChannelName, NewChannel},
+    error_chain_fmt,
+    jwt::AuthorizationService,
+    websocket::{messages, Server},
+};
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {

@@ -9,6 +9,8 @@ use crate::domain::{channels::Channel, messages::MessageResponse};
 #[serde(tag = "type", content = "payload")]
 pub enum WebSocketMessage {
     Empty,
+    Ping,
+    Pong,
     Ready,
     Identify { bearer: String },
     NewMessage { message: MessageResponse },

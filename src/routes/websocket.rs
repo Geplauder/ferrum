@@ -54,20 +54,26 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
                     Err(_) => return,
                 };
 
-                if let WebSocketMessage::Identify { bearer } = message {
-                    // Use proper jwt secret
-                    let claims = match get_claims(&bearer, "foo") {
-                        Some(value) => value,
-                        None => return,
-                    };
+                match message {
+                    WebSocketMessage::Ping => {
+                        ctx.text(serde_json::to_string(&WebSocketMessage::Pong).unwrap());
+                    }
+                    WebSocketMessage::Identify { bearer } => {
+                        // Use proper jwt secret
+                        let claims = match get_claims(&bearer, "foo") {
+                            Some(value) => value,
+                            None => return,
+                        };
 
-                    let address = ctx.address();
+                        let address = ctx.address();
 
-                    self.user_id = Some(claims.id);
-                    self.server.do_send(IdentifyUser {
-                        user_id: claims.id,
-                        addr: address.recipient(),
-                    });
+                        self.user_id = Some(claims.id);
+                        self.server.do_send(IdentifyUser {
+                            user_id: claims.id,
+                            addr: address.recipient(),
+                        });
+                    }
+                    _ => (),
                 }
             }
             Ok(ws::Message::Close(reason)) => {
