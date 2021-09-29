@@ -5,7 +5,7 @@ pub struct NewServer {
     pub name: ServerName,
 }
 
-#[derive(Debug, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
 pub struct Server {
     pub id: Uuid,
     pub name: String,

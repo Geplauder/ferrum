@@ -5,8 +5,8 @@ use sqlx::PgPool;
 use uuid::Uuid;
 
 use super::messages::{
-    IdentifyUser, NewChannel, SendMessageToChannel, SerializedWebSocketMessage, WebSocketClose,
-    WebSocketMessage,
+    IdentifyUser, NewChannel, NewServer, SendMessageToChannel, SerializedWebSocketMessage,
+    WebSocketClose, WebSocketMessage,
 };
 
 pub struct Server {
@@ -131,5 +131,20 @@ impl Handler<NewChannel> for Server {
         }
         .into_actor(self)
         .wait(ctx)
+    }
+}
+
+impl Handler<NewServer> for Server {
+    type Result = ();
+
+    fn handle(&mut self, msg: NewServer, _ctx: &mut Self::Context) -> Self::Result {
+        if let Some(recipient) = self.users.get(&msg.user_id) {
+            recipient
+                .do_send(SerializedWebSocketMessage::AddServer(
+                    msg.server,
+                    msg.channels,
+                ))
+                .unwrap();
+        }
     }
 }

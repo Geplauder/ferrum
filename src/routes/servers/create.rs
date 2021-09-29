@@ -1,5 +1,6 @@
 use std::convert::{TryFrom, TryInto};
 
+use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
@@ -7,9 +8,13 @@ use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::{
-    domain::servers::{NewServer, ServerName},
+    domain::{
+        channels::Channel,
+        servers::{NewServer, Server, ServerName},
+    },
     error_chain_fmt,
     jwt::AuthorizationService,
+    websocket::{messages, Server as WebSocketServer},
 };
 
 #[derive(serde::Deserialize)]
@@ -50,10 +55,11 @@ impl ResponseError for CreateError {
     }
 }
 
-#[tracing::instrument(name = "Create a new server", skip(body, pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, server_name = %body.name))]
+#[tracing::instrument(name = "Create a new server", skip(body, pool, websocket_server, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, server_name = %body.name))]
 pub async fn create(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
+    websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateError> {
     let new_server: NewServer = body.0.try_into().map_err(CreateError::ValidationError)?;
@@ -63,15 +69,15 @@ pub async fn create(
         .await
         .context("Failed to acquire a postgres connection from pool")?;
 
-    let server_id = insert_server(&mut transaction, &new_server, auth.claims.id)
+    let server = insert_server(&mut transaction, &new_server, auth.claims.id)
         .await
         .context("Failed to insert new server in the database.")?;
 
-    add_default_channel_to_server(&mut transaction, server_id)
+    let channel = add_default_channel_to_server(&mut transaction, server.id)
         .await
         .context("Failed to insert default server channel to the database.")?;
 
-    add_user_to_server(&mut transaction, auth.claims.id, server_id)
+    add_user_to_server(&mut transaction, auth.claims.id, server.id)
         .await
         .context("Failed to insert new users_servers entry to the database.")?;
 
@@ -79,6 +85,12 @@ pub async fn create(
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new server.")?;
+
+    websocket_server.do_send(messages::NewServer {
+        user_id: auth.claims.id,
+        server,
+        channels: vec![channel],
+    });
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -91,22 +103,22 @@ async fn insert_server(
     transaction: &mut Transaction<'_, Postgres>,
     new_server: &NewServer,
     user_id: Uuid,
-) -> Result<Uuid, sqlx::Error> {
-    let id = Uuid::new_v4();
-
-    sqlx::query!(
+) -> Result<Server, sqlx::Error> {
+    let server = sqlx::query_as!(
+        Server,
         r#"
         INSERT INTO servers (id, name, owner_id)
         VALUES ($1, $2, $3)
+        RETURNING *
         "#,
-        id,
+        Uuid::new_v4(),
         new_server.name.as_ref(),
         user_id,
     )
-    .execute(transaction)
+    .fetch_one(transaction)
     .await?;
 
-    Ok(id)
+    Ok(server)
 }
 
 #[tracing::instrument(
@@ -116,21 +128,21 @@ async fn insert_server(
 async fn add_default_channel_to_server(
     transaction: &mut Transaction<'_, Postgres>,
     server_id: Uuid,
-) -> Result<(), sqlx::Error> {
-    let id = Uuid::new_v4();
-
-    sqlx::query!(
+) -> Result<Channel, sqlx::Error> {
+    let channel = sqlx::query_as!(
+        Channel,
         r#"
         INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)
+        RETURNING *
         "#,
-        id,
+        Uuid::new_v4(),
         server_id,
         "general",
     )
-    .execute(transaction)
+    .fetch_one(transaction)
     .await?;
 
-    Ok(())
+    Ok(channel)
 }
 
 #[tracing::instrument(

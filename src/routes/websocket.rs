@@ -31,15 +31,20 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
 
                 ctx.text(serde_json::to_string(&WebSocketMessage::Ready).unwrap());
             }
+            SerializedWebSocketMessage::Data(data, channel) => {
+                if self.channels.contains(&channel) {
+                    ctx.text(data);
+                }
+            }
             SerializedWebSocketMessage::AddChannel(channel) => {
                 self.channels.push(channel.id);
 
                 ctx.text(serde_json::to_string(&WebSocketMessage::NewChannel { channel }).unwrap());
             }
-            SerializedWebSocketMessage::Data(data, channel) => {
-                if self.channels.contains(&channel) {
-                    ctx.text(data);
-                }
+            SerializedWebSocketMessage::AddServer(server, channels) => {
+                self.channels.extend(channels.iter().map(|x| x.id));
+
+                ctx.text(serde_json::to_string(&WebSocketMessage::NewServer { server }).unwrap());
             }
         }
     }

@@ -2,7 +2,7 @@ use actix::Recipient;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::domain::{channels::Channel, messages::MessageResponse};
+use crate::domain::{channels::Channel, messages::MessageResponse, servers::Server};
 
 #[derive(Debug, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
@@ -12,9 +12,18 @@ pub enum WebSocketMessage {
     Ping,
     Pong,
     Ready,
-    Identify { bearer: String },
-    NewMessage { message: MessageResponse },
-    NewChannel { channel: Channel },
+    Identify {
+        bearer: String,
+    },
+    NewMessage {
+        message: MessageResponse,
+    },
+    NewChannel {
+        channel: Channel,
+    },
+    NewServer {
+        server: Server,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
@@ -22,6 +31,7 @@ pub enum WebSocketMessage {
 pub enum SerializedWebSocketMessage {
     Ready(Vec<Uuid>),
     AddChannel(Channel),
+    AddServer(Server, Vec<Channel>),
     Data(String, Uuid),
 }
 
@@ -75,5 +85,19 @@ pub struct NewChannel {
 impl NewChannel {
     pub fn new(channel: Channel) -> Self {
         Self { channel }
+    }
+}
+
+#[derive(Debug, actix::prelude::Message)]
+#[rtype(result = "()")]
+pub struct NewServer {
+    pub user_id: Uuid,
+    pub server: Server,
+    pub channels: Vec<Channel>,
+}
+
+impl NewServer {
+    pub fn new(user_id: Uuid, server: Server, channels: Vec<Channel>) -> Self {
+        Self { user_id, server, channels }
     }
 }
