@@ -73,9 +73,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
                 ctx.close(reason);
                 ctx.stop();
             }
-            Err(_) => {
-                ctx.stop();
-            }
             _ => (),
         }
     }

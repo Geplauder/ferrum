@@ -24,28 +24,11 @@ pub enum WebSocketMessage {
     NewMessage(NewMessagePayload),
 }
 
-// #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
-// #[rtype(result = "()")]
-// pub struct SerializedWebSocketMessage(pub String, pub Uuid);
-
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub enum SerializedWebSocketMessage {
     Ready(Vec<Uuid>),
     Data(String, Uuid),
-}
-
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
-pub struct WebSocketConnect {
-    pub user_id: Uuid,
-    pub recipient: Recipient<SerializedWebSocketMessage>,
-}
-
-impl WebSocketConnect {
-    pub fn new(user_id: Uuid, recipient: Recipient<SerializedWebSocketMessage>) -> Self {
-        Self { user_id, recipient }
-    }
 }
 
 #[derive(Debug, actix::prelude::Message)]

@@ -728,6 +728,7 @@ name = "ferrum"
 version = "0.1.0"
 dependencies = [
  "actix",
+ "actix-codec",
  "actix-cors",
  "actix-http",
  "actix-rt",

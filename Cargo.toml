@@ -17,6 +17,7 @@ actix-web = "4.0.0-beta.9"
 actix-web-actors = "4.0.0-beta.7"
 actix-web-httpauth = "0.6.0-beta.2"
 actix-cors = "0.6.0-beta.2"
+actix-codec = "0.4.0"
 awc = "3.0.0-beta.8"
 anyhow = "1.0.40"
 argon2 = { version = "0.3", features = ["std"] }

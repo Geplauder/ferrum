@@ -1,16 +1,16 @@
 use std::time::Duration;
 
-use actix::{Actor, Addr};
+use actix_http::{client::ConnectionIo, ws};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
-use awc::ws::WebsocketsRequest;
 use fake::Fake;
 use ferrum::{
     application::{get_db_pool, Application},
     jwt::Jwt,
     settings::{get_settings, DatabaseSettings},
     telemetry::{get_subscriber, init_subscriber},
-    websocket::Server,
+    websocket::messages::WebSocketMessage,
 };
+use futures::{select, FutureExt, SinkExt, StreamExt};
 use once_cell::sync::Lazy;
 use sqlx::{postgres::PgPoolOptions, types::Uuid, Connection, Executor, PgConnection, PgPool};
 
@@ -40,7 +40,6 @@ pub struct TestApplication {
     pub port: u16,
     pub db_pool: PgPool,
     pub jwt_secret: String,
-    pub websocket_server: Addr<Server>,
     test_user: Option<TestUser>,
     test_user_token: Option<String>,
     test_server: Option<TestServer>,
@@ -65,13 +64,17 @@ impl TestApplication {
         self.test_server.as_ref().unwrap().clone()
     }
 
-    pub async fn websocket(&self, bearer: Option<String>) -> WebsocketsRequest {
-        let client = self.http_client();
-
-        match bearer {
-            Some(bearer) => client.ws(&format!("{}/ws?bearer={}", &self.ws_address, bearer)),
-            None => client.ws(&self.ws_address),
-        }
+    pub async fn websocket(
+        &self,
+    ) -> (
+        awc::ClientResponse,
+        actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+    ) {
+        self.http_client()
+            .ws(&format!("{}/ws", &self.ws_address))
+            .connect()
+            .await
+            .unwrap()
     }
 }
 
@@ -89,9 +92,7 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
 
     configure_database(&settings.database).await;
 
-    let websocket_server = Server::default().start();
-
-    let application = Application::build(settings.clone(), websocket_server.clone())
+    let application = Application::build(settings.clone())
         .await
         .expect("Failed to build application");
 
@@ -109,7 +110,6 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
             .await
             .expect("Failed to connect to database"),
         jwt_secret: settings.application.jwt_secret,
-        websocket_server: websocket_server,
         test_user_token: None,
         test_user: None,
         test_server: None,
@@ -180,6 +180,38 @@ async fn configure_database(settings: &DatabaseSettings) -> PgPool {
         .expect("Failed to migrate the database");
 
     connection_pool
+}
+
+pub async fn get_next_websocket_message(
+    connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+) -> Option<WebSocketMessage> {
+    let mut message = connection.next().fuse();
+    let mut timeout = Box::pin(actix_rt::time::sleep(Duration::from_secs(2)).fuse());
+
+    let x = select! {
+        x = message => x,
+        () = timeout => return None,
+    };
+
+    match x.unwrap().unwrap() {
+        ws::Frame::Text(text) => match serde_json::from_slice::<WebSocketMessage>(&text) {
+            Ok(value) => Some(value),
+            Err(_) => None,
+        },
+        _ => None,
+    }
+}
+
+pub async fn send_websocket_message(
+    connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+    message: WebSocketMessage,
+) {
+    connection
+        .send(ws::Message::Text(
+            serde_json::to_string(&message).unwrap().into(),
+        ))
+        .await
+        .unwrap();
 }
 
 #[derive(Debug, Clone)]

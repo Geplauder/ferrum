@@ -1,11 +1,10 @@
-use std::time::Duration;
-
-use actix_http::{encoding::Decoder, ws, Payload};
-use ferrum::websocket::messages::{BootstrapPayload, WebSocketMessage};
-use futures::{select, FutureExt, SinkExt, StreamExt};
+use actix_http::{encoding::Decoder, Payload};
+use ferrum::websocket::messages::{IdentifyPayload, WebSocketMessage};
 use uuid::Uuid;
 
-use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+use crate::helpers::{
+    get_next_websocket_message, send_websocket_message, spawn_app, BootstrapType, TestApplication,
+};
 
 impl TestApplication {
     pub async fn post_create_channel_message(
@@ -235,30 +234,24 @@ async fn create_message_returns_401_when_user_has_no_access_to_the_channel() {
 }
 
 #[actix_rt::test]
-async fn create_message_sends_websocket_message_to_bootstrapped_users() {
+async fn create_message_sends_websocket_message_to_ready_users() {
     // Arrange
     let app = spawn_app(BootstrapType::UserAndOwnServer).await;
     let body = serde_json::json!({
         "content": "foobar"
     });
 
-    let (_response, mut connection) = app
-        .websocket(Some(app.test_user_token()))
-        .await
-        .connect()
-        .await
-        .unwrap();
+    let (_response, mut connection) = app.websocket().await;
 
-    connection
-        .send(ws::Message::Text(
-            serde_json::to_string(&WebSocketMessage::Bootstrap(BootstrapPayload {
-                channels: vec![app.test_server().default_channel_id],
-            }))
-            .unwrap()
-            .into(),
-        ))
-        .await
-        .unwrap();
+    send_websocket_message(
+        &mut connection,
+        WebSocketMessage::Identify(IdentifyPayload {
+            bearer: app.test_user_token(),
+        }),
+    )
+    .await;
+
+    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
 
     // Act
     app.post_create_channel_message(
@@ -269,23 +262,15 @@ async fn create_message_sends_websocket_message_to_bootstrapped_users() {
     .await;
 
     // Assert
-    let message = connection.next().await;
-    let data = match message.unwrap().unwrap() {
-        ws::Frame::Text(text) => match serde_json::from_slice::<WebSocketMessage>(&text) {
-            Ok(value) => Some(value),
-            Err(_) => None,
-        },
-        _ => None,
-    };
+    let message = get_next_websocket_message(&mut connection).await;
 
-    assert!(data.is_some());
-
-    match data.unwrap() {
-        WebSocketMessage::NewMessage(message) => {
+    match message {
+        Some(WebSocketMessage::NewMessage(message)) => {
             assert_eq!("foobar", message.message.content);
             assert_eq!(app.test_user().id, message.message.user.id);
         }
-        _ => assert!(false, "Received wrong message type"),
+        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
+        None => assert!(false, "Received no message"),
     }
 }
 
@@ -297,12 +282,7 @@ async fn create_message_does_not_send_websocket_message_to_non_bootstrapped_user
         "content": "foobar"
     });
 
-    let (_response, mut connection) = app
-        .websocket(Some(app.test_user_token()))
-        .await
-        .connect()
-        .await
-        .unwrap();
+    let (_response, mut connection) = app.websocket().await;
 
     // Act
     app.post_create_channel_message(
@@ -313,12 +293,11 @@ async fn create_message_does_not_send_websocket_message_to_non_bootstrapped_user
     .await;
 
     // Assert
-    let mut message = connection.next().fuse();
-    let mut timeout = Box::pin(actix_rt::time::sleep(Duration::from_secs(2)).fuse());
+    let message = get_next_websocket_message(&mut connection).await;
 
-    // Check if the client receives a websocket in the next two seconds
-    select! {
-        _ = message => assert!(false, "Client received a websocket message"),
-        () = timeout => assert!(true),
-    }
+    assert!(
+        message.is_none(),
+        "Received a websocket message: {:#?}",
+        message
+    );
 }
