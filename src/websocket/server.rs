@@ -113,7 +113,7 @@ impl Handler<NewChannel> for Server {
                 )
                 SELECT users_servers.user_id
                 FROM users_servers
-                WHERE users_servers.server_id IN (SELECT server_id FROM server_query)
+                WHERE users_servers.user_id IS NOT NULL AND users_servers.server_id IN (SELECT server_id FROM server_query)
                 "#,
                 msg.channel.id,
             )
