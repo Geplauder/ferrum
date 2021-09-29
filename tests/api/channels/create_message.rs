@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum::websocket::messages::{IdentifyPayload, WebSocketMessage};
+use ferrum::websocket::messages::WebSocketMessage;
 use uuid::Uuid;
 
 use crate::helpers::{
@@ -245,9 +245,9 @@ async fn create_message_sends_websocket_message_to_ready_users() {
 
     send_websocket_message(
         &mut connection,
-        WebSocketMessage::Identify(IdentifyPayload {
+        WebSocketMessage::Identify {
             bearer: app.test_user_token(),
-        }),
+        },
     )
     .await;
 
@@ -265,9 +265,9 @@ async fn create_message_sends_websocket_message_to_ready_users() {
     let message = get_next_websocket_message(&mut connection).await;
 
     match message {
-        Some(WebSocketMessage::NewMessage(message)) => {
-            assert_eq!("foobar", message.message.content);
-            assert_eq!(app.test_user().id, message.message.user.id);
+        Some(WebSocketMessage::NewMessage { message }) => {
+            assert_eq!("foobar", message.content);
+            assert_eq!(app.test_user().id, message.user.id);
         }
         Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
         None => assert!(false, "Received no message"),

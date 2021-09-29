@@ -4,24 +4,14 @@ use uuid::Uuid;
 
 use crate::domain::messages::MessageResponse;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct IdentifyPayload {
-    pub bearer: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct NewMessagePayload {
-    pub message: MessageResponse,
-}
-
 #[derive(Debug, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
 #[serde(tag = "type", content = "payload")]
 pub enum WebSocketMessage {
     Empty,
     Ready,
-    Identify(IdentifyPayload),
-    NewMessage(NewMessagePayload),
+    Identify { bearer: String },
+    NewMessage { message: MessageResponse },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]

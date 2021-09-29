@@ -1,5 +1,5 @@
 use actix_http::ws;
-use ferrum::websocket::messages::{IdentifyPayload, WebSocketMessage};
+use ferrum::websocket::messages::WebSocketMessage;
 use futures::SinkExt;
 
 use crate::helpers::{
@@ -27,9 +27,9 @@ async fn websocket_closes_successfully() {
 
     send_websocket_message(
         &mut connection,
-        WebSocketMessage::Identify(IdentifyPayload {
+        WebSocketMessage::Identify {
             bearer: app.test_user_token(),
-        }),
+        },
     )
     .await;
 
@@ -54,9 +54,9 @@ async fn websocket_receives_ready_message_after_successfull_identify() {
     // Act
     send_websocket_message(
         &mut connection,
-        WebSocketMessage::Identify(IdentifyPayload {
+        WebSocketMessage::Identify {
             bearer: app.test_user_token(),
-        }),
+        },
     )
     .await;
 
@@ -82,7 +82,7 @@ async fn websocket_does_not_receive_ready_message_after_missing_or_invalid_beare
         // Act
         send_websocket_message(
             &mut connection,
-            WebSocketMessage::Identify(IdentifyPayload { bearer: token }),
+            WebSocketMessage::Identify { bearer: token },
         )
         .await;
 

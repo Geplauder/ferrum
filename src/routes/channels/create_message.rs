@@ -16,7 +16,7 @@ use crate::{
     jwt::AuthorizationService,
     utilities::does_user_have_access_to_channel,
     websocket::{
-        messages::{NewMessagePayload, SendMessageToChannel, WebSocketMessage},
+        messages::{SendMessageToChannel, WebSocketMessage},
         Server,
     },
 };
@@ -101,7 +101,7 @@ pub async fn create_message(
 
     server.do_send(SendMessageToChannel::new(
         *channel_id,
-        WebSocketMessage::NewMessage(NewMessagePayload { message }),
+        WebSocketMessage::NewMessage { message },
     ));
 
     Ok(HttpResponse::Ok().finish())

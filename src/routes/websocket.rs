@@ -49,9 +49,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
                     Err(_) => return,
                 };
 
-                if let WebSocketMessage::Identify(identify) = message {
+                if let WebSocketMessage::Identify { bearer } = message {
                     // Use proper jwt secret
-                    let claims = match get_claims(&identify.bearer, "foo") {
+                    let claims = match get_claims(&bearer, "foo") {
                         Some(value) => value,
                         None => return,
                     };
