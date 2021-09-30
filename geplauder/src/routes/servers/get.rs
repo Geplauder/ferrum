@@ -11,8 +11,8 @@ use crate::{
 
 #[derive(thiserror::Error)]
 pub enum GetServerError {
-    #[error("Unauthorized")]
-    UnauthorizedError,
+    #[error("Forbidden")]
+    ForbiddenError,
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -26,7 +26,7 @@ impl std::fmt::Debug for GetServerError {
 impl ResponseError for GetServerError {
     fn status_code(&self) -> actix_http::StatusCode {
         match *self {
-            GetServerError::UnauthorizedError => StatusCode::UNAUTHORIZED,
+            GetServerError::ForbiddenError => StatusCode::FORBIDDEN,
             GetServerError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -43,7 +43,7 @@ pub async fn get(
         .context("Failed to check if user is on server")?;
 
     if is_user_on_server == false {
-        return Err(GetServerError::UnauthorizedError);
+        return Err(GetServerError::ForbiddenError);
     }
 
     let server = get_server(*server_id, &pool)

@@ -33,8 +33,8 @@ impl TryFrom<BodyData> for NewChannel {
 pub enum CreateChannelError {
     #[error("{0}")]
     ValidationError(String),
-    #[error("Unauthorized")]
-    UnauthorizedError,
+    #[error("Forbidden")]
+    ForbiddenError,
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -49,7 +49,7 @@ impl ResponseError for CreateChannelError {
     fn status_code(&self) -> actix_http::StatusCode {
         match *self {
             CreateChannelError::ValidationError(_) => StatusCode::BAD_REQUEST,
-            CreateChannelError::UnauthorizedError => StatusCode::UNAUTHORIZED,
+            CreateChannelError::ForbiddenError => StatusCode::FORBIDDEN,
             CreateChannelError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -73,7 +73,7 @@ pub async fn create_channel(
         .context("Failed to check if user is owner of the server.")?;
 
     if is_user_owner == false {
-        return Err(CreateChannelError::UnauthorizedError);
+        return Err(CreateChannelError::ForbiddenError);
     }
 
     let mut transaction = pool

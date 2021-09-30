@@ -40,8 +40,8 @@ impl TryFrom<BodyData> for NewMessage {
 pub enum CreateMessageError {
     #[error("{0}")]
     ValidationError(String),
-    #[error("Unauthorized")]
-    UnauthorizedError(#[from] sqlx::Error),
+    #[error("Forbidden")]
+    ForbiddenError(#[from] sqlx::Error),
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -56,7 +56,7 @@ impl ResponseError for CreateMessageError {
     fn status_code(&self) -> actix_http::StatusCode {
         match *self {
             CreateMessageError::ValidationError(_) => StatusCode::BAD_REQUEST,
-            CreateMessageError::UnauthorizedError(_) => StatusCode::UNAUTHORIZED,
+            CreateMessageError::ForbiddenError(_) => StatusCode::FORBIDDEN,
             CreateMessageError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -77,7 +77,7 @@ pub async fn create_message(
 
     does_user_have_access_to_channel(&pool, *channel_id, auth.claims.id)
         .await
-        .map_err(CreateMessageError::UnauthorizedError)?;
+        .map_err(CreateMessageError::ForbiddenError)?;
 
     let mut transaction = pool
         .begin()

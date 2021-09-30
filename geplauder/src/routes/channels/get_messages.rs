@@ -16,8 +16,8 @@ use crate::{
 
 #[derive(thiserror::Error)]
 pub enum GetMessagesError {
-    #[error("Unauthorized")]
-    UnauthorizedError(#[from] sqlx::Error),
+    #[error("Forbidden")]
+    ForbiddenError(#[from] sqlx::Error),
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -31,7 +31,7 @@ impl std::fmt::Debug for GetMessagesError {
 impl ResponseError for GetMessagesError {
     fn status_code(&self) -> actix_http::StatusCode {
         match *self {
-            GetMessagesError::UnauthorizedError(_) => StatusCode::UNAUTHORIZED,
+            GetMessagesError::ForbiddenError(_) => StatusCode::FORBIDDEN,
             GetMessagesError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -45,7 +45,7 @@ pub async fn get_messages(
 ) -> Result<HttpResponse, GetMessagesError> {
     does_user_have_access_to_channel(&pool, *channel_id, auth.claims.id)
         .await
-        .map_err(GetMessagesError::UnauthorizedError)?;
+        .map_err(GetMessagesError::ForbiddenError)?;
 
     let channel_messages = get_channel_messages(*channel_id, &pool).await?;
 

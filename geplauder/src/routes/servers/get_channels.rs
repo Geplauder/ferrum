@@ -11,8 +11,8 @@ use crate::{
 
 #[derive(thiserror::Error)]
 pub enum GetChannelsError {
-    #[error("Unauthorized")]
-    UnauthorizedError,
+    #[error("Forbidden")]
+    ForbiddenError,
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -26,7 +26,7 @@ impl std::fmt::Debug for GetChannelsError {
 impl ResponseError for GetChannelsError {
     fn status_code(&self) -> actix_http::StatusCode {
         match *self {
-            GetChannelsError::UnauthorizedError => StatusCode::UNAUTHORIZED,
+            GetChannelsError::ForbiddenError => StatusCode::FORBIDDEN,
             GetChannelsError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -43,7 +43,7 @@ pub async fn get_channels(
         .context("Failed to check if user is on server")?;
 
     if is_user_on_server == false {
-        return Err(GetChannelsError::UnauthorizedError);
+        return Err(GetChannelsError::ForbiddenError);
     }
 
     let server_channels = get_server_channels(*server_id, &pool).await?;

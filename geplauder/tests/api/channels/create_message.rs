@@ -122,7 +122,7 @@ async fn create_message_returns_404_when_channel_id_is_invalid() {
 }
 
 #[geplauder_macros::test(strategy = "UserAndOwnServer")]
-async fn create_message_returns_401_when_channel_id_is_not_found() {
+async fn create_message_returns_403_when_channel_id_is_not_found() {
     // Arrange
     let body = serde_json::json!({
         "content": "foobar"
@@ -138,7 +138,7 @@ async fn create_message_returns_401_when_channel_id_is_not_found() {
         .await;
 
     // Assert
-    assert_eq!(401, response.status().as_u16());
+    assert_eq!(403, response.status().as_u16());
 }
 
 #[geplauder_macros::test(strategy = "UserAndOwnServer")]
@@ -203,7 +203,7 @@ async fn create_message_returns_401_for_missing_or_invalid_bearer_token() {
 }
 
 #[geplauder_macros::test(strategy = "UserAndOtherServer")]
-async fn create_message_returns_401_when_user_has_no_access_to_the_channel() {
+async fn create_message_returns_403_when_user_has_no_access_to_the_channel() {
     // Arrange
     let body = serde_json::json!({
         "content": "foobar"
@@ -219,7 +219,7 @@ async fn create_message_returns_401_when_user_has_no_access_to_the_channel() {
         .await;
 
     // Assert
-    assert_eq!(401, response.status().as_u16());
+    assert_eq!(403, response.status().as_u16());
 }
 
 #[geplauder_macros::test(strategy = "UserAndOwnServer")]
