@@ -52,6 +52,7 @@ jobs:
 
       - name: Migrate database
         run: |
+          cd geplauder
           sqlx database create
           sqlx migrate run
 
@@ -136,6 +137,7 @@ jobs:
 
       - name: Migrate database
         run: |
+          cd geplauder
           sqlx database create
           sqlx migrate run
 

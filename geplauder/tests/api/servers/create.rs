@@ -1,9 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
 use ferrum::websocket::messages::WebSocketMessage;
 
-use crate::helpers::{
-    get_next_websocket_message, send_websocket_message, spawn_app, BootstrapType, TestApplication,
-};
+use crate::helpers::{get_next_websocket_message, send_websocket_message, TestApplication};
 
 impl TestApplication {
     pub async fn post_create_server(
@@ -26,10 +24,9 @@ impl TestApplication {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn create_returns_200_for_valid_json_data() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
     let body = serde_json::json!({
         "name": "foobar",
     });
@@ -43,10 +40,9 @@ async fn create_returns_200_for_valid_json_data() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn create_persists_the_new_server() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
     let body = serde_json::json!({
         "name": "foobar",
     });
@@ -65,10 +61,9 @@ async fn create_persists_the_new_server() {
     assert_eq!(app.test_user().id, saved_server.owner_id);
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn create_also_joins_owner_to_the_server() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
     let body = serde_json::json!({
         "name": "foobar",
     });
@@ -86,10 +81,9 @@ async fn create_also_joins_owner_to_the_server() {
     assert_eq!(app.test_user().id, saved_users_servers.user_id);
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn create_also_creates_default_server_channel() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
     let body = serde_json::json!({
         "name": "foobar"
     });
@@ -107,10 +101,9 @@ async fn create_also_creates_default_server_channel() {
     assert_eq!("general", saved_channel.name);
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn create_fails_if_there_is_a_database_error() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
     let body = serde_json::json!({
         "name": "foobar",
     });
@@ -129,10 +122,9 @@ async fn create_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn create_returns_400_when_data_is_missing() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
     let body = serde_json::json!({});
 
     // Act
@@ -144,10 +136,9 @@ async fn create_returns_400_when_data_is_missing() {
     assert_eq!(400, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn create_returns_400_when_data_is_invalid() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
     let body = serde_json::json !({
         "name": "foo",
     });
@@ -161,10 +152,9 @@ async fn create_returns_400_when_data_is_invalid() {
     assert_eq!(400, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn create_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
     let body = serde_json::json !({
         "name": "foobar",
     });
@@ -178,10 +168,9 @@ async fn create_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn create_sends_new_server_to_owner_per_websocket() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
     let body = serde_json::json!({
         "name": "foobar"
     });

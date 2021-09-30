@@ -1,7 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
 use ferrum::domain::servers::Server;
 
-use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+use crate::helpers::TestApplication;
 
 impl TestApplication {
     pub async fn get_user_servers(
@@ -20,10 +20,9 @@ impl TestApplication {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn current_user_servers_returns_200_for_valid_bearer_token() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
 
     // Todo: Improve this
     app.put_join_server(
@@ -46,10 +45,9 @@ async fn current_user_servers_returns_200_for_valid_bearer_token() {
     assert_eq!(app.test_user().id, user_server.owner_id);
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn current_user_servers_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
 
     // Todo: Improve this
     app.put_join_server(
@@ -67,10 +65,9 @@ async fn current_user_servers_returns_401_for_missing_or_invalid_bearer_token() 
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn current_user_servers_fails_if_there_is_a_database_error() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
 
     // Todo: Improve this
     app.put_join_server(

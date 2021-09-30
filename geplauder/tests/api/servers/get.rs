@@ -2,7 +2,7 @@ use actix_http::{encoding::Decoder, Payload};
 use ferrum::domain::servers::Server;
 use uuid::Uuid;
 
-use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+use crate::helpers::TestApplication;
 
 impl TestApplication {
     pub async fn get_server(
@@ -22,10 +22,9 @@ impl TestApplication {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_200_for_valid_request() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
 
     // Act
     let response = app
@@ -39,10 +38,9 @@ async fn get_server_returns_200_for_valid_request() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_valid_data_for_valid_response() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
 
     // Act
     let response = app
@@ -60,11 +58,9 @@ async fn get_server_returns_valid_data_for_valid_response() {
     assert_eq!(app.test_server().name, response.name);
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_fails_if_there_is_a_database_error() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
-
     sqlx::query!("ALTER TABLE servers DROP COLUMN name;")
         .execute(&app.db_pool)
         .await
@@ -82,10 +78,9 @@ async fn get_server_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_404_when_server_id_is_invalid() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
 
     // Act
     let response = app
@@ -96,10 +91,9 @@ async fn get_server_returns_404_when_server_id_is_invalid() {
     assert_eq!(404, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_401_when_server_id_is_not_found() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
 
     // Act
     let response = app
@@ -110,10 +104,9 @@ async fn get_server_returns_401_when_server_id_is_not_found() {
     assert_eq!(401, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
 
     for token in [None, Some("foo".to_string())] {
         // Act
@@ -126,10 +119,9 @@ async fn get_server_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOtherServer")]
 async fn get_server_returns_401_for_users_without_access() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOtherServer).await;
 
     // Act
     let response = app

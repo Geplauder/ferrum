@@ -1,7 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
 use ferrum::domain::users::User;
 
-use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+use crate::helpers::TestApplication;
 
 impl TestApplication {
     pub async fn get_users(&self, bearer: Option<String>) -> awc::ClientResponse<Decoder<Payload>> {
@@ -15,10 +15,9 @@ impl TestApplication {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn current_user_returns_200_for_valid_bearer_token() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
 
     // Act
     let mut response = app.get_users(Some(app.test_user_token())).await;
@@ -33,10 +32,9 @@ async fn current_user_returns_200_for_valid_bearer_token() {
     assert_eq!(app.test_user().name, user_data.username);
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn current_user_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
 
     for token in [None, Some("foo".to_string())] {
         // Act
@@ -47,10 +45,9 @@ async fn current_user_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn current_user_fails_if_there_is_a_database_error() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
 
     sqlx::query!("ALTER TABLE users DROP COLUMN email;")
         .execute(&app.db_pool)

@@ -3,7 +3,7 @@ use ferrum::domain::messages::MessageResponse;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::helpers::{spawn_app, BootstrapType, TestApplication, TestServer, TestUser};
+use crate::helpers::{TestApplication, TestServer, TestUser};
 
 impl TestApplication {
     pub async fn get_channel_messages(
@@ -24,10 +24,9 @@ impl TestApplication {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_200_for_valid_request() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
     add_message_to_channel(
         &app.test_server(),
         app.test_server().default_channel_id,
@@ -47,10 +46,9 @@ async fn get_messages_returns_200_for_valid_request() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_valid_data_for_valid_request() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
     add_message_to_channel(
         &app.test_server(),
         app.test_server().default_channel_id,
@@ -73,10 +71,9 @@ async fn get_messages_returns_valid_data_for_valid_request() {
     assert_eq!(1, response.len());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_fails_if_there_is_a_database_error() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
     add_message_to_channel(
         &app.test_server(),
         app.test_server().default_channel_id,
@@ -101,10 +98,9 @@ async fn get_messages_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
     add_message_to_channel(
         &app.test_server(),
         app.test_server().default_channel_id,
@@ -123,10 +119,9 @@ async fn get_messages_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOtherServer")]
 async fn get_messages_returns_401_for_users_without_access() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOtherServer).await;
     add_message_to_channel(
         &app.test_server(),
         app.test_server().default_channel_id,
@@ -146,10 +141,9 @@ async fn get_messages_returns_401_for_users_without_access() {
     assert_eq!(401, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_404_when_channel_id_is_invalid() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
     add_message_to_channel(
         &app.test_server(),
         app.test_server().default_channel_id,
@@ -166,10 +160,9 @@ async fn get_messages_returns_404_when_channel_id_is_invalid() {
     assert_eq!(404, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_401_when_channel_id_is_not_found() {
     // Arrange
-    let app = spawn_app(BootstrapType::UserAndOwnServer).await;
     add_message_to_channel(
         &app.test_server(),
         app.test_server().default_channel_id,

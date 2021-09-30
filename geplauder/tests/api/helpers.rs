@@ -6,7 +6,7 @@ use fake::Fake;
 use ferrum::{
     application::{get_db_pool, Application},
     jwt::Jwt,
-    settings::{get_settings, DatabaseSettings},
+    settings::{get_settings, DatabaseSettings, Settings},
     telemetry::{get_subscriber, init_subscriber},
     websocket::messages::WebSocketMessage,
 };
@@ -40,6 +40,7 @@ pub struct TestApplication {
     pub port: u16,
     pub db_pool: PgPool,
     pub jwt_secret: String,
+    pub settings: Settings,
     test_user: Option<TestUser>,
     test_user_token: Option<String>,
     test_server: Option<TestServer>,
@@ -109,7 +110,8 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
         db_pool: get_db_pool(&settings.database)
             .await
             .expect("Failed to connect to database"),
-        jwt_secret: settings.application.jwt_secret,
+        jwt_secret: settings.application.jwt_secret.clone(),
+        settings: settings,
         test_user_token: None,
         test_user: None,
         test_server: None,
@@ -154,6 +156,30 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
     }
 
     test_application
+}
+
+pub async fn teardown(settings: &DatabaseSettings) {
+    let mut connection = PgConnection::connect_with(&settings.without_db())
+        .await
+        .expect("Failed to connect to Postgres");
+
+    connection
+        .execute(&*format!(
+            r#"
+            SELECT pg_terminate_backend(pg_stat_activity.pid)
+            FROM pg_stat_activity
+            WHERE datname = '{}'
+            AND pid <> pg_backend_pid();
+            "#,
+            settings.database_name
+        ))
+        .await
+        .expect("Failed to delete database.");
+
+    connection
+        .execute(&*format!("DROP DATABASE \"{}\"", settings.database_name))
+        .await
+        .expect("Failed to delete database.");
 }
 
 async fn configure_database(settings: &DatabaseSettings) -> PgPool {

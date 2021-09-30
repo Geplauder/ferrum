@@ -1,6 +1,6 @@
 use actix_http::{encoding::Decoder, Payload};
 
-use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+use crate::helpers::TestApplication;
 
 impl TestApplication {
     pub async fn post_register(
@@ -15,10 +15,9 @@ impl TestApplication {
     }
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test]
 async fn register_returns_200_for_valid_json_data() {
     // Arrange
-    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "email": "foo@bar.com",
@@ -32,10 +31,9 @@ async fn register_returns_200_for_valid_json_data() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test]
 async fn register_persists_the_new_user() {
     // Arrange
-    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "email": "foo@bar.com",
@@ -55,10 +53,9 @@ async fn register_persists_the_new_user() {
     assert_eq!("foo@bar.com", saved_user.email);
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test]
 async fn register_fails_if_there_is_a_database_error() {
     // Arrange
-    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "email": "foo@bar.com",
@@ -77,10 +74,9 @@ async fn register_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test]
 async fn register_returns_400_when_data_is_missing() {
     // Arrange
-    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "password": "foobar123"
@@ -93,10 +89,9 @@ async fn register_returns_400_when_data_is_missing() {
     assert_eq!(400, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test]
 async fn register_returns_400_when_data_is_invalid() {
     // Arrange
-    let app = spawn_app(BootstrapType::Default).await;
     let body = serde_json::json!({
         "name": "foobar",
         "email": "foobar.com",

@@ -1,7 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
 use ferrum::jwt::get_claims;
 
-use crate::helpers::{spawn_app, BootstrapType, TestApplication};
+use crate::helpers::TestApplication;
 
 impl TestApplication {
     pub async fn post_login(
@@ -21,11 +21,9 @@ struct LoginResponse {
     token: String,
 }
 
-#[actix_rt::test]
-async fn login_returns_200_for_valid_json_data() {
+#[geplauder_macros::test(strategy = "User")]
+async fn test_login_returns_200_for_valid_json_data() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
-
     let body = serde_json::json!({
         "email": app.test_user().email,
         "password": app.test_user().password,
@@ -49,11 +47,9 @@ async fn login_returns_200_for_valid_json_data() {
     assert_eq!(app.test_user().email, claims.email);
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn login_fails_if_there_is_a_database_error() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
-
     let body = serde_json::json!({
         "email": app.test_user().email,
         "password": app.test_user().password,
@@ -71,11 +67,9 @@ async fn login_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn login_returns_400_when_data_is_missing() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
-
     let body = serde_json::json!({
         "email": app.test_user().email,
     });
@@ -87,11 +81,9 @@ async fn login_returns_400_when_data_is_missing() {
     assert_eq!(400, response.status().as_u16());
 }
 
-#[actix_rt::test]
+#[geplauder_macros::test(strategy = "User")]
 async fn login_returns_401_when_data_is_invalid() {
     // Arrange
-    let app = spawn_app(BootstrapType::User).await;
-
     let payloads = [
         serde_json::json!({
             "email": app.test_user().email,
