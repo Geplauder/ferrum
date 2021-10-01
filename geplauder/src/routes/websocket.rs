@@ -4,7 +4,7 @@ use actix_web_actors::ws;
 use uuid::Uuid;
 
 use crate::{
-    jwt::get_claims,
+    jwt::Jwt,
     websocket::{
         messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose, WebSocketMessage},
         Server,
@@ -15,6 +15,7 @@ pub struct WebSocketSession {
     pub user_id: Option<Uuid>,
     pub server: Addr<Server>,
     pub channels: Vec<Uuid>,
+    jwt: Jwt,
 }
 
 impl Actor for WebSocketSession {
@@ -67,8 +68,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
                         ctx.text(serde_json::to_string(&WebSocketMessage::Pong).unwrap());
                     }
                     WebSocketMessage::Identify { bearer } => {
-                        // Use proper jwt secret
-                        let claims = match get_claims(&bearer, "foo") {
+                        let claims = match self.jwt.get_claims(&bearer) {
                             Some(value) => value,
                             None => return,
                         };
@@ -100,6 +100,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
 pub async fn websocket(
     request: HttpRequest,
     stream: web::Payload,
+    jwt: web::Data<Jwt>,
     server: web::Data<Addr<Server>>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let response = ws::start(
@@ -107,6 +108,7 @@ pub async fn websocket(
             user_id: None,
             server: server.get_ref().clone(),
             channels: vec![],
+            jwt: jwt.as_ref().clone(),
         },
         &request,
         stream,

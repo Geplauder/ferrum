@@ -40,21 +40,21 @@ impl Jwt {
         )
         .unwrap()
     }
-}
 
-pub fn get_claims(token: &str, secret: &str) -> Option<Claims> {
-    let validation = Validation {
-        validate_exp: false,
-        ..Default::default()
-    };
+    pub fn get_claims(&self, token: &str) -> Option<Claims> {
+        let validation = Validation {
+            validate_exp: false,
+            ..Default::default()
+        };
 
-    match jsonwebtoken::decode::<Claims>(
-        token,
-        &DecodingKey::from_secret(secret.as_bytes()),
-        &validation,
-    ) {
-        Ok(value) => Some(value.claims),
-        Err(_) => None,
+        match jsonwebtoken::decode::<Claims>(
+            token,
+            &DecodingKey::from_secret(self.secret.as_bytes()),
+            &validation,
+        ) {
+            Ok(value) => Some(value.claims),
+            Err(_) => None,
+        }
     }
 }
 
@@ -100,7 +100,8 @@ impl FromRequest for AuthorizationService {
         let jwt = request.app_data::<Data<Jwt>>().unwrap();
 
         if let Some(service) = token.as_ref().and_then(|token| {
-            get_claims(token, &jwt.secret).map(|claims| AuthorizationService { claims })
+            jwt.get_claims(token)
+                .map(|claims| AuthorizationService { claims })
         }) {
             return ok(service);
         }

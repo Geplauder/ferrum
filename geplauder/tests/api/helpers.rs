@@ -39,7 +39,7 @@ pub struct TestApplication {
     pub ws_address: String,
     pub port: u16,
     pub db_pool: PgPool,
-    pub jwt_secret: String,
+    pub jwt: Jwt,
     pub settings: Settings,
     test_user: Option<TestUser>,
     test_user_token: Option<String>,
@@ -101,8 +101,6 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
 
     let _ = tokio::spawn(application.run_until_stopped());
 
-    let jwt = Jwt::new(settings.application.jwt_secret.to_owned());
-
     let mut test_application = TestApplication {
         address: format!("http://localhost:{}", application_port),
         ws_address: format!("ws://localhost:{}", application_port),
@@ -110,7 +108,7 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
         db_pool: get_db_pool(&settings.database)
             .await
             .expect("Failed to connect to database"),
-        jwt_secret: settings.application.jwt_secret.clone(),
+        jwt: Jwt::new(settings.application.jwt_secret.to_owned()),
         settings: settings,
         test_user_token: None,
         test_user: None,
@@ -123,8 +121,11 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
             let test_user = TestUser::generate();
             test_user.store(&test_application.db_pool).await;
 
-            test_application.test_user_token =
-                Some(jwt.encode(test_user.id.to_owned(), test_user.email.to_owned()));
+            test_application.test_user_token = Some(
+                test_application
+                    .jwt
+                    .encode(test_user.id.to_owned(), test_user.email.to_owned()),
+            );
             test_application.test_user = Some(test_user);
         }
         BootstrapType::UserAndOwnServer => {
@@ -134,8 +135,11 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
             let test_server = TestServer::generate(test_user.id);
             test_server.store(&test_application.db_pool).await;
 
-            test_application.test_user_token =
-                Some(jwt.encode(test_user.id.to_owned(), test_user.email.to_owned()));
+            test_application.test_user_token = Some(
+                test_application
+                    .jwt
+                    .encode(test_user.id.to_owned(), test_user.email.to_owned()),
+            );
             test_application.test_user = Some(test_user);
             test_application.test_server = Some(test_server);
         }
@@ -148,8 +152,11 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
             let test_server = TestServer::generate(dummy_user.id);
             test_server.store(&test_application.db_pool).await;
 
-            test_application.test_user_token =
-                Some(jwt.encode(test_user.id.to_owned(), test_user.email.to_owned()));
+            test_application.test_user_token = Some(
+                test_application
+                    .jwt
+                    .encode(test_user.id.to_owned(), test_user.email.to_owned()),
+            );
             test_application.test_user = Some(test_user);
             test_application.test_server = Some(test_server);
         }

@@ -1,5 +1,4 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum::jwt::get_claims;
 
 use crate::helpers::TestApplication;
 
@@ -40,7 +39,7 @@ async fn test_login_returns_200_for_valid_json_data() {
 
     let response_data = response_data.unwrap();
 
-    let claims = get_claims(&response_data.token, &app.jwt_secret);
+    let claims = app.jwt.get_claims(&response_data.token);
     assert!(claims.is_some());
 
     let claims = claims.unwrap();
