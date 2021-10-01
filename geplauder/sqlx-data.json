@@ -59,6 +59,44 @@
       "nullable": []
     }
   },
+  "21aee6d804b6921115527f445ffa571324fa59271be95988ae943ec4ea4158fc": {
+    "query": "\n                SELECT id, username, created_at, updated_at\n                FROM users\n                WHERE id = $1\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "339bc4f601cf4130a42fdbd13e8e23c5e6ac44314c15bb1eee8b96d89e3a4662": {
     "query": "\n                WITH server_query AS (\n                    SELECT servers.id as server_id\n                    FROM servers\n                    INNER JOIN channels ON channels.server_id = servers.id\n                    WHERE channels.id = $1 LIMIT 1\n                )\n                SELECT users_servers.user_id\n                FROM users_servers\n                WHERE users_servers.user_id IS NOT NULL AND users_servers.server_id IN (SELECT server_id FROM server_query)\n                ",
     "describe": {
@@ -119,6 +157,26 @@
         false,
         false,
         false,
+        false
+      ]
+    }
+  },
+  "3614ba1ba399cd32376fbdb5d1ebc8489872b73073ba3d9929b50380de07c952": {
+    "query": "\n        SELECT users_servers.user_id\n        FROM users_servers\n        WHERE users_servers.user_id IS NOT NULL AND users_servers.server_id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "user_id",
+          "type_info": "Uuid"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
         false
       ]
     }

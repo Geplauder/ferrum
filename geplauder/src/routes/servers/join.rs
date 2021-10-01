@@ -1,10 +1,15 @@
+use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
-use crate::{error_chain_fmt, jwt::AuthorizationService};
+use crate::{
+    error_chain_fmt,
+    jwt::AuthorizationService,
+    websocket::{messages, Server},
+};
 
 #[derive(thiserror::Error)]
 pub enum JoinError {
@@ -32,10 +37,11 @@ impl ResponseError for JoinError {
     }
 }
 
-#[tracing::instrument(name = "Join server", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Join server", skip(pool, auth, websocket_server), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn join(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
+    websocket_server: web::Data<Addr<Server>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, JoinError> {
     let mut transaction = pool
@@ -49,6 +55,8 @@ pub async fn join(
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new users_servers entry.")?;
+
+    websocket_server.do_send(messages::NewUser::new(auth.claims.id, *server_id));
 
     Ok(HttpResponse::Ok().finish())
 }

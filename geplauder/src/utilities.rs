@@ -52,3 +52,18 @@ pub async fn is_user_on_server(
 
     Ok(row.is_some())
 }
+
+pub async fn get_users_on_server(pool: &PgPool, server_id: Uuid) -> Result<Vec<Uuid>, sqlx::Error> {
+    let affected_users = sqlx::query!(
+        r#"
+        SELECT users_servers.user_id
+        FROM users_servers
+        WHERE users_servers.user_id IS NOT NULL AND users_servers.server_id = $1
+        "#,
+        server_id,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(affected_users.iter().map(|x| x.user_id).collect())
+}

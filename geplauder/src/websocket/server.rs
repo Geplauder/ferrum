@@ -4,8 +4,10 @@ use actix::{Actor, Context, ContextFutureSpawner, Handler, Recipient, WrapFuture
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::{domain::users::UserResponse, utilities::get_users_on_server};
+
 use super::messages::{
-    IdentifyUser, NewChannel, NewServer, SendMessageToChannel, SerializedWebSocketMessage,
+    IdentifyUser, NewChannel, NewServer, NewUser, SendMessageToChannel, SerializedWebSocketMessage,
     WebSocketClose, WebSocketMessage,
 };
 
@@ -103,6 +105,7 @@ impl Handler<NewChannel> for Server {
         let users = self.users.clone();
 
         async move {
+            // TODO: Simplify this query with msg.channel.server_id
             let affected_users = sqlx::query!(
                 r#"
                 WITH server_query AS (
@@ -146,5 +149,41 @@ impl Handler<NewServer> for Server {
                 ))
                 .unwrap();
         }
+    }
+}
+
+impl Handler<NewUser> for Server {
+    type Result = ();
+
+    fn handle(&mut self, msg: NewUser, ctx: &mut Self::Context) -> Self::Result {
+        let db_pool = self.db_pool.clone();
+        let users = self.users.clone();
+
+        async move {
+            let new_user = sqlx::query_as!(
+                UserResponse,
+                r#"
+                SELECT id, username, created_at, updated_at
+                FROM users
+                WHERE id = $1
+                "#,
+                msg.user_id
+            )
+            .fetch_one(&db_pool)
+            .await
+            .unwrap();
+
+            let users_on_server = get_users_on_server(&db_pool, msg.server_id).await.unwrap();
+
+            for user in &users_on_server {
+                if let Some(recipient) = users.get(user) {
+                    recipient
+                        .do_send(SerializedWebSocketMessage::AddUser(new_user.clone()))
+                        .unwrap();
+                }
+            }
+        }
+        .into_actor(self)
+        .wait(ctx)
     }
 }
