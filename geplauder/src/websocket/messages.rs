@@ -18,7 +18,7 @@ pub enum WebSocketMessage {
     NewMessage { message: MessageResponse },
     NewChannel { channel: Channel },
     NewServer { server: Server },
-    NewUser { user: UserResponse },
+    NewUser { server_id: Uuid, user: UserResponse },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
@@ -27,7 +27,7 @@ pub enum SerializedWebSocketMessage {
     Ready(Vec<Uuid>),
     AddChannel(Channel),
     AddServer(Server, Vec<Channel>), // TODO: Add user(s)
-    AddUser(UserResponse),
+    AddUser(Uuid, UserResponse),
     Data(String, Uuid),
 }
 

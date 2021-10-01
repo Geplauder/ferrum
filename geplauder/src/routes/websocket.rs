@@ -47,8 +47,8 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
 
                 ctx.text(serde_json::to_string(&WebSocketMessage::NewServer { server }).unwrap());
             }
-            SerializedWebSocketMessage::AddUser(user) => {
-                ctx.text(serde_json::to_string(&WebSocketMessage::NewUser { user }).unwrap());
+            SerializedWebSocketMessage::AddUser(server_id, user) => {
+                ctx.text(serde_json::to_string(&WebSocketMessage::NewUser { server_id, user }).unwrap());
             }
         }
     }

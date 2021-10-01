@@ -163,7 +163,10 @@ impl Handler<NewUser> for Server {
             for user in &users_on_server {
                 if let Some(recipient) = users.get(user) {
                     recipient
-                        .do_send(SerializedWebSocketMessage::AddUser(new_user.clone()))
+                        .do_send(SerializedWebSocketMessage::AddUser(
+                            msg.server_id,
+                            new_user.clone(),
+                        ))
                         .unwrap();
                 }
             }
