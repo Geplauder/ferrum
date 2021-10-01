@@ -8,10 +8,7 @@ use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::{
-    domain::{
-        channels::Channel,
-        servers::{NewServer, Server, ServerName},
-    },
+    domain::servers::{NewServer, Server, ServerName},
     error_chain_fmt,
     jwt::AuthorizationService,
     websocket::{messages, Server as WebSocketServer},
@@ -73,7 +70,7 @@ pub async fn create(
         .await
         .context("Failed to insert new server in the database.")?;
 
-    let channel = add_default_channel_to_server(&mut transaction, server.id)
+    add_default_channel_to_server(&mut transaction, server.id)
         .await
         .context("Failed to insert default server channel to the database.")?;
 
@@ -86,11 +83,7 @@ pub async fn create(
         .await
         .context("Failed to commit SQL transaction to store a new server.")?;
 
-    websocket_server.do_send(messages::NewServer::new(
-        auth.claims.id,
-        server,
-        vec![channel],
-    ));
+    websocket_server.do_send(messages::NewServer::new(auth.claims.id, server.id));
 
     Ok(HttpResponse::Ok().finish())
 }
@@ -128,21 +121,19 @@ async fn insert_server(
 async fn add_default_channel_to_server(
     transaction: &mut Transaction<'_, Postgres>,
     server_id: Uuid,
-) -> Result<Channel, sqlx::Error> {
-    let channel = sqlx::query_as!(
-        Channel,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
         r#"
         INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)
-        RETURNING *
         "#,
         Uuid::new_v4(),
         server_id,
         "general",
     )
-    .fetch_one(transaction)
+    .execute(transaction)
     .await?;
 
-    Ok(channel)
+    Ok(())
 }
 
 #[tracing::instrument(

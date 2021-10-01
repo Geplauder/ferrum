@@ -88,17 +88,12 @@ impl NewChannel {
 #[rtype(result = "()")]
 pub struct NewServer {
     pub user_id: Uuid,
-    pub server: Server,
-    pub channels: Vec<Channel>,
+    pub server_id: Uuid,
 }
 
 impl NewServer {
-    pub fn new(user_id: Uuid, server: Server, channels: Vec<Channel>) -> Self {
-        Self {
-            user_id,
-            server,
-            channels,
-        }
+    pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
+        Self { user_id, server_id }
     }
 }
 

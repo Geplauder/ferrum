@@ -4,7 +4,10 @@ use actix::{Actor, Context, ContextFutureSpawner, Handler, Recipient, WrapFuture
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::users::UserResponse, utilities::get_users_on_server};
+use crate::{
+    domain::{channels::Channel, users::UserResponse},
+    utilities::get_users_on_server,
+};
 
 use super::messages::{
     IdentifyUser, NewChannel, NewServer, NewUser, SendMessageToChannel, SerializedWebSocketMessage,
@@ -125,15 +128,48 @@ impl Handler<NewChannel> for Server {
 impl Handler<NewServer> for Server {
     type Result = ();
 
-    fn handle(&mut self, msg: NewServer, _ctx: &mut Self::Context) -> Self::Result {
-        if let Some(recipient) = self.users.get(&msg.user_id) {
-            recipient
-                .do_send(SerializedWebSocketMessage::AddServer(
-                    msg.server,
-                    msg.channels,
-                ))
-                .unwrap();
+    fn handle(&mut self, msg: NewServer, ctx: &mut Self::Context) -> Self::Result {
+        let db_pool = self.db_pool.clone();
+        let users = self.users.clone();
+
+        async move {
+            let server = sqlx::query_as!(
+                crate::domain::servers::Server,
+                r#"
+                SELECT *
+                FROM servers
+                WHERE servers.id = $1
+                "#,
+                msg.server_id
+            )
+            .fetch_one(&db_pool)
+            .await
+            .unwrap();
+
+            let channels = sqlx::query_as!(
+                Channel,
+                r#"
+                SELECT *
+                FROM channels
+                WHERE channels.server_id = $1
+                "#,
+                msg.server_id
+            )
+            .fetch_all(&db_pool)
+            .await
+            .unwrap();
+
+            if let Some(recipient) = users.get(&msg.user_id) {
+                recipient
+                    .do_send(SerializedWebSocketMessage::AddServer(
+                        server.clone(),
+                        channels,
+                    ))
+                    .unwrap();
+            }
         }
+        .into_actor(self)
+        .wait(ctx)
     }
 }
 

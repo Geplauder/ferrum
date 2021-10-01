@@ -57,6 +57,7 @@ pub async fn join(
         .context("Failed to commit SQL transaction to store a new users_servers entry.")?;
 
     websocket_server.do_send(messages::NewUser::new(auth.claims.id, *server_id));
+    websocket_server.do_send(messages::NewServer::new(auth.claims.id, *server_id));
 
     Ok(HttpResponse::Ok().finish())
 }

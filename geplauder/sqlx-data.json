@@ -161,6 +161,20 @@
       ]
     }
   },
+  "367c4be408fc282be1bee6eeea972e3f93d4e23bd66ceb4510f83bb91dbcf900": {
+    "query": "\n        INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "3e19ae7f4dc3e0f6aea6c81374d60403b6801ce4e4cae640126d46649c6ceb2a": {
     "query": "\n        WITH server_query AS (\n            SELECT servers.id as server_id\n            FROM servers\n            INNER JOIN channels ON channels.server_id = servers.id\n            WHERE channels.id = $1 LIMIT 1\n        )\n        SELECT users_servers.*\n        FROM users_servers\n        WHERE users_servers.user_id = $2 AND users_servers.server_id IN (SELECT server_id FROM server_query)\n        ",
     "describe": {
@@ -579,6 +593,50 @@
       ]
     }
   },
+  "c18d4cac123938985f9bfd595e584fa44bf18bf39576a3e594c5346b3e88bd55": {
+    "query": "\n                SELECT *\n                FROM channels\n                WHERE channels.server_id = $1\n                ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "server_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "c7e4a5d6ab6847d62422066f5c8c66e60ab4af814c16e927ed7720b7a0808ab8": {
     "query": "\n        INSERT INTO users_servers (id, user_id, server_id)\n        VALUES ($1, $2, $3)\n        ",
     "describe": {
@@ -655,8 +713,8 @@
       ]
     }
   },
-  "d39d947aaec68e9619dcaa4e7ae21f8828cc864eb360f97c2e35bca39a104310": {
-    "query": "\n        INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)\n        RETURNING *\n        ",
+  "d86f9b8662d94f4b3bd567d9228fcb7f4441d5aca83b47c175911b9e3f3f79b1": {
+    "query": "\n                SELECT *\n                FROM servers\n                WHERE servers.id = $1\n                ",
     "describe": {
       "columns": [
         {
@@ -666,13 +724,13 @@
         },
         {
           "ordinal": 1,
-          "name": "server_id",
-          "type_info": "Uuid"
+          "name": "name",
+          "type_info": "Text"
         },
         {
           "ordinal": 2,
-          "name": "name",
-          "type_info": "Text"
+          "name": "owner_id",
+          "type_info": "Uuid"
         },
         {
           "ordinal": 3,
@@ -687,9 +745,7 @@
       ],
       "parameters": {
         "Left": [
-          "Uuid",
-          "Uuid",
-          "Text"
+          "Uuid"
         ]
       },
       "nullable": [
