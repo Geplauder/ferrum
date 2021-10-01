@@ -184,7 +184,10 @@ pub async fn teardown(settings: &DatabaseSettings) {
         .expect("Failed to delete database.");
 
     connection
-        .execute(&*format!("DROP DATABASE \"{}\"", settings.database_name))
+        .execute(&*format!(
+            "DROP DATABASE \"{}\" WITH (FORCE)",
+            settings.database_name
+        ))
         .await
         .expect("Failed to delete database.");
 }
