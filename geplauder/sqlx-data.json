@@ -97,26 +97,6 @@
       ]
     }
   },
-  "339bc4f601cf4130a42fdbd13e8e23c5e6ac44314c15bb1eee8b96d89e3a4662": {
-    "query": "\n                WITH server_query AS (\n                    SELECT servers.id as server_id\n                    FROM servers\n                    INNER JOIN channels ON channels.server_id = servers.id\n                    WHERE channels.id = $1 LIMIT 1\n                )\n                SELECT users_servers.user_id\n                FROM users_servers\n                WHERE users_servers.user_id IS NOT NULL AND users_servers.server_id IN (SELECT server_id FROM server_query)\n                ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "user_id",
-          "type_info": "Uuid"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      },
-      "nullable": [
-        false
-      ]
-    }
-  },
   "35aaf3f9ff815f1903a19f926795cfcd6cfa3dd1e23d6b720ed81786deaa7a76": {
     "query": "\n            SELECT id, username, email, created_at, updated_at\n            FROM users\n            WHERE users.id = $1\n            ",
     "describe": {

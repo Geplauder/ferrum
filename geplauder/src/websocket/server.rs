@@ -105,27 +105,12 @@ impl Handler<NewChannel> for Server {
         let users = self.users.clone();
 
         async move {
-            // TODO: Simplify this query with msg.channel.server_id
-            let affected_users = sqlx::query!(
-                r#"
-                WITH server_query AS (
-                    SELECT servers.id as server_id
-                    FROM servers
-                    INNER JOIN channels ON channels.server_id = servers.id
-                    WHERE channels.id = $1 LIMIT 1
-                )
-                SELECT users_servers.user_id
-                FROM users_servers
-                WHERE users_servers.user_id IS NOT NULL AND users_servers.server_id IN (SELECT server_id FROM server_query)
-                "#,
-                msg.channel.id,
-            )
-            .fetch_all(&db_pool)
-            .await
-            .unwrap();
+            let affected_users = get_users_on_server(&db_pool, msg.channel.server_id)
+                .await
+                .unwrap();
 
             for user in &affected_users {
-                if let Some(recipient) = users.get(&user.user_id) {
+                if let Some(recipient) = users.get(user) {
                     recipient
                         .do_send(SerializedWebSocketMessage::AddChannel(msg.channel.clone()))
                         .unwrap();
