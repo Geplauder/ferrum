@@ -70,7 +70,9 @@ pub async fn register(
 
     insert_user(&mut transaction, &new_user)
         .await
-        .context("Failed to insert new user in the database.")?;
+        .map_err(|_| {
+            RegisterError::ValidationError("Please choose a different username/email!".to_string())
+        })?;
 
     transaction
         .commit()
