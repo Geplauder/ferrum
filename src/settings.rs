@@ -1,3 +1,5 @@
+// © https://github.com/LukeMathWalker/zero-to-production
+
 use std::convert::{TryFrom, TryInto};
 
 use config::{Config, ConfigError};
