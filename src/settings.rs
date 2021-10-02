@@ -81,7 +81,7 @@ impl TryFrom<String> for Environment {
 pub fn get_settings() -> Result<Settings, ConfigError> {
     let mut settings = Config::default();
     let base_path = std::env::current_dir().expect("Error while getting current directory");
-    let settings_directory = base_path.join("../settings");
+    let settings_directory = base_path.join("./settings");
 
     settings.merge(config::File::from(settings_directory.join("base")).required(true))?;
 

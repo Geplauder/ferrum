@@ -4,7 +4,7 @@ use futures::SinkExt;
 
 use crate::helpers::{get_next_websocket_message, send_websocket_message};
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn websocket_is_valid_for_valid_request() {
     // Arrange
 
@@ -15,7 +15,7 @@ async fn websocket_is_valid_for_valid_request() {
     assert_eq!(101, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn websocket_closes_successfully() {
     // Arrange
     let (_response, mut connection) = app.websocket().await;
@@ -39,7 +39,7 @@ async fn websocket_closes_successfully() {
     tokio::time::sleep(std::time::Duration::from_secs(1)).await; // Wait until server processed that message
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn websocket_receives_ready_message_after_successfull_identify() {
     // Arrange
     let (_response, mut connection) = app.websocket().await;
@@ -63,7 +63,7 @@ async fn websocket_receives_ready_message_after_successfull_identify() {
     }
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn websocket_does_not_receive_ready_message_after_missing_or_invalid_bearer_token_in_identify_message(
 ) {
     // Arrange
@@ -88,7 +88,7 @@ async fn websocket_does_not_receive_ready_message_after_missing_or_invalid_beare
     }
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn websocket_responds_to_ping_with_pong() {
     // Arrange
     let (_response, mut connection) = app.websocket().await;

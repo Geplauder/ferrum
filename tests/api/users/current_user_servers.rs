@@ -20,7 +20,7 @@ impl TestApplication {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn current_user_servers_returns_200_for_valid_bearer_token() {
     // Arrange
 
@@ -45,7 +45,7 @@ async fn current_user_servers_returns_200_for_valid_bearer_token() {
     assert_eq!(app.test_user().id, user_server.owner_id);
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn current_user_servers_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
 
@@ -65,7 +65,7 @@ async fn current_user_servers_returns_401_for_missing_or_invalid_bearer_token() 
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn current_user_servers_fails_if_there_is_a_database_error() {
     // Arrange
 

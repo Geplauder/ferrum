@@ -15,7 +15,7 @@ impl TestApplication {
     }
 }
 
-#[geplauder_macros::test]
+#[ferrum_macros::test]
 async fn register_returns_200_for_valid_json_data() {
     // Arrange
     let body = serde_json::json!({
@@ -31,7 +31,7 @@ async fn register_returns_200_for_valid_json_data() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[geplauder_macros::test]
+#[ferrum_macros::test]
 async fn register_persists_the_new_user() {
     // Arrange
     let body = serde_json::json!({
@@ -53,7 +53,7 @@ async fn register_persists_the_new_user() {
     assert_eq!("foo@bar.com", saved_user.email);
 }
 
-#[geplauder_macros::test]
+#[ferrum_macros::test]
 async fn register_fails_if_there_is_a_database_error() {
     // Arrange
     let body = serde_json::json!({
@@ -74,7 +74,7 @@ async fn register_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[geplauder_macros::test]
+#[ferrum_macros::test]
 async fn register_returns_400_when_data_is_missing() {
     // Arrange
     let body = serde_json::json!({
@@ -89,7 +89,7 @@ async fn register_returns_400_when_data_is_missing() {
     assert_eq!(400, response.status().as_u16());
 }
 
-#[geplauder_macros::test]
+#[ferrum_macros::test]
 async fn register_returns_400_when_data_is_invalid() {
     // Arrange
     let body = serde_json::json!({

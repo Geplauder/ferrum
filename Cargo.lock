@@ -741,8 +741,8 @@ dependencies = [
  "chrono",
  "config",
  "fake",
+ "ferrum-macros",
  "futures",
- "geplauder-macros",
  "jsonwebtoken",
  "once_cell",
  "quickcheck",
@@ -761,6 +761,15 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "validator",
+]
+
+[[package]]
+name = "ferrum-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -910,15 +919,6 @@ checksum = "501466ecc8a30d1d3b7fc9229b122b2ce8ed6e9d9223f1138d4babb253e51817"
 dependencies = [
  "typenum",
  "version_check",
-]
-
-[[package]]
-name = "geplauder-macros"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
 ]
 
 [[package]]

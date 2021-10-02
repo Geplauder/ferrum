@@ -15,7 +15,7 @@ impl TestApplication {
     }
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn current_user_returns_200_for_valid_bearer_token() {
     // Arrange
 
@@ -32,7 +32,7 @@ async fn current_user_returns_200_for_valid_bearer_token() {
     assert_eq!(app.test_user().name, user_data.username);
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn current_user_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
 
@@ -45,7 +45,7 @@ async fn current_user_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn current_user_fails_if_there_is_a_database_error() {
     // Arrange
 

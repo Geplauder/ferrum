@@ -1,4 +1,4 @@
-#[geplauder_macros::test]
+#[ferrum_macros::test]
 async fn health_check_works() {
     // Arrange
     let client = awc::Client::new();

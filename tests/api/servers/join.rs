@@ -20,7 +20,7 @@ impl TestApplication {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOtherServer")]
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn join_returns_200_for_valid_request() {
     // Arrange
 
@@ -36,7 +36,7 @@ async fn join_returns_200_for_valid_request() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOtherServer")]
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn join_persists_the_new_user_server_entry() {
     // Arrange
 
@@ -61,7 +61,7 @@ async fn join_persists_the_new_user_server_entry() {
     assert_eq!(app.test_server().id, saved_user_server.server_id);
 }
 
-#[geplauder_macros::test(strategy = "UserAndOtherServer")]
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn join_fails_if_there_is_a_database_error() {
     // Arrange
     sqlx::query!("ALTER TABLE users_servers DROP COLUMN user_id;")
@@ -81,7 +81,7 @@ async fn join_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOtherServer")]
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn join_returns_203_when_user_is_already_joined() {
     // Arrange
     app.put_join_server(
@@ -102,7 +102,7 @@ async fn join_returns_203_when_user_is_already_joined() {
     assert_eq!(204, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOtherServer")]
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn join_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
 

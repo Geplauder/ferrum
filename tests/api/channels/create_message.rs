@@ -27,7 +27,7 @@ impl TestApplication {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_returns_200_for_valid_request_data() {
     // Arrange
     let body = serde_json::json!({
@@ -47,7 +47,7 @@ async fn create_message_returns_200_for_valid_request_data() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_persists_the_new_message() {
     // Arrange
     let body = serde_json::json!({
@@ -80,7 +80,7 @@ async fn create_message_persists_the_new_message() {
     );
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_fails_if_there_is_a_database_error() {
     // Arrange
     let body = serde_json::json!({
@@ -105,7 +105,7 @@ async fn create_message_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_returns_404_when_channel_id_is_invalid() {
     // Arrange
     let body = serde_json::json!({
@@ -121,7 +121,7 @@ async fn create_message_returns_404_when_channel_id_is_invalid() {
     assert_eq!(404, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_returns_403_when_channel_id_is_not_found() {
     // Arrange
     let body = serde_json::json!({
@@ -141,7 +141,7 @@ async fn create_message_returns_403_when_channel_id_is_not_found() {
     assert_eq!(403, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_returns_400_when_data_is_missing() {
     // Arrange
     let body = serde_json::json!({});
@@ -159,7 +159,7 @@ async fn create_message_returns_400_when_data_is_missing() {
     assert_eq!(400, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_returns_400_when_data_is_invalid() {
     // Arrange
 
@@ -180,7 +180,7 @@ async fn create_message_returns_400_when_data_is_invalid() {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
     let body = serde_json::json!({
@@ -202,7 +202,7 @@ async fn create_message_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOtherServer")]
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn create_message_returns_403_when_user_has_no_access_to_the_channel() {
     // Arrange
     let body = serde_json::json!({
@@ -222,7 +222,7 @@ async fn create_message_returns_403_when_user_has_no_access_to_the_channel() {
     assert_eq!(403, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_sends_websocket_message_to_ready_users() {
     // Arrange
     let body = serde_json::json!({
@@ -262,7 +262,7 @@ async fn create_message_sends_websocket_message_to_ready_users() {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_message_does_not_send_websocket_message_to_non_bootstrapped_users() {
     // Arrange
     let body = serde_json::json!({

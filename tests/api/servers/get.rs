@@ -22,7 +22,7 @@ impl TestApplication {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_200_for_valid_request() {
     // Arrange
 
@@ -38,7 +38,7 @@ async fn get_server_returns_200_for_valid_request() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_valid_data_for_valid_response() {
     // Arrange
 
@@ -58,7 +58,7 @@ async fn get_server_returns_valid_data_for_valid_response() {
     assert_eq!(app.test_server().name, response.name);
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_fails_if_there_is_a_database_error() {
     // Arrange
     sqlx::query!("ALTER TABLE servers DROP COLUMN name;")
@@ -78,7 +78,7 @@ async fn get_server_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_404_when_server_id_is_invalid() {
     // Arrange
 
@@ -91,7 +91,7 @@ async fn get_server_returns_404_when_server_id_is_invalid() {
     assert_eq!(404, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_403_when_server_id_is_not_found() {
     // Arrange
 
@@ -104,7 +104,7 @@ async fn get_server_returns_403_when_server_id_is_not_found() {
     assert_eq!(403, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_server_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
 
@@ -119,7 +119,7 @@ async fn get_server_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOtherServer")]
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn get_server_returns_403_for_users_without_access() {
     // Arrange
 

@@ -24,7 +24,7 @@ impl TestApplication {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_200_for_valid_request() {
     // Arrange
     add_message_to_channel(
@@ -46,7 +46,7 @@ async fn get_messages_returns_200_for_valid_request() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_valid_data_for_valid_request() {
     // Arrange
     add_message_to_channel(
@@ -71,7 +71,7 @@ async fn get_messages_returns_valid_data_for_valid_request() {
     assert_eq!(1, response.len());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_fails_if_there_is_a_database_error() {
     // Arrange
     add_message_to_channel(
@@ -98,7 +98,7 @@ async fn get_messages_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
     add_message_to_channel(
@@ -119,7 +119,7 @@ async fn get_messages_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOtherServer")]
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn get_messages_returns_403_for_users_without_access() {
     // Arrange
     add_message_to_channel(
@@ -141,7 +141,7 @@ async fn get_messages_returns_403_for_users_without_access() {
     assert_eq!(403, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_404_when_channel_id_is_invalid() {
     // Arrange
     add_message_to_channel(
@@ -160,7 +160,7 @@ async fn get_messages_returns_404_when_channel_id_is_invalid() {
     assert_eq!(404, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn get_messages_returns_403_when_channel_id_is_not_found() {
     // Arrange
     add_message_to_channel(

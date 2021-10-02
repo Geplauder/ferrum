@@ -24,7 +24,7 @@ impl TestApplication {
     }
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn create_returns_200_for_valid_json_data() {
     // Arrange
     let body = serde_json::json!({
@@ -40,7 +40,7 @@ async fn create_returns_200_for_valid_json_data() {
     assert_eq!(200, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn create_persists_the_new_server() {
     // Arrange
     let body = serde_json::json!({
@@ -61,7 +61,7 @@ async fn create_persists_the_new_server() {
     assert_eq!(app.test_user().id, saved_server.owner_id);
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn create_also_joins_owner_to_the_server() {
     // Arrange
     let body = serde_json::json!({
@@ -81,7 +81,7 @@ async fn create_also_joins_owner_to_the_server() {
     assert_eq!(app.test_user().id, saved_users_servers.user_id);
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn create_also_creates_default_server_channel() {
     // Arrange
     let body = serde_json::json!({
@@ -101,7 +101,7 @@ async fn create_also_creates_default_server_channel() {
     assert_eq!("general", saved_channel.name);
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn create_fails_if_there_is_a_database_error() {
     // Arrange
     let body = serde_json::json!({
@@ -122,7 +122,7 @@ async fn create_fails_if_there_is_a_database_error() {
     assert_eq!(500, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn create_returns_400_when_data_is_missing() {
     // Arrange
     let body = serde_json::json!({});
@@ -136,7 +136,7 @@ async fn create_returns_400_when_data_is_missing() {
     assert_eq!(400, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn create_returns_400_when_data_is_invalid() {
     // Arrange
     let body = serde_json::json !({
@@ -152,7 +152,7 @@ async fn create_returns_400_when_data_is_invalid() {
     assert_eq!(400, response.status().as_u16());
 }
 
-#[geplauder_macros::test(strategy = "User")]
+#[ferrum_macros::test(strategy = "User")]
 async fn create_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
     let body = serde_json::json !({
@@ -168,7 +168,7 @@ async fn create_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
-#[geplauder_macros::test(strategy = "UserAndOwnServer")]
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn create_sends_new_server_to_owner_per_websocket() {
     // Arrange
     let body = serde_json::json!({
