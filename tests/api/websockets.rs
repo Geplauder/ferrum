@@ -105,3 +105,26 @@ async fn websocket_responds_to_ping_with_pong() {
         None => assert!(false, "Received no message"),
     }
 }
+
+#[ferrum_macros::test(strategy = "User")]
+async fn websocket_survives_malformed_messages() {
+    // Arrange
+    let (_response, mut connection) = app.websocket().await;
+
+    // Act
+    connection
+        .send(ws::Message::Text("foobar".into()))
+        .await
+        .unwrap();
+
+    // Assert
+    let response = app
+        .http_client()
+        .get(&format!("{}/health_check", &app.address))
+        .send()
+        .await
+        .expect("Failed to execute request.");
+
+    // Assert
+    assert!(response.status().is_success());
+}

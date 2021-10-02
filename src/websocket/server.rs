@@ -198,12 +198,12 @@ impl Handler<NewUser> for Server {
 
             for user in &users_on_server {
                 if let Some(recipient) = users.get(user) {
-                    recipient
-                        .do_send(SerializedWebSocketMessage::AddUser(
-                            msg.server_id,
-                            new_user.clone(),
-                        ))
-                        .unwrap();
+                    if let Err(error) = recipient.do_send(SerializedWebSocketMessage::AddUser(
+                        msg.server_id,
+                        new_user.clone(),
+                    )) {
+                        println!("Error in NewUser websocket message handler: {:?}", error);
+                    }
                 }
             }
         }
