@@ -1,11 +1,11 @@
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::channels::models::ChannelModel;
+use ferrum_db::{channels::queries::get_channels_for_server, users::queries::is_user_on_server};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{error_chain_fmt, jwt::AuthorizationService, utilities::is_user_on_server};
+use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum GetChannelsError {
@@ -44,28 +44,9 @@ pub async fn get_channels(
         return Err(GetChannelsError::ForbiddenError);
     }
 
-    let server_channels = get_server_channels(*server_id, &pool).await?;
+    let server_channels = get_channels_for_server(*server_id, &pool)
+        .await
+        .context("Failed to retrieve server channels.")?;
 
     Ok(HttpResponse::Ok().json(server_channels))
-}
-
-#[tracing::instrument(name = "Get server channels", skip(server_id, pool))]
-async fn get_server_channels(
-    server_id: Uuid,
-    pool: &PgPool,
-) -> Result<Vec<ChannelModel>, GetChannelsError> {
-    let channels = sqlx::query_as!(
-        ChannelModel,
-        r#"
-        SELECT *
-        FROM channels
-        WHERE channels.server_id = $1
-        "#,
-        server_id
-    )
-    .fetch_all(pool)
-    .await
-    .context("Failed to retrieve server channels.")?;
-
-    Ok(channels)
 }

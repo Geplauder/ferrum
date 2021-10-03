@@ -23,7 +23,7 @@ pub enum WebSocketMessage {
         channel: ChannelModel, // TODO: Use proper response models
     },
     NewServer {
-        server: ServerModel, // TODO: Use proper response models
+        server: ServerModel,         // TODO: Use proper response models
         channels: Vec<ChannelModel>, // TODO: Use proper response models
     },
     NewUser {

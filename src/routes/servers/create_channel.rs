@@ -4,8 +4,14 @@ use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::channels::models::{ChannelModel, ChannelName, NewChannel};
-use sqlx::{PgPool, Postgres, Transaction};
+use ferrum_db::{
+    channels::{
+        models::{ChannelName, NewChannel},
+        queries::insert_channel,
+    },
+    servers::queries::is_user_owner_of_server,
+};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
@@ -68,7 +74,7 @@ pub async fn create_channel(
         .try_into()
         .map_err(CreateChannelError::ValidationError)?;
 
-    let is_user_owner = check_if_user_is_owner(&pool, *server_id, auth.claims.id)
+    let is_user_owner = is_user_owner_of_server(&pool, *server_id, auth.claims.id)
         .await
         .context("Failed to check if user is owner of the server.")?;
 
@@ -93,48 +99,4 @@ pub async fn create_channel(
     websocket_server.do_send(messages::NewChannel::new(channel));
 
     Ok(HttpResponse::Ok().finish())
-}
-
-#[tracing::instrument(
-    name = "Check if user is owner of the server",
-    skip(pool, server_id, user_id)
-)]
-async fn check_if_user_is_owner(
-    pool: &PgPool,
-    server_id: Uuid,
-    user_id: Uuid,
-) -> Result<bool, sqlx::Error> {
-    let row = sqlx::query!("SELECT owner_id FROM servers WHERE id = $1", server_id)
-        .fetch_one(pool)
-        .await?;
-
-    Ok(row.owner_id == user_id)
-}
-
-#[tracing::instrument(
-    name = "Saving a new server channel to the database",
-    skip(transaction, new_channel, server_id)
-)]
-async fn insert_channel(
-    transaction: &mut Transaction<'_, Postgres>,
-    new_channel: &NewChannel,
-    server_id: Uuid,
-) -> Result<ChannelModel, sqlx::Error> {
-    let id = Uuid::new_v4();
-
-    let channel = sqlx::query_as!(
-        ChannelModel,
-        r#"
-        INSERT INTO channels (id, server_id, name)
-        VALUES ($1, $2, $3)
-        RETURNING *
-        "#,
-        id,
-        server_id,
-        new_channel.name.as_ref(),
-    )
-    .fetch_one(transaction)
-    .await?;
-
-    Ok(channel)
 }

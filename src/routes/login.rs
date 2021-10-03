@@ -4,6 +4,7 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
+use ferrum_db::users::queries::get_user_with_email;
 use sqlx::{types::Uuid, PgPool};
 
 use crate::{error_chain_fmt, jwt::Jwt, telemetry::spawn_blocking_with_tracing};
@@ -79,44 +80,23 @@ async fn validate_credentials(
     login_user: LoginUser,
     pool: &PgPool,
 ) -> Result<(Uuid, String), LoginError> {
-    let stored_user = get_stored_user(login_user.email.as_ref(), pool)
+    let stored_user = get_user_with_email(login_user.email.as_ref(), pool)
         .await
         .map_err(LoginError::UnexpectedError)?;
 
-    let (stored_user_id, stored_user_email, stored_user_password) = match stored_user {
+    let user = match stored_user {
         Some(value) => value,
         None => return Err(LoginError::LoginFailed(anyhow::anyhow!(""))),
     };
 
-    spawn_blocking_with_tracing(move || {
-        verify_password_hash(stored_user_password, login_user.password)
-    })
-    .await
-    .context("Failed to spawn blocking task.")
-    .map_err(LoginError::UnexpectedError)??;
+    let user_password = user.password.clone();
 
-    Ok((stored_user_id, stored_user_email))
-}
+    spawn_blocking_with_tracing(move || verify_password_hash(user_password, login_user.password))
+        .await
+        .context("Failed to spawn blocking task.")
+        .map_err(LoginError::UnexpectedError)??;
 
-#[tracing::instrument(name = "Get stored user", skip(email, pool))]
-async fn get_stored_user(
-    email: &str,
-    pool: &PgPool,
-) -> Result<Option<(Uuid, String, String)>, anyhow::Error> {
-    let row = sqlx::query!(
-        r#"
-        SELECT id, email, password
-        FROM users
-        WHERE email = $1
-        "#,
-        email
-    )
-    .fetch_optional(pool)
-    .await
-    .context("Failed to retrieve stored user.")?
-    .map(|row| (row.id, row.email, row.password));
-
-    Ok(row)
+    Ok((user.id, user.email))
 }
 
 #[tracing::instrument(

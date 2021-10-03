@@ -1,8 +1,7 @@
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::servers::models::ServerModel;
+use ferrum_db::users::queries::get_users_on_server;
 use sqlx::PgPool;
-use uuid::Uuid;
 
 use crate::{error_chain_fmt, jwt::AuthorizationService};
 
@@ -25,29 +24,9 @@ pub async fn current_user_servers(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CurrentUserServersError> {
-    let user_servers = get_user_servers(auth.claims.id, &pool).await?;
+    let user_servers = get_users_on_server(auth.claims.id, &pool)
+        .await
+        .context("Failed to retrieve server users")?;
 
     Ok(HttpResponse::Ok().json(user_servers))
-}
-
-#[tracing::instrument(name = "Get store user servers", skip(user_id, pool))]
-async fn get_user_servers(
-    user_id: Uuid,
-    pool: &PgPool,
-) -> Result<Vec<ServerModel>, CurrentUserServersError> {
-    let servers = sqlx::query_as!(
-        ServerModel,
-        r#"
-        SELECT servers.*
-        FROM users_servers
-        INNER JOIN servers ON users_servers.server_id = servers.id
-        WHERE users_servers.user_id = $1
-        "#,
-        user_id
-    )
-    .fetch_all(pool)
-    .await
-    .context("Failed to retrieve user servers")?;
-
-    Ok(servers)
 }
