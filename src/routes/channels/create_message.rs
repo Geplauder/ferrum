@@ -9,12 +9,19 @@ use ferrum_db::{
         models::{MessageContent, NewMessage},
         queries::insert_message,
     },
-    users::queries::does_user_have_access_to_channel,
+    users::queries::{does_user_have_access_to_channel, get_user_with_id},
 };
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{error_chain_fmt, jwt::AuthorizationService, websocket::Server};
+use crate::{
+    error_chain_fmt,
+    jwt::AuthorizationService,
+    websocket::{
+        messages::{SendMessageToChannel, WebSocketMessage},
+        Server,
+    },
+};
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {
@@ -57,12 +64,12 @@ impl ResponseError for CreateMessageError {
     }
 }
 
-#[tracing::instrument(name = "Create a new channel message", skip(body, pool, auth, _server), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Create a new channel message", skip(body, pool, auth, server), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn create_message(
     channel_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    _server: web::Data<Addr<Server>>,
+    server: web::Data<Addr<Server>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateMessageError> {
     let new_message: NewMessage = body
@@ -79,7 +86,7 @@ pub async fn create_message(
         .await
         .context("Failed to acquire a postgres connection from pool.")?;
 
-    let _message = insert_message(
+    let message = insert_message(
         &mut transaction,
         &pool,
         &new_message,
@@ -89,17 +96,21 @@ pub async fn create_message(
     .await
     .context("Failed to insert a new channel message to the database.")?;
 
-    todo!("Convert MessageModel to MessageResponse");
+    let user = get_user_with_id(auth.claims.id, &pool)
+        .await
+        .context("Failed to get user model")?;
 
-    // transaction
-    //     .commit()
-    //     .await
-    //     .context("Failed to commit SQL transaction to store a new channel message.")?;
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit SQL transaction to store a new channel message.")?;
 
-    // server.do_send(SendMessageToChannel::new(
-    //     *channel_id,
-    //     WebSocketMessage::NewMessage { message },
-    // ));
+    server.do_send(SendMessageToChannel::new(
+        *channel_id,
+        WebSocketMessage::NewMessage {
+            message: message.to_response(user),
+        },
+    ));
 
-    // Ok(HttpResponse::Ok().finish())
+    Ok(HttpResponse::Ok().finish())
 }

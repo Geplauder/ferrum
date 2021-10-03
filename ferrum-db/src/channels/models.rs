@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use ferrum_shared::channels::ChannelResponse;
 use uuid::Uuid;
 
 pub struct NewChannel {
@@ -12,6 +13,18 @@ pub struct ChannelModel {
     pub name: String,
     pub updated_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
+}
+
+impl From<ChannelModel> for ChannelResponse {
+    fn from(val: ChannelModel) -> Self {
+        ChannelResponse {
+            id: val.id,
+            server_id: val.server_id,
+            name: val.name,
+            updated_at: val.updated_at,
+            created_at: val.created_at,
+        }
+    }
 }
 
 pub struct ChannelName(String);

@@ -1,5 +1,8 @@
 use chrono::{DateTime, Utc};
+use ferrum_shared::messages::MessageResponse;
 use uuid::Uuid;
+
+use crate::users::models::UserModel;
 
 pub struct NewMessage {
     pub content: MessageContent,
@@ -13,6 +16,19 @@ pub struct MessageModel {
     pub content: String,
     pub updated_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
+}
+
+impl MessageModel {
+    pub fn to_response(&self, user: UserModel) -> MessageResponse {
+        MessageResponse {
+            id: self.id,
+            channel_id: self.channel_id,
+            user: user.into(),
+            content: self.content.to_owned(),
+            updated_at: self.updated_at,
+            created_at: self.created_at,
+        }
+    }
 }
 
 pub struct MessageContent(String);

@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum::domain::messages::MessageResponse;
+use ferrum_shared::messages::MessageResponse;
 use sqlx::PgPool;
 use uuid::Uuid;
 

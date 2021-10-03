@@ -22,7 +22,10 @@ pub async fn get_channels_for_server(
 }
 
 #[tracing::instrument(name = "Get channels for user", skip(user_id, pool))]
-pub async fn get_channels_for_user(user_id: Uuid, pool: &PgPool) -> Result<Vec<ChannelModel>, sqlx::Error> {
+pub async fn get_channels_for_user(
+    user_id: Uuid,
+    pool: &PgPool,
+) -> Result<Vec<ChannelModel>, sqlx::Error> {
     sqlx::query_as!(
         ChannelModel,
         r#"

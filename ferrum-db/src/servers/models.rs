@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use ferrum_shared::servers::ServerResponse;
 use uuid::Uuid;
 
 pub struct NewServer {
@@ -12,6 +13,18 @@ pub struct ServerModel {
     pub owner_id: Uuid,
     pub updated_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
+}
+
+impl From<ServerModel> for ServerResponse {
+    fn from(val: ServerModel) -> Self {
+        Self {
+            id: val.id,
+            name: val.name,
+            owner_id: val.owner_id,
+            updated_at: val.updated_at,
+            created_at: val.created_at,
+        }
+    }
 }
 
 pub struct ServerName(String);

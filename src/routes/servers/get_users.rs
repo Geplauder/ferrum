@@ -2,6 +2,7 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::users::queries::{get_users_on_server, is_user_on_server};
+use ferrum_shared::users::UserResponse;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -44,9 +45,12 @@ pub async fn get_users(
         return Err(GetUsersError::ForbiddenError);
     }
 
-    let server_users = get_users_on_server(*server_id, &pool)
+    let server_users: Vec<UserResponse> = get_users_on_server(*server_id, &pool)
         .await
-        .context("Failed to retrieve server users")?;
+        .context("Failed to retrieve server users")?
+        .iter()
+        .map(|x| x.clone().into())
+        .collect();
 
     Ok(HttpResponse::Ok().json(server_users))
 }
