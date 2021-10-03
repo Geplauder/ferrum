@@ -159,6 +159,8 @@ impl Handler<NewServer> for Server {
             .await
             .unwrap();
 
+            // TODO: Also send users
+
             if let Some(recipient) = users.get(&msg.user_id) {
                 recipient
                     .do_send(SerializedWebSocketMessage::AddServer(

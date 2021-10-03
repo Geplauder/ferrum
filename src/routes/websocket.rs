@@ -45,7 +45,7 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
             SerializedWebSocketMessage::AddServer(server, channels) => {
                 self.channels.extend(channels.iter().map(|x| x.id));
 
-                ctx.text(serde_json::to_string(&WebSocketMessage::NewServer { server }).unwrap());
+                ctx.text(serde_json::to_string(&WebSocketMessage::NewServer { server, channels }).unwrap());
             }
             SerializedWebSocketMessage::AddUser(server_id, user) => {
                 ctx.text(

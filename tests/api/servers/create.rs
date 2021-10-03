@@ -195,8 +195,9 @@ async fn create_sends_new_server_to_owner_per_websocket() {
     let message = get_next_websocket_message(&mut connection).await;
 
     match message {
-        Some(WebSocketMessage::NewServer { server: new_server }) => {
-            assert_eq!("foobar", new_server.name)
+        Some(WebSocketMessage::NewServer { server: new_server, channels}) => {
+            assert_eq!("foobar", new_server.name);
+            assert_eq!(1, channels.len());
         }
         Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
         None => assert!(false, "Received no message"),

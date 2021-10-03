@@ -146,7 +146,10 @@ async fn join_sends_new_server_to_joining_user() {
     let message = get_next_websocket_message(&mut connection).await;
 
     match message {
-        Some(WebSocketMessage::NewServer { server: new_server }) => {
+        Some(WebSocketMessage::NewServer {
+            server: new_server,
+            channels: _,
+        }) => {
             assert_eq!(app.test_server().name, new_server.name);
         }
         Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),

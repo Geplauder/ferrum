@@ -17,7 +17,7 @@ pub enum WebSocketMessage {
     Identify { bearer: String },
     NewMessage { message: MessageResponse },
     NewChannel { channel: Channel },
-    NewServer { server: Server },
+    NewServer { server: Server, channels: Vec<Channel> },
     NewUser { server_id: Uuid, user: UserResponse },
 }
 
