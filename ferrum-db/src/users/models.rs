@@ -1,4 +1,7 @@
-use argon2::{Argon2, PasswordHasher, password_hash::{SaltString, rand_core::OsRng}};
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Argon2, PasswordHasher,
+};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
@@ -12,6 +15,7 @@ pub struct NewUser {
 pub struct UserModel {
     pub id: Uuid,
     pub username: String,
+    pub password: String,
     pub email: String,
     pub updated_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,

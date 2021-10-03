@@ -1,14 +1,13 @@
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::{messages::models::MessageModel, users::models::UserModel};
+use ferrum_db::{
+    messages::queries::get_messages_for_channel, users::queries::does_user_have_access_to_channel,
+};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{
-    domain::messages::MessageResponse, error_chain_fmt, jwt::AuthorizationService,
-    utilities::does_user_have_access_to_channel,
-};
+use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum GetMessagesError {
@@ -43,47 +42,11 @@ pub async fn get_messages(
         .await
         .map_err(GetMessagesError::ForbiddenError)?;
 
-    let channel_messages = get_channel_messages(*channel_id, &pool).await?;
-
-    Ok(HttpResponse::Ok().json(channel_messages))
-}
-
-#[tracing::instrument(name = "Get messages from channel", skip(channel_id, pool))]
-async fn get_channel_messages(
-    channel_id: Uuid,
-    pool: &PgPool,
-) -> Result<Vec<MessageResponse>, GetMessagesError> {
-    let messages = sqlx::query_as!(
-        MessageModel,
-        r#"
-        SELECT *
-        FROM messages
-        WHERE messages.channel_id = $1
-        "#,
-        channel_id,
-    )
-    .fetch_all(pool)
-    .await
-    .context("Failed to retrieve channel messages.")?;
-
-    let mut data = vec![];
-
-    for message in &messages {
-        let user = sqlx::query_as!(
-            UserModel,
-            r#"
-            SELECT id, username, email, created_at, updated_at
-            FROM users
-            WHERE users.id = $1
-            "#,
-            message.user_id,
-        )
-        .fetch_one(pool)
+    let _channel_messages = get_messages_for_channel(*channel_id, &pool)
         .await
-        .context("")?;
+        .context("Failed to retrieve channel messages.")?;
 
-        data.push(MessageResponse::new(message, &user));
-    }
+    todo!("Return MessageResponse");
 
-    Ok(data)
+    // Ok(HttpResponse::Ok().json(channel_messages))
 }

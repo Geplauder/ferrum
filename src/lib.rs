@@ -6,7 +6,6 @@ pub mod jwt;
 pub mod routes;
 pub mod settings;
 pub mod telemetry;
-pub mod utilities;
 pub mod websocket;
 
 pub fn error_chain_fmt(

@@ -3,8 +3,11 @@ use std::convert::{TryFrom, TryInto};
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::users::models::{NewUser, UserEmail, UserName, UserPassword};
-use sqlx::{types::Uuid, PgPool, Postgres, Transaction};
+use ferrum_db::users::{
+    models::{NewUser, UserEmail, UserName, UserPassword},
+    queries::insert_user,
+};
+use sqlx::PgPool;
 
 use crate::error_chain_fmt;
 
@@ -76,30 +79,4 @@ pub async fn register(
         .context("Failed to commit SQL transaction to store a new user.")?;
 
     Ok(HttpResponse::Ok().finish())
-}
-
-#[tracing::instrument(
-    name = "Saving a new user to the database",
-    skip(transaction, new_user)
-)]
-async fn insert_user(
-    transaction: &mut Transaction<'_, Postgres>,
-    new_user: &NewUser,
-) -> Result<(), sqlx::Error> {
-    let id = Uuid::new_v4();
-
-    sqlx::query!(
-        r#"
-    INSERT INTO users (id, username, email, password)
-    VALUES ($1, $2, $3, $4)
-    "#,
-        id,
-        new_user.name.as_ref(),
-        new_user.email.as_ref(),
-        new_user.password.as_ref()
-    )
-    .execute(transaction)
-    .await?;
-
-    Ok(())
 }

@@ -1,11 +1,11 @@
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::servers::models::ServerModel;
+use ferrum_db::{servers::queries::get_server_with_id, users::queries::is_user_on_server};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{error_chain_fmt, jwt::AuthorizationService, utilities::is_user_on_server};
+use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum GetServerError {
@@ -44,26 +44,9 @@ pub async fn get(
         return Err(GetServerError::ForbiddenError);
     }
 
-    let server = get_server(*server_id, &pool)
+    let server = get_server_with_id(*server_id, &pool)
         .await
         .context("Error while fetching server")?;
 
     Ok(HttpResponse::Ok().json(server))
-}
-
-#[tracing::instrument(name = "Get server", skip(server_id, pool))]
-async fn get_server(server_id: Uuid, pool: &PgPool) -> Result<ServerModel, sqlx::Error> {
-    let server = sqlx::query_as!(
-        ServerModel,
-        r#"
-        SELECT *
-        FROM servers
-        WHERE servers.id = $1
-        "#,
-        server_id
-    )
-    .fetch_one(pool)
-    .await?;
-
-    Ok(server)
 }

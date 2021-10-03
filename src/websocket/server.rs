@@ -1,11 +1,18 @@
 use std::collections::HashMap;
 
 use actix::{Actor, Context, ContextFutureSpawner, Handler, Recipient, WrapFuture};
-use ferrum_db::{channels::models::ChannelModel, servers::models::ServerModel};
+use ferrum_db::{
+    channels::{
+        models::ChannelModel,
+        queries::{get_channels_for_server, get_channels_for_user},
+    },
+    servers::{models::ServerModel, queries::get_server_with_id},
+    users::queries::{get_user_with_id, get_users_on_server},
+};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::users::UserResponse, utilities::get_users_on_server};
+use crate::domain::users::UserResponse;
 
 use super::messages::{
     IdentifyUser, NewChannel, NewServer, NewUser, SendMessageToChannel, SerializedWebSocketMessage,
@@ -56,21 +63,10 @@ impl Handler<IdentifyUser> for Server {
         let addr = msg.addr;
         let db_pool = self.db_pool.clone();
 
+        let user_id = msg.user_id;
+
         async move {
-            let channels = sqlx::query!(
-                r#"
-                WITH server_query AS (SELECT servers.id as server_id
-                    FROM users_servers
-                    INNER JOIN servers ON servers.id = users_servers.server_id
-                )
-                SELECT channels.id
-                FROM channels
-                WHERE channels.server_id IN (SELECT server_id FROM server_query)
-                "#
-            )
-            .fetch_all(&db_pool)
-            .await
-            .unwrap();
+            let channels = get_channels_for_user(user_id, &db_pool).await.unwrap();
 
             addr.do_send(SerializedWebSocketMessage::Ready(
                 channels.iter().map(|x| x.id).collect(),
@@ -106,12 +102,12 @@ impl Handler<NewChannel> for Server {
         let users = self.users.clone();
 
         async move {
-            let affected_users = get_users_on_server(&db_pool, msg.channel.server_id)
+            let affected_users = get_users_on_server(msg.channel.server_id, &db_pool)
                 .await
                 .unwrap();
 
             for user in &affected_users {
-                if let Some(recipient) = users.get(user) {
+                if let Some(recipient) = users.get(&user.id) {
                     recipient
                         .do_send(SerializedWebSocketMessage::AddChannel(msg.channel.clone()))
                         .unwrap();
@@ -131,31 +127,11 @@ impl Handler<NewServer> for Server {
         let users = self.users.clone();
 
         async move {
-            let server = sqlx::query_as!(
-                ServerModel,
-                r#"
-                SELECT *
-                FROM servers
-                WHERE servers.id = $1
-                "#,
-                msg.server_id
-            )
-            .fetch_one(&db_pool)
-            .await
-            .unwrap();
+            let server = get_server_with_id(msg.server_id, &db_pool).await.unwrap();
 
-            let channels = sqlx::query_as!(
-                ChannelModel,
-                r#"
-                SELECT *
-                FROM channels
-                WHERE channels.server_id = $1
-                "#,
-                msg.server_id
-            )
-            .fetch_all(&db_pool)
-            .await
-            .unwrap();
+            let channels = get_channels_for_server(msg.server_id, &db_pool)
+                .await
+                .unwrap();
 
             // TODO: Also send users
 
@@ -181,31 +157,22 @@ impl Handler<NewUser> for Server {
         let users = self.users.clone();
 
         async move {
-            let new_user = sqlx::query_as!(
-                UserResponse,
-                r#"
-                SELECT id, username, created_at, updated_at
-                FROM users
-                WHERE id = $1
-                "#,
-                msg.user_id
-            )
-            .fetch_one(&db_pool)
-            .await
-            .unwrap();
+            let new_user = get_user_with_id(msg.user_id, &db_pool).await.unwrap();
 
-            let users_on_server = get_users_on_server(&db_pool, msg.server_id).await.unwrap();
+            todo!("Convert UserModel to UserResponse");
 
-            for user in &users_on_server {
-                if let Some(recipient) = users.get(user) {
-                    if let Err(error) = recipient.do_send(SerializedWebSocketMessage::AddUser(
-                        msg.server_id,
-                        new_user.clone(),
-                    )) {
-                        println!("Error in NewUser websocket message handler: {:?}", error);
-                    }
-                }
-            }
+            // let users_on_server = get_users_on_server(msg.server_id, &db_pool).await.unwrap();
+
+            // for user in &users_on_server {
+            //     if let Some(recipient) = users.get(&user.id) {
+            //         if let Err(error) = recipient.do_send(SerializedWebSocketMessage::AddUser(
+            //             msg.server_id,
+            //             new_user.clone(),
+            //         )) {
+            //             println!("Error in NewUser websocket message handler: {:?}", error);
+            //         }
+            //     }
+            // }
         }
         .into_actor(self)
         .wait(ctx)

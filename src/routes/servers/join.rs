@@ -2,7 +2,8 @@ use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use sqlx::{PgPool, Postgres, Transaction};
+use ferrum_db::servers::queries::add_user_to_server;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
@@ -49,39 +50,7 @@ pub async fn join(
         .await
         .context("Failed to acquire a postgres connection from the pool")?;
 
-    insert_user_server(&mut transaction, auth.claims.id, *server_id).await?;
-
-    transaction
-        .commit()
-        .await
-        .context("Failed to commit SQL transaction to store a new users_servers entry.")?;
-
-    websocket_server.do_send(messages::NewServer::new(auth.claims.id, *server_id));
-    websocket_server.do_send(messages::NewUser::new(auth.claims.id, *server_id));
-
-    Ok(HttpResponse::Ok().finish())
-}
-
-#[tracing::instrument(name = "Join server", skip(transaction, user_id, server_id))]
-async fn insert_user_server(
-    transaction: &mut Transaction<'_, Postgres>,
-    user_id: Uuid,
-    server_id: Uuid,
-) -> Result<(), JoinError> {
-    let id = Uuid::new_v4();
-
-    match sqlx::query!(
-        r#"
-        INSERT INTO users_servers (id, user_id, server_id)
-        VALUES ($1, $2, $3)
-        "#,
-        id,
-        user_id,
-        server_id,
-    )
-    .execute(transaction)
-    .await
-    {
+    match add_user_to_server(&mut transaction, auth.claims.id, *server_id).await {
         Ok(_) => Ok(()),
         Err(error) => {
             if error.as_database_error().unwrap().code().unwrap() == "23505" {
@@ -92,5 +61,15 @@ async fn insert_user_server(
         }
     }
     .context("Failed to insert new users_servers entry in the database")
-    .map_err(JoinError::UnexpectedError)
+    .map_err(JoinError::UnexpectedError)?;
+
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit SQL transaction to store a new users_servers entry.")?;
+
+    websocket_server.do_send(messages::NewServer::new(auth.claims.id, *server_id));
+    websocket_server.do_send(messages::NewUser::new(auth.claims.id, *server_id));
+
+    Ok(HttpResponse::Ok().finish())
 }

@@ -1,11 +1,11 @@
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::users::models::UserModel;
+use ferrum_db::users::queries::{get_users_on_server, is_user_on_server};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{error_chain_fmt, jwt::AuthorizationService, utilities::is_user_on_server};
+use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum GetUsersError {
@@ -44,26 +44,9 @@ pub async fn get_users(
         return Err(GetUsersError::ForbiddenError);
     }
 
-    let server_users = get_server_users(*server_id, &pool).await?;
+    let server_users = get_users_on_server(*server_id, &pool)
+        .await
+        .context("Failed to retrieve server users")?;
 
     Ok(HttpResponse::Ok().json(server_users))
-}
-
-#[tracing::instrument(name = "Get server users", skip(server_id, pool))]
-async fn get_server_users(server_id: Uuid, pool: &PgPool) -> Result<Vec<UserModel>, GetUsersError> {
-    let users = sqlx::query_as!(
-        UserModel,
-        r#"
-        SELECT users.id, users.username, users.email, users.created_at, users.updated_at
-        FROM users_servers
-        INNER JOIN users ON users_servers.user_id = users.id
-        WHERE users_servers.server_id = $1
-        "#,
-        server_id,
-    )
-    .fetch_all(pool)
-    .await
-    .context("Failed to retrieve server users")?;
-
-    Ok(users)
 }
