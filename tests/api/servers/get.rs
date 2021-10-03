@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum::domain::servers::Server;
+use ferrum_db::servers::models::ServerModel;
 use uuid::Uuid;
 
 use crate::helpers::TestApplication;
@@ -49,7 +49,7 @@ async fn get_server_returns_valid_data_for_valid_response() {
             Some(app.test_user_token()),
         )
         .await
-        .json::<Server>()
+        .json::<ServerModel>()
         .await
         .unwrap();
 

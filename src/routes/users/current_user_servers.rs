@@ -1,9 +1,10 @@
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
+use ferrum_db::servers::models::ServerModel;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::servers::Server, error_chain_fmt, jwt::AuthorizationService};
+use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum CurrentUserServersError {
@@ -33,9 +34,9 @@ pub async fn current_user_servers(
 async fn get_user_servers(
     user_id: Uuid,
     pool: &PgPool,
-) -> Result<Vec<Server>, CurrentUserServersError> {
+) -> Result<Vec<ServerModel>, CurrentUserServersError> {
     let servers = sqlx::query_as!(
-        Server,
+        ServerModel,
         r#"
         SELECT servers.*
         FROM users_servers

@@ -1,13 +1,11 @@
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
+use ferrum_db::channels::models::ChannelModel;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{
-    domain::channels::Channel, error_chain_fmt, jwt::AuthorizationService,
-    utilities::is_user_on_server,
-};
+use crate::{error_chain_fmt, jwt::AuthorizationService, utilities::is_user_on_server};
 
 #[derive(thiserror::Error)]
 pub enum GetChannelsError {
@@ -55,9 +53,9 @@ pub async fn get_channels(
 async fn get_server_channels(
     server_id: Uuid,
     pool: &PgPool,
-) -> Result<Vec<Channel>, GetChannelsError> {
+) -> Result<Vec<ChannelModel>, GetChannelsError> {
     let channels = sqlx::query_as!(
-        Channel,
+        ChannelModel,
         r#"
         SELECT *
         FROM channels

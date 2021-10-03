@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum::domain::users::User;
+use ferrum_db::users::models::UserModel;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -52,7 +52,7 @@ async fn get_users_returns_valid_data_for_valid_request() {
             Some(app.test_user_token()),
         )
         .await
-        .json::<Vec<User>>()
+        .json::<Vec<UserModel>>()
         .await
         .unwrap();
 

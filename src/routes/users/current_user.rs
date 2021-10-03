@@ -1,9 +1,10 @@
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
+use ferrum_db::users::models::UserModel;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{domain::users::User, error_chain_fmt, jwt::AuthorizationService};
+use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum UsersError {
@@ -30,9 +31,9 @@ pub async fn current_user(
 }
 
 #[tracing::instrument(name = "Get stored user", skip(user_id, pool))]
-async fn get_user_data(user_id: Uuid, pool: &PgPool) -> Result<User, UsersError> {
+async fn get_user_data(user_id: Uuid, pool: &PgPool) -> Result<UserModel, UsersError> {
     let user = sqlx::query_as!(
-        User,
+        UserModel,
         r#"
         SELECT id, username, email, updated_at, created_at
         FROM users

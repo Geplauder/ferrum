@@ -1,16 +1,12 @@
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
+use ferrum_db::{messages::models::MessageModel, users::models::UserModel};
 use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
-    domain::{
-        messages::{Message, MessageResponse},
-        users::User,
-    },
-    error_chain_fmt,
-    jwt::AuthorizationService,
+    domain::messages::MessageResponse, error_chain_fmt, jwt::AuthorizationService,
     utilities::does_user_have_access_to_channel,
 };
 
@@ -58,7 +54,7 @@ async fn get_channel_messages(
     pool: &PgPool,
 ) -> Result<Vec<MessageResponse>, GetMessagesError> {
     let messages = sqlx::query_as!(
-        Message,
+        MessageModel,
         r#"
         SELECT *
         FROM messages
@@ -74,7 +70,7 @@ async fn get_channel_messages(
 
     for message in &messages {
         let user = sqlx::query_as!(
-            User,
+            UserModel,
             r#"
             SELECT id, username, email, created_at, updated_at
             FROM users

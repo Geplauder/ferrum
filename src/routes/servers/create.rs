@@ -4,11 +4,11 @@ use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
+use ferrum_db::servers::models::{NewServer, ServerModel, ServerName};
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::{
-    domain::servers::{NewServer, Server, ServerName},
     error_chain_fmt,
     jwt::AuthorizationService,
     websocket::{messages, Server as WebSocketServer},
@@ -96,9 +96,9 @@ async fn insert_server(
     transaction: &mut Transaction<'_, Postgres>,
     new_server: &NewServer,
     user_id: Uuid,
-) -> Result<Server, sqlx::Error> {
+) -> Result<ServerModel, sqlx::Error> {
     let server = sqlx::query_as!(
-        Server,
+        ServerModel,
         r#"
         INSERT INTO servers (id, name, owner_id)
         VALUES ($1, $2, $3)

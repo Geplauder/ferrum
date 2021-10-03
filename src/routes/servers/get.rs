@@ -1,13 +1,11 @@
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
+use ferrum_db::servers::models::ServerModel;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{
-    domain::servers::Server, error_chain_fmt, jwt::AuthorizationService,
-    utilities::is_user_on_server,
-};
+use crate::{error_chain_fmt, jwt::AuthorizationService, utilities::is_user_on_server};
 
 #[derive(thiserror::Error)]
 pub enum GetServerError {
@@ -54,9 +52,9 @@ pub async fn get(
 }
 
 #[tracing::instrument(name = "Get server", skip(server_id, pool))]
-async fn get_server(server_id: Uuid, pool: &PgPool) -> Result<Server, sqlx::Error> {
+async fn get_server(server_id: Uuid, pool: &PgPool) -> Result<ServerModel, sqlx::Error> {
     let server = sqlx::query_as!(
-        Server,
+        ServerModel,
         r#"
         SELECT *
         FROM servers

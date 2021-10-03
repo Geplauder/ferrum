@@ -1,0 +1,19 @@
+[package]
+name = "ferrum-db"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sqlx = { version = "0.5.1", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline"] }
+validator = "0.14.0"
+serde = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+uuid = { version = "0.8", features = ["v4", "serde"] }
+argon2 = { version = "0.3", features = ["std"] }
+
+[dev-dependencies]
+fake = "~2.3.0"
+quickcheck = "0.9.2"
+quickcheck_macros = "0.9.1"

@@ -4,14 +4,15 @@ use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
+use ferrum_db::{
+    messages::models::{MessageContent, MessageModel, NewMessage},
+    users::models::UserModel,
+};
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::{
-    domain::{
-        messages::{Message, MessageContent, MessageResponse, NewMessage},
-        users::User,
-    },
+    domain::messages::MessageResponse,
     error_chain_fmt,
     jwt::AuthorizationService,
     utilities::does_user_have_access_to_channel,
@@ -121,7 +122,7 @@ async fn insert_message(
     let id = Uuid::new_v4();
 
     let message = sqlx::query_as!(
-        Message,
+        MessageModel,
         r#"
         INSERT INTO messages (id, channel_id, user_id, content)
         VALUES ($1, $2, $3, $4)
@@ -136,7 +137,7 @@ async fn insert_message(
     .await?;
 
     let user = sqlx::query_as!(
-        User,
+        UserModel,
         r#"
         SELECT id, username, email, created_at, updated_at
         FROM users

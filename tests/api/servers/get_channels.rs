@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum::domain::channels::Channel;
+use ferrum_db::channels::models::ChannelModel;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -52,7 +52,7 @@ async fn get_channels_returns_valid_data_for_valid_request() {
             Some(app.test_user_token()),
         )
         .await
-        .json::<Vec<Channel>>()
+        .json::<Vec<ChannelModel>>()
         .await
         .unwrap();
 
