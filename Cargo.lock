@@ -741,6 +741,7 @@ dependencies = [
  "chrono",
  "config",
  "fake",
+ "ferrum-db",
  "ferrum-macros",
  "futures",
  "jsonwebtoken",
@@ -759,6 +760,21 @@ dependencies = [
  "tracing-futures",
  "tracing-log",
  "tracing-subscriber",
+ "uuid",
+ "validator",
+]
+
+[[package]]
+name = "ferrum-db"
+version = "0.1.0"
+dependencies = [
+ "argon2",
+ "chrono",
+ "fake",
+ "quickcheck",
+ "quickcheck_macros",
+ "serde 1.0.130",
+ "sqlx",
  "uuid",
  "validator",
 ]

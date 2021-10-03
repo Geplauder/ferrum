@@ -1,13 +1,11 @@
 use std::collections::HashMap;
 
 use actix::{Actor, Context, ContextFutureSpawner, Handler, Recipient, WrapFuture};
+use ferrum_db::{channels::models::ChannelModel, servers::models::ServerModel};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{
-    domain::{channels::Channel, users::UserResponse},
-    utilities::get_users_on_server,
-};
+use crate::{domain::users::UserResponse, utilities::get_users_on_server};
 
 use super::messages::{
     IdentifyUser, NewChannel, NewServer, NewUser, SendMessageToChannel, SerializedWebSocketMessage,
@@ -134,7 +132,7 @@ impl Handler<NewServer> for Server {
 
         async move {
             let server = sqlx::query_as!(
-                crate::domain::servers::Server,
+                ServerModel,
                 r#"
                 SELECT *
                 FROM servers
@@ -147,7 +145,7 @@ impl Handler<NewServer> for Server {
             .unwrap();
 
             let channels = sqlx::query_as!(
-                Channel,
+                ChannelModel,
                 r#"
                 SELECT *
                 FROM channels

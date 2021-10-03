@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum::domain::servers::Server;
+use ferrum_db::servers::models::ServerModel;
 
 use crate::helpers::TestApplication;
 
@@ -37,7 +37,7 @@ async fn current_user_servers_returns_200_for_valid_bearer_token() {
     // Assert
     assert_eq!(200, response.status().as_u16());
 
-    let user_servers = response.json::<Vec<Server>>().await.unwrap();
+    let user_servers = response.json::<Vec<ServerModel>>().await.unwrap();
     let user_server = user_servers.first().unwrap();
 
     assert_eq!(app.test_server().id, user_server.id);

@@ -3,12 +3,10 @@ use std::convert::{TryFrom, TryInto};
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
+use ferrum_db::users::models::{NewUser, UserEmail, UserName, UserPassword};
 use sqlx::{types::Uuid, PgPool, Postgres, Transaction};
 
-use crate::{
-    domain::users::{NewUser, UserEmail, UserName, UserPassword},
-    error_chain_fmt,
-};
+use crate::error_chain_fmt;
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {

@@ -4,11 +4,11 @@ use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
+use ferrum_db::channels::models::{ChannelModel, ChannelName, NewChannel};
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use crate::{
-    domain::channels::{Channel, ChannelName, NewChannel},
     error_chain_fmt,
     jwt::AuthorizationService,
     websocket::{messages, Server},
@@ -119,11 +119,11 @@ async fn insert_channel(
     transaction: &mut Transaction<'_, Postgres>,
     new_channel: &NewChannel,
     server_id: Uuid,
-) -> Result<Channel, sqlx::Error> {
+) -> Result<ChannelModel, sqlx::Error> {
     let id = Uuid::new_v4();
 
     let channel = sqlx::query_as!(
-        Channel,
+        ChannelModel,
         r#"
         INSERT INTO channels (id, server_id, name)
         VALUES ($1, $2, $3)
