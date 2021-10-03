@@ -1,5 +1,5 @@
 # Ferrum
-[![codecov](https://codecov.io/gh/Cryma/ferrum/branch/main/graph/badge.svg?token=VPY6FPONH3)](https://codecov.io/gh/Cryma/ferrum)
+[![codecov](https://codecov.io/gh/Geplauder/ferrum/branch/main/graph/badge.svg?token=ns58EurBKz)](https://codecov.io/gh/Geplauder/ferrum)
 ![](../../actions/workflows/rust.yml/badge.svg)
 
 Ferrum is the backend for Geplauder, built with actix-web and sqlx.
