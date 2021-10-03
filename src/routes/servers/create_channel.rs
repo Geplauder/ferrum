@@ -96,7 +96,7 @@ pub async fn create_channel(
         .await
         .context("Failed to commit SQL transaction to store a new server channel.")?;
 
-    websocket_server.do_send(messages::NewChannel::new(channel));
+    websocket_server.do_send(messages::NewChannel::new(channel.into()));
 
     Ok(HttpResponse::Ok().finish())
 }

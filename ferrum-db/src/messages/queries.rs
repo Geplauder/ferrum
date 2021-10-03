@@ -19,24 +19,6 @@ pub async fn get_messages_for_channel(
     )
     .fetch_all(pool)
     .await
-    // let mut data = vec![];
-
-    // for message in &messages {
-    //     let user = sqlx::query_as!(
-    //         UserModel,
-    //         r#"
-    //         SELECT id, username, email, created_at, updated_at
-    //         FROM users
-    //         WHERE users.id = $1
-    //         "#,
-    //         message.user_id,
-    //     )
-    //     .fetch_one(pool)
-    //     .await
-    //     .context("")?;
-
-    //     data.push(MessageResponse::new(message, &user));
-    // }
 }
 
 #[tracing::instrument(
@@ -64,18 +46,4 @@ pub async fn insert_message(
     )
     .fetch_one(transaction)
     .await
-
-    // let user = sqlx::query_as!(
-    //     UserModel,
-    //     r#"
-    //     SELECT id, username, email, created_at, updated_at
-    //     FROM users
-    //     WHERE users.id = $1
-    //     "#,
-    //     message.user_id,
-    // )
-    // .fetch_one(pool)
-    // .await?;
-
-    // Ok(MessageResponse::new(&message, &user))
 }

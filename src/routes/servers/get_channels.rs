@@ -2,6 +2,7 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::{channels::queries::get_channels_for_server, users::queries::is_user_on_server};
+use ferrum_shared::channels::ChannelResponse;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -44,9 +45,12 @@ pub async fn get_channels(
         return Err(GetChannelsError::ForbiddenError);
     }
 
-    let server_channels = get_channels_for_server(*server_id, &pool)
+    let server_channels: Vec<ChannelResponse> = get_channels_for_server(*server_id, &pool)
         .await
-        .context("Failed to retrieve server channels.")?;
+        .context("Failed to retrieve server channels.")?
+        .iter()
+        .map(|x| x.clone().into())
+        .collect();
 
     Ok(HttpResponse::Ok().json(server_channels))
 }

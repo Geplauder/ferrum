@@ -1,9 +1,10 @@
 use actix::Recipient;
-use ferrum_db::{channels::models::ChannelModel, servers::models::ServerModel};
+use ferrum_shared::{
+    channels::ChannelResponse, messages::MessageResponse, servers::ServerResponse,
+    users::UserResponse,
+};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-
-use crate::domain::{messages::MessageResponse, users::UserResponse};
 
 #[derive(Debug, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
@@ -20,11 +21,11 @@ pub enum WebSocketMessage {
         message: MessageResponse,
     },
     NewChannel {
-        channel: ChannelModel, // TODO: Use proper response models
+        channel: ChannelResponse,
     },
     NewServer {
-        server: ServerModel,         // TODO: Use proper response models
-        channels: Vec<ChannelModel>, // TODO: Use proper response models
+        server: ServerResponse,
+        channels: Vec<ChannelResponse>,
     },
     NewUser {
         server_id: Uuid,
@@ -36,8 +37,8 @@ pub enum WebSocketMessage {
 #[rtype(result = "()")]
 pub enum SerializedWebSocketMessage {
     Ready(Vec<Uuid>),
-    AddChannel(ChannelModel),
-    AddServer(ServerModel, Vec<ChannelModel>), // TODO: Add user(s)
+    AddChannel(ChannelResponse),
+    AddServer(ServerResponse, Vec<ChannelResponse>), // TODO: Add user(s)
     AddUser(Uuid, UserResponse),
     Data(String, Uuid),
 }
@@ -86,11 +87,11 @@ impl SendMessageToChannel {
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct NewChannel {
-    pub channel: ChannelModel,
+    pub channel: ChannelResponse,
 }
 
 impl NewChannel {
-    pub fn new(channel: ChannelModel) -> Self {
+    pub fn new(channel: ChannelResponse) -> Self {
         Self { channel }
     }
 }

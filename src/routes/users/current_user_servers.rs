@@ -1,6 +1,7 @@
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::users::queries::get_users_on_server;
+use ferrum_db::servers::queries::get_servers_for_user;
+use ferrum_shared::servers::ServerResponse;
 use sqlx::PgPool;
 
 use crate::{error_chain_fmt, jwt::AuthorizationService};
@@ -24,9 +25,12 @@ pub async fn current_user_servers(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CurrentUserServersError> {
-    let user_servers = get_users_on_server(auth.claims.id, &pool)
+    let user_servers: Vec<ServerResponse> = get_servers_for_user(auth.claims.id, &pool)
         .await
-        .context("Failed to retrieve server users")?;
+        .context("Failed to retrieve server users")?
+        .iter()
+        .map(|x| x.clone().into())
+        .collect();
 
     Ok(HttpResponse::Ok().json(user_servers))
 }

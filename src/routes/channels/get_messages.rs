@@ -2,7 +2,8 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::{
-    messages::queries::get_messages_for_channel, users::queries::does_user_have_access_to_channel,
+    messages::queries::get_messages_for_channel,
+    users::queries::{does_user_have_access_to_channel, get_user_with_id},
 };
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -42,11 +43,19 @@ pub async fn get_messages(
         .await
         .map_err(GetMessagesError::ForbiddenError)?;
 
-    let _channel_messages = get_messages_for_channel(*channel_id, &pool)
+    let channel_messages = get_messages_for_channel(*channel_id, &pool)
         .await
         .context("Failed to retrieve channel messages.")?;
 
-    todo!("Return MessageResponse");
+    let mut channel_message_responses = vec![];
 
-    // Ok(HttpResponse::Ok().json(channel_messages))
+    for channel_message in &channel_messages {
+        let user = get_user_with_id(channel_message.user_id, &pool)
+            .await
+            .context("Failed to get user model")?;
+
+        channel_message_responses.push(channel_message.to_response(user));
+    }
+
+    Ok(HttpResponse::Ok().json(channel_message_responses))
 }

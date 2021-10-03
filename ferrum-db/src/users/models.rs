@@ -3,6 +3,7 @@ use argon2::{
     Argon2, PasswordHasher,
 };
 use chrono::{DateTime, Utc};
+use ferrum_shared::users::UserResponse;
 use uuid::Uuid;
 
 pub struct NewUser {
@@ -20,6 +21,18 @@ pub struct UserModel {
     pub updated_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
 }
+
+impl From<UserModel> for UserResponse {
+    fn from(val: UserModel) -> Self {
+        Self {
+            id: val.id,
+            username: val.username,
+            updated_at: val.updated_at,
+            created_at: val.created_at,
+        }
+    }
+}
+
 pub struct UserEmail(String);
 
 impl UserEmail {

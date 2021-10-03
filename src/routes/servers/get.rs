@@ -2,6 +2,7 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::{servers::queries::get_server_with_id, users::queries::is_user_on_server};
+use ferrum_shared::servers::ServerResponse;
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -44,9 +45,10 @@ pub async fn get(
         return Err(GetServerError::ForbiddenError);
     }
 
-    let server = get_server_with_id(*server_id, &pool)
+    let server: ServerResponse = get_server_with_id(*server_id, &pool)
         .await
-        .context("Error while fetching server")?;
+        .context("Error while fetching server")?
+        .into();
 
     Ok(HttpResponse::Ok().json(server))
 }

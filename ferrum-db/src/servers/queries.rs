@@ -105,3 +105,22 @@ pub async fn is_user_owner_of_server(
 
     Ok(row.owner_id == user_id)
 }
+
+#[tracing::instrument(name = "Get servers for user", skip(user_id, pool))]
+pub async fn get_servers_for_user(
+    user_id: Uuid,
+    pool: &PgPool,
+) -> Result<Vec<ServerModel>, sqlx::Error> {
+    sqlx::query_as!(
+        ServerModel,
+        r#"
+        SELECT servers.*
+        FROM users_servers
+        INNER JOIN servers ON users_servers.server_id = servers.id
+        WHERE users_servers.user_id = $1
+        "#,
+        user_id
+    )
+    .fetch_all(pool)
+    .await
+}

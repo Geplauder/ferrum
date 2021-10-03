@@ -1,6 +1,7 @@
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::users::queries::get_user_with_id;
+use ferrum_shared::users::UserResponse;
 use sqlx::PgPool;
 
 use crate::{error_chain_fmt, jwt::AuthorizationService};
@@ -24,9 +25,10 @@ pub async fn current_user(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, UsersError> {
-    let user_data = get_user_with_id(auth.claims.id, &pool)
+    let user_data: UserResponse = get_user_with_id(auth.claims.id, &pool)
         .await
-        .context("Failed to retrieve stored user.")?;
+        .context("Failed to retrieve stored user.")?
+        .into();
 
     Ok(HttpResponse::Ok().json(user_data))
 }

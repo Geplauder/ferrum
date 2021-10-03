@@ -743,6 +743,7 @@ dependencies = [
  "fake",
  "ferrum-db",
  "ferrum-macros",
+ "ferrum-shared",
  "futures",
  "jsonwebtoken",
  "once_cell",
@@ -772,6 +773,7 @@ dependencies = [
  "argon2",
  "chrono",
  "fake",
+ "ferrum-shared",
  "quickcheck",
  "quickcheck_macros",
  "serde 1.0.130",
@@ -788,6 +790,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "ferrum-shared"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "serde 1.0.130",
+ "uuid",
 ]
 
 [[package]]
