@@ -14,11 +14,23 @@ pub enum WebSocketMessage {
     Ping,
     Pong,
     Ready,
-    Identify { bearer: String },
-    NewMessage { message: MessageResponse },
-    NewChannel { channel: Channel },
-    NewServer { server: Server, channels: Vec<Channel> },
-    NewUser { server_id: Uuid, user: UserResponse },
+    Identify {
+        bearer: String,
+    },
+    NewMessage {
+        message: MessageResponse,
+    },
+    NewChannel {
+        channel: Channel,
+    },
+    NewServer {
+        server: Server,
+        channels: Vec<Channel>,
+    },
+    NewUser {
+        server_id: Uuid,
+        user: UserResponse,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
