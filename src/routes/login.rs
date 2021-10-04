@@ -1,13 +1,14 @@
 use std::convert::{TryFrom, TryInto};
 
+use crate::telemetry::spawn_blocking_with_tracing;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use argon2::{Argon2, PasswordHash, PasswordVerifier};
 use ferrum_db::users::queries::get_user_with_email;
+pub use ferrum_shared::error_chain_fmt;
+use ferrum_shared::jwt::Jwt;
 use sqlx::{types::Uuid, PgPool};
-
-use crate::{error_chain_fmt, jwt::Jwt, telemetry::spawn_blocking_with_tracing};
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {

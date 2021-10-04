@@ -1,10 +1,9 @@
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::servers::queries::get_servers_for_user;
-use ferrum_shared::servers::ServerResponse;
+pub use ferrum_shared::error_chain_fmt;
+use ferrum_shared::{jwt::AuthorizationService, servers::ServerResponse};
 use sqlx::PgPool;
-
-use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum CurrentUserServersError {

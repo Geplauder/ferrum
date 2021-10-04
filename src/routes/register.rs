@@ -7,9 +7,8 @@ use ferrum_db::users::{
     models::{NewUser, UserEmail, UserName, UserPassword},
     queries::insert_user,
 };
+pub use ferrum_shared::error_chain_fmt;
 use sqlx::PgPool;
-
-use crate::error_chain_fmt;
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {

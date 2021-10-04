@@ -16,12 +16,14 @@ members = [
     ".",
     "ferrum-db",
     "ferrum-macros",
-    "ferrum-shared"
+    "ferrum-shared",
+    "ferrum-websocket"
 ]
 
 [dependencies]
 ferrum-db = { path = "./ferrum-db" }
 ferrum-shared = { path = "./ferrum-shared"}
+ferrum-websocket = { path = "./ferrum-websocket" }
 actix = "0.12"
 actix-http = "3.0.0-beta.10"
 actix-web = "4.0.0-beta.9"

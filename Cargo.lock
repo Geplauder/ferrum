@@ -744,6 +744,7 @@ dependencies = [
  "ferrum-db",
  "ferrum-macros",
  "ferrum-shared",
+ "ferrum-websocket",
  "futures",
  "jsonwebtoken",
  "once_cell",
@@ -796,8 +797,28 @@ dependencies = [
 name = "ferrum-shared"
 version = "0.1.0"
 dependencies = [
+ "actix-http",
+ "actix-web",
  "chrono",
+ "futures",
+ "jsonwebtoken",
  "serde 1.0.130",
+ "thiserror",
+ "uuid",
+]
+
+[[package]]
+name = "ferrum-websocket"
+version = "0.1.0"
+dependencies = [
+ "actix",
+ "actix-web",
+ "actix-web-actors",
+ "ferrum-db",
+ "ferrum-shared",
+ "serde 1.0.130",
+ "serde_json",
+ "sqlx",
  "uuid",
 ]
 

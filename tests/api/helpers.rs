@@ -5,11 +5,11 @@ use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use fake::Fake;
 use ferrum::{
     application::{get_db_pool, Application},
-    jwt::Jwt,
     settings::{get_settings, DatabaseSettings, Settings},
     telemetry::{get_subscriber, init_subscriber},
-    websocket::messages::WebSocketMessage,
 };
+use ferrum_shared::jwt::Jwt;
+use ferrum_websocket::messages::WebSocketMessage;
 use futures::{select, FutureExt, SinkExt, StreamExt};
 use once_cell::sync::Lazy;
 use sqlx::{postgres::PgPoolOptions, types::Uuid, Connection, Executor, PgConnection, PgPool};

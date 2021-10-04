@@ -5,10 +5,10 @@ use ferrum_db::{
     messages::queries::get_messages_for_channel,
     users::queries::{does_user_have_access_to_channel, get_user_with_id},
 };
+pub use ferrum_shared::error_chain_fmt;
+use ferrum_shared::jwt::AuthorizationService;
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum GetMessagesError {

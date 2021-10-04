@@ -3,12 +3,13 @@ use std::{net::TcpListener, time::Duration};
 use actix::Actor;
 use actix_cors::Cors;
 use actix_web::{dev::Server, web, web::Data, App, HttpServer};
+use ferrum_shared::jwt::Jwt;
+use ferrum_websocket::WebSocketServer;
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tracing_actix_web::TracingLogger;
 
 use crate::{
-    jwt::Jwt,
-    routes::{channels, health_check, login, register, servers, users, websocket},
+    routes::{channels, health_check, login, register, servers, users},
     settings::{DatabaseSettings, Settings},
 };
 
@@ -33,7 +34,7 @@ impl Application {
         let listener = TcpListener::bind(&address)?;
         let port = listener.local_addr().unwrap().port();
 
-        let websocket_server = crate::websocket::Server::new(db_pool.clone());
+        let websocket_server = WebSocketServer::new(db_pool.clone());
 
         let server = run(
             listener,
@@ -67,7 +68,7 @@ fn run(
     db_pool: PgPool,
     base_url: String,
     jwt_secret: String,
-    websocket_server: crate::websocket::Server,
+    websocket_server: WebSocketServer,
 ) -> Result<Server, std::io::Error> {
     let db_pool = Data::new(db_pool);
     let base_url = Data::new(ApplicationBaseUrl(base_url));
@@ -87,7 +88,7 @@ fn run(
             .app_data(base_url.clone())
             .app_data(jwt.clone())
             .app_data(websocket_server.clone())
-            .route("/ws", web::get().to(websocket))
+            .route("/ws", web::get().to(ferrum_websocket::websocket))
             .route("/health_check", web::get().to(health_check))
             .route("/register", web::post().to(register))
             .route("/login", web::post().to(login))

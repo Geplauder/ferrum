@@ -1,19 +1,18 @@
+pub mod messages;
+mod server;
+
 use actix::{Actor, ActorContext, Addr, AsyncContext, Handler, StreamHandler};
 use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
+use ferrum_shared::jwt::Jwt;
+use messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose, WebSocketMessage};
 use uuid::Uuid;
 
-use crate::{
-    jwt::Jwt,
-    websocket::{
-        messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose, WebSocketMessage},
-        Server,
-    },
-};
+pub use server::WebSocketServer;
 
 pub struct WebSocketSession {
     pub user_id: Option<Uuid>,
-    pub server: Addr<Server>,
+    pub server: Addr<WebSocketServer>,
     pub channels: Vec<Uuid>,
     jwt: Jwt,
 }
@@ -106,7 +105,7 @@ pub async fn websocket(
     request: HttpRequest,
     stream: web::Payload,
     jwt: web::Data<Jwt>,
-    server: web::Data<Addr<Server>>,
+    server: web::Data<Addr<WebSocketServer>>,
 ) -> Result<HttpResponse, actix_web::Error> {
     let response = ws::start(
         WebSocketSession {

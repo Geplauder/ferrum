@@ -3,14 +3,11 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::servers::queries::add_user_to_server;
+pub use ferrum_shared::error_chain_fmt;
+use ferrum_shared::jwt::AuthorizationService;
+use ferrum_websocket::{messages, WebSocketServer};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::{
-    error_chain_fmt,
-    jwt::AuthorizationService,
-    websocket::{messages, Server},
-};
 
 #[derive(thiserror::Error)]
 pub enum JoinError {
@@ -42,7 +39,7 @@ impl ResponseError for JoinError {
 pub async fn join(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    websocket_server: web::Data<Addr<Server>>,
+    websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, JoinError> {
     let mut transaction = pool
