@@ -83,7 +83,7 @@ async fn validate_credentials(
 ) -> Result<(Uuid, String), LoginError> {
     let stored_user = get_user_with_email(login_user.email.as_ref(), pool)
         .await
-        .map_err(LoginError::UnexpectedError)?;
+        .context("Failed to retrieve stored user.")?;
 
     let user = match stored_user {
         Some(value) => value,
