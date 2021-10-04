@@ -148,9 +148,12 @@ async fn join_sends_new_server_to_joining_user() {
     match message {
         Some(WebSocketMessage::NewServer {
             server: new_server,
-            channels: _,
+            channels,
+            users,
         }) => {
             assert_eq!(app.test_server().name, new_server.name);
+            assert_eq!(1, channels.len());
+            assert_eq!(2, users.len());
         }
         Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
         None => assert!(false, "Received no message"),
