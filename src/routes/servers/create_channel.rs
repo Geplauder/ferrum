@@ -11,14 +11,11 @@ use ferrum_db::{
     },
     servers::queries::is_user_owner_of_server,
 };
+pub use ferrum_shared::error_chain_fmt;
+use ferrum_shared::jwt::AuthorizationService;
+use ferrum_websocket::{messages, WebSocketServer};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::{
-    error_chain_fmt,
-    jwt::AuthorizationService,
-    websocket::{messages, Server},
-};
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {
@@ -66,7 +63,7 @@ pub async fn create_channel(
     server_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    websocket_server: web::Data<Addr<Server>>,
+    websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateChannelError> {
     let new_channel: NewChannel = body

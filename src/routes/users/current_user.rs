@@ -1,10 +1,9 @@
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::users::queries::get_user_with_id;
-use ferrum_shared::users::UserResponse;
+pub use ferrum_shared::error_chain_fmt;
+use ferrum_shared::{jwt::AuthorizationService, users::UserResponse};
 use sqlx::PgPool;
-
-use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum UsersError {

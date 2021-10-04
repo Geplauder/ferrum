@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum::websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessage;
 
 use crate::helpers::{
     get_next_websocket_message, send_websocket_message, TestApplication, TestUser,

@@ -11,17 +11,14 @@ use ferrum_db::{
     },
     users::queries::{does_user_have_access_to_channel, get_user_with_id},
 };
+pub use ferrum_shared::error_chain_fmt;
+use ferrum_shared::jwt::AuthorizationService;
+use ferrum_websocket::{
+    messages::{self, WebSocketMessage},
+    WebSocketServer,
+};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::{
-    error_chain_fmt,
-    jwt::AuthorizationService,
-    websocket::{
-        messages::{SendMessageToChannel, WebSocketMessage},
-        Server,
-    },
-};
 
 #[derive(serde::Deserialize)]
 pub struct BodyData {
@@ -69,7 +66,7 @@ pub async fn create_message(
     channel_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    server: web::Data<Addr<Server>>,
+    server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateMessageError> {
     let new_message: NewMessage = body
@@ -105,7 +102,7 @@ pub async fn create_message(
         .await
         .context("Failed to commit SQL transaction to store a new channel message.")?;
 
-    server.do_send(SendMessageToChannel::new(
+    server.do_send(messages::SendMessageToChannel::new(
         *channel_id,
         WebSocketMessage::NewMessage {
             message: message.to_response(user),

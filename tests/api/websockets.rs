@@ -1,5 +1,5 @@
 use actix_http::ws;
-use ferrum::websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessage;
 use futures::SinkExt;
 
 use crate::helpers::{get_next_websocket_message, send_websocket_message};

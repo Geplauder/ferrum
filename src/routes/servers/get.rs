@@ -2,11 +2,10 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::{servers::queries::get_server_with_id, users::queries::is_user_on_server};
-use ferrum_shared::servers::ServerResponse;
+pub use ferrum_shared::error_chain_fmt;
+use ferrum_shared::{jwt::AuthorizationService, servers::ServerResponse};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-use crate::{error_chain_fmt, jwt::AuthorizationService};
 
 #[derive(thiserror::Error)]
 pub enum GetServerError {

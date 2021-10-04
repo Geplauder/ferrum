@@ -15,12 +15,12 @@ use super::messages::{
     WebSocketClose, WebSocketMessage,
 };
 
-pub struct Server {
+pub struct WebSocketServer {
     db_pool: PgPool,
     users: HashMap<Uuid, Recipient<SerializedWebSocketMessage>>,
 }
 
-impl Server {
+impl WebSocketServer {
     pub fn new(db_pool: PgPool) -> Self {
         Self {
             db_pool,
@@ -46,11 +46,11 @@ impl Server {
     }
 }
 
-impl Actor for Server {
+impl Actor for WebSocketServer {
     type Context = Context<Self>;
 }
 
-impl Handler<IdentifyUser> for Server {
+impl Handler<IdentifyUser> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: IdentifyUser, ctx: &mut Self::Context) -> Self::Result {
@@ -74,7 +74,7 @@ impl Handler<IdentifyUser> for Server {
     }
 }
 
-impl Handler<WebSocketClose> for Server {
+impl Handler<WebSocketClose> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: WebSocketClose, _ctx: &mut Self::Context) -> Self::Result {
@@ -82,7 +82,7 @@ impl Handler<WebSocketClose> for Server {
     }
 }
 
-impl Handler<SendMessageToChannel> for Server {
+impl Handler<SendMessageToChannel> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: SendMessageToChannel, _ctx: &mut Self::Context) -> Self::Result {
@@ -90,7 +90,7 @@ impl Handler<SendMessageToChannel> for Server {
     }
 }
 
-impl Handler<NewChannel> for Server {
+impl Handler<NewChannel> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: NewChannel, ctx: &mut Self::Context) -> Self::Result {
@@ -115,7 +115,7 @@ impl Handler<NewChannel> for Server {
     }
 }
 
-impl Handler<NewServer> for Server {
+impl Handler<NewServer> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: NewServer, ctx: &mut Self::Context) -> Self::Result {
@@ -151,7 +151,7 @@ impl Handler<NewServer> for Server {
     }
 }
 
-impl Handler<NewUser> for Server {
+impl Handler<NewUser> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: NewUser, ctx: &mut Self::Context) -> Self::Result {
