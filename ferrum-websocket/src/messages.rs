@@ -26,6 +26,7 @@ pub enum WebSocketMessage {
     NewServer {
         server: ServerResponse,
         channels: Vec<ChannelResponse>,
+        users: Vec<UserResponse>,
     },
     NewUser {
         server_id: Uuid,
@@ -38,7 +39,7 @@ pub enum WebSocketMessage {
 pub enum SerializedWebSocketMessage {
     Ready(Vec<Uuid>),
     AddChannel(ChannelResponse),
-    AddServer(ServerResponse, Vec<ChannelResponse>), // TODO: Add user(s)
+    AddServer(ServerResponse, Vec<ChannelResponse>, Vec<UserResponse>),
     AddUser(Uuid, UserResponse),
     Data(String, Uuid),
 }
