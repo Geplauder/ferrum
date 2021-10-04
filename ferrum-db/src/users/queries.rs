@@ -1,4 +1,3 @@
-use anyhow::Context;
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
@@ -8,8 +7,8 @@ use super::models::*;
 pub async fn get_user_with_email(
     email: &str,
     pool: &PgPool,
-) -> Result<Option<UserModel>, anyhow::Error> {
-    let user = sqlx::query_as!(
+) -> Result<Option<UserModel>, sqlx::Error> {
+    sqlx::query_as!(
         UserModel,
         r#"
         SELECT *
@@ -20,9 +19,6 @@ pub async fn get_user_with_email(
     )
     .fetch_optional(pool)
     .await
-    .context("Failed to retrieve stored user.")?;
-
-    Ok(user)
 }
 
 #[tracing::instrument(name = "Get stored user with id", skip(user_id, pool))]
