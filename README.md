@@ -18,6 +18,7 @@ docker compose up -d
 The preferred way to configure your database is `sqlx-cli`:
 ```bash
 cargo install sqlx-cli # Install sqlx-cli
+cd ferrum-db
 sqlx database create   # Create the database specified in '.env'
 sqlx migrate run       # Run migrations
 ```
