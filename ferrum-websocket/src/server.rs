@@ -135,13 +135,19 @@ impl Handler<NewServer> for WebSocketServer {
                 .map(|x| x.clone().into())
                 .collect();
 
-            // TODO: Also send users
+            let users_on_server: Vec<UserResponse> = get_users_on_server(msg.server_id, &db_pool)
+                .await
+                .unwrap()
+                .iter()
+                .map(|x| x.clone().into())
+                .collect();
 
             if let Some(recipient) = users.get(&msg.user_id) {
                 recipient
                     .do_send(SerializedWebSocketMessage::AddServer(
                         server.clone(),
                         channels,
+                        users_on_server,
                     ))
                     .unwrap();
             }
