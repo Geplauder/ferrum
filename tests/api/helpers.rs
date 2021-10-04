@@ -210,7 +210,7 @@ async fn configure_database(settings: &DatabaseSettings) -> PgPool {
         .await
         .expect("Failed to connect to Postgres.");
 
-    sqlx::migrate!("./migrations")
+    sqlx::migrate!("./ferrum-db/migrations")
         .run(&connection_pool)
         .await
         .expect("Failed to migrate the database");
