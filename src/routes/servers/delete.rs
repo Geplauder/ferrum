@@ -52,5 +52,10 @@ pub async fn delete(
         .await
         .context("Failed to delete existing server from database.")?;
 
+    transaction
+        .commit()
+        .await
+        .context("Failed to commit SQL transaction to store a new server.")?;
+
     Ok(HttpResponse::Ok().finish())
 }
