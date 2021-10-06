@@ -1,6 +1,8 @@
 pub mod messages;
 mod server;
 
+use std::{collections::HashSet, iter::FromIterator};
+
 use actix::{Actor, ActorContext, Addr, AsyncContext, Handler, StreamHandler};
 use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
@@ -13,7 +15,8 @@ pub use server::WebSocketServer;
 pub struct WebSocketSession {
     pub user_id: Option<Uuid>,
     pub server: Addr<WebSocketServer>,
-    pub channels: Vec<Uuid>,
+    pub channels: HashSet<Uuid>,
+    pub servers: HashSet<Uuid>,
     jwt: Jwt,
 }
 
@@ -26,8 +29,9 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
 
     fn handle(&mut self, msg: SerializedWebSocketMessage, ctx: &mut Self::Context) -> Self::Result {
         match msg {
-            SerializedWebSocketMessage::Ready(channels) => {
-                self.channels = channels;
+            SerializedWebSocketMessage::Ready(servers, channels) => {
+                self.servers = HashSet::from_iter(servers.iter().cloned());
+                self.channels = HashSet::from_iter(channels.iter().cloned());
 
                 ctx.text(serde_json::to_string(&WebSocketMessage::Ready).unwrap());
             }
@@ -37,11 +41,12 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
                 }
             }
             SerializedWebSocketMessage::AddChannel(channel) => {
-                self.channels.push(channel.id);
+                self.channels.insert(channel.id);
 
                 ctx.text(serde_json::to_string(&WebSocketMessage::NewChannel { channel }).unwrap());
             }
             SerializedWebSocketMessage::AddServer(server, channels, users) => {
+                self.servers.insert(server.id);
                 self.channels.extend(channels.iter().map(|x| x.id));
 
                 ctx.text(
@@ -54,13 +59,25 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
                 );
             }
             SerializedWebSocketMessage::AddUser(server_id, user) => {
+                if self.servers.contains(&server_id) == false {
+                    return;
+                }
+
                 ctx.text(
                     serde_json::to_string(&WebSocketMessage::NewUser { server_id, user }).unwrap(),
                 );
             }
-            SerializedWebSocketMessage::DeleteServer(server_id) => ctx.text(
-                serde_json::to_string(&WebSocketMessage::DeleteServer { server_id }).unwrap(),
-            ),
+            SerializedWebSocketMessage::DeleteServer(server_id) => {
+                if self.servers.contains(&server_id) == false {
+                    return;
+                }
+
+                self.servers.remove(&server_id);
+
+                ctx.text(
+                    serde_json::to_string(&WebSocketMessage::DeleteServer { server_id }).unwrap(),
+                )
+            }
         }
     }
 }
@@ -118,7 +135,8 @@ pub async fn websocket(
         WebSocketSession {
             user_id: None,
             server: server.get_ref().clone(),
-            channels: vec![],
+            channels: HashSet::new(),
+            servers: HashSet::new(),
             jwt: jwt.as_ref().clone(),
         },
         &request,
