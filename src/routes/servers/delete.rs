@@ -1,8 +1,10 @@
+use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::servers::queries::{delete_server, is_user_owner_of_server};
 use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
+use ferrum_websocket::{messages, WebSocketServer};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -29,10 +31,11 @@ impl ResponseError for DeleteServerError {
     }
 }
 
-#[tracing::instrument("Delete server", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument("Delete server", skip(pool, websocket_server, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn delete(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
+    websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, DeleteServerError> {
     let is_user_owner = is_user_owner_of_server(&pool, *server_id, auth.claims.id)
@@ -56,6 +59,8 @@ pub async fn delete(
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new server.")?;
+
+    websocket_server.do_send(messages::DeleteServer::new(*server_id));
 
     Ok(HttpResponse::Ok().finish())
 }
