@@ -2,7 +2,9 @@ use actix_http::{encoding::Decoder, Payload};
 use ferrum_websocket::messages::WebSocketMessage;
 use uuid::Uuid;
 
-use crate::helpers::{get_next_websocket_message, send_websocket_message, TestApplication};
+use crate::helpers::{
+    get_next_websocket_message, send_websocket_message, TestApplication, TestUser,
+};
 
 impl TestApplication {
     pub async fn delete_server(
@@ -149,4 +151,37 @@ async fn delete_server_sends_deleted_server_to_users_on_server() {
     }
 }
 
-// TODO: Add test to ensure that users not on the server do not get messaged about it
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
+async fn delete_server_does_not_send_websocket_message_to_users_not_on_the_server() {
+    // Arrange
+    let other_user = TestUser::generate();
+    other_user.store(&app.db_pool).await;
+
+    let (_response, mut connection) = app.websocket().await;
+
+    send_websocket_message(
+        &mut connection,
+        WebSocketMessage::Identify {
+            bearer: app.jwt.encode(other_user.id, other_user.email),
+        },
+    )
+    .await;
+
+    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+
+    // Act
+    app.delete_server(
+        app.test_server().id.to_string(),
+        Some(app.test_user_token()),
+    )
+    .await;
+
+    // Assert
+    let message = get_next_websocket_message(&mut connection).await;
+
+    assert!(
+        message.is_none(),
+        "Received a websocket message: {:#?}",
+        message
+    );
+}
