@@ -58,6 +58,9 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
                     serde_json::to_string(&WebSocketMessage::NewUser { server_id, user }).unwrap(),
                 );
             }
+            SerializedWebSocketMessage::DeleteServer(server_id) => ctx.text(
+                serde_json::to_string(&WebSocketMessage::DeleteServer { server_id }).unwrap(),
+            ),
         }
     }
 }
