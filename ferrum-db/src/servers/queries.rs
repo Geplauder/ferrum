@@ -45,6 +45,24 @@ pub async fn insert_server(
     .await
 }
 
+#[tracing::instrument(name = "Delete a existing server from the database")]
+pub async fn delete_server(
+    transaction: &mut Transaction<'_, Postgres>,
+    server_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        DELETE FROM servers
+        WHERE servers.id = $1
+        "#,
+        server_id
+    )
+    .execute(transaction)
+    .await?;
+
+    Ok(())
+}
+
 #[tracing::instrument(
     name = "Saving a new users_servers entry to the database",
     skip(transaction, user_id, server_id)
