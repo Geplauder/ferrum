@@ -174,7 +174,7 @@ impl Handler<NewUser> for WebSocketServer {
                 .unwrap()
                 .into();
 
-            for (_, recipient) in &users {
+            for recipient in users.values() {
                 if let Err(error) = recipient.do_send(SerializedWebSocketMessage::AddUser(
                     msg.server_id,
                     new_user.clone(),
@@ -192,7 +192,7 @@ impl Handler<DeleteServer> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: DeleteServer, _ctx: &mut Self::Context) -> Self::Result {
-        for (_, recipient) in &self.users {
+        for recipient in self.users.values() {
             recipient
                 .do_send(SerializedWebSocketMessage::DeleteServer(msg.server_id))
                 .unwrap();
