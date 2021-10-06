@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use actix::{Actor, Context, ContextFutureSpawner, Handler, Recipient, WrapFuture};
 use ferrum_db::{
     channels::queries::{get_channels_for_server, get_channels_for_user},
-    servers::queries::get_server_with_id,
+    servers::queries::{get_server_with_id, get_servers_for_user},
     users::queries::{get_user_with_id, get_users_on_server},
 };
 use ferrum_shared::{channels::ChannelResponse, servers::ServerResponse, users::UserResponse};
@@ -65,8 +65,10 @@ impl Handler<IdentifyUser> for WebSocketServer {
 
         async move {
             let channels = get_channels_for_user(user_id, &db_pool).await.unwrap();
+            let servers = get_servers_for_user(user_id, &db_pool).await.unwrap();
 
             addr.do_send(SerializedWebSocketMessage::Ready(
+                servers.iter().map(|x| x.id).collect(),
                 channels.iter().map(|x| x.id).collect(),
             ))
             .expect("");
@@ -172,16 +174,12 @@ impl Handler<NewUser> for WebSocketServer {
                 .unwrap()
                 .into();
 
-            let users_on_server = get_users_on_server(msg.server_id, &db_pool).await.unwrap();
-
-            for user in &users_on_server {
-                if let Some(recipient) = users.get(&user.id) {
-                    if let Err(error) = recipient.do_send(SerializedWebSocketMessage::AddUser(
-                        msg.server_id,
-                        new_user.clone(),
-                    )) {
-                        println!("Error in NewUser websocket message handler: {:?}", error);
-                    }
+            for (_, recipient) in &users {
+                if let Err(error) = recipient.do_send(SerializedWebSocketMessage::AddUser(
+                    msg.server_id,
+                    new_user.clone(),
+                )) {
+                    println!("Error in NewUser websocket message handler: {:?}", error);
                 }
             }
         }
@@ -193,22 +191,11 @@ impl Handler<NewUser> for WebSocketServer {
 impl Handler<DeleteServer> for WebSocketServer {
     type Result = ();
 
-    fn handle(&mut self, msg: DeleteServer, ctx: &mut Self::Context) -> Self::Result {
-        let db_pool = self.db_pool.clone();
-        let users = self.users.clone();
-
-        async move {
-            let affected_users = get_users_on_server(msg.server_id, &db_pool).await.unwrap();
-
-            for user in &affected_users {
-                if let Some(recipient) = users.get(&user.id) {
-                    recipient
-                        .do_send(SerializedWebSocketMessage::DeleteServer(msg.server_id))
-                        .unwrap();
-                }
-            }
+    fn handle(&mut self, msg: DeleteServer, _ctx: &mut Self::Context) -> Self::Result {
+        for (_, recipient) in &self.users {
+            recipient
+                .do_send(SerializedWebSocketMessage::DeleteServer(msg.server_id))
+                .unwrap();
         }
-        .into_actor(self)
-        .wait(ctx)
     }
 }

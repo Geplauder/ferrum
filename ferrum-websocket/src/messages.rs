@@ -40,7 +40,7 @@ pub enum WebSocketMessage {
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub enum SerializedWebSocketMessage {
-    Ready(Vec<Uuid>),
+    Ready(Vec<Uuid>, Vec<Uuid>),
     AddChannel(ChannelResponse),
     AddServer(ServerResponse, Vec<ChannelResponse>, Vec<UserResponse>),
     AddUser(Uuid, UserResponse),
