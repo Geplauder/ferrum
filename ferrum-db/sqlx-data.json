@@ -259,6 +259,18 @@
       ]
     }
   },
+  "5046ed062f0ce6c536bf383618e558ff5debd3d216d5c1d58140a5f49c8ab9f0": {
+    "query": "\n        DELETE FROM servers\n        WHERE servers.id = $1\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "810f9468c3d69cffa133b2b0aaae899120570f16f6047f7ff9c398a97b9f5bdf": {
     "query": "\n        SELECT *\n        FROM users\n        WHERE email = $1\n        ",
     "describe": {
