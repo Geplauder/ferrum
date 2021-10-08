@@ -69,6 +69,12 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
                     serde_json::to_string(&WebSocketMessage::NewUser { server_id, user }).unwrap(),
                 );
             }
+            SerializedWebSocketMessage::DeleteUser(user_id, server_id) => {
+                ctx.text(
+                    serde_json::to_string(&WebSocketMessage::DeleteUser { user_id, server_id })
+                        .unwrap(),
+                );
+            }
             SerializedWebSocketMessage::DeleteServer(server_id) => {
                 if self.servers.contains(&server_id) == false {
                     return;

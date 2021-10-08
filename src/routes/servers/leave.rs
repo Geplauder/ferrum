@@ -4,7 +4,7 @@ use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::servers::queries::{get_server_with_id, remove_user_from_server};
 use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
-use ferrum_websocket::WebSocketServer;
+use ferrum_websocket::{messages, WebSocketServer};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -34,11 +34,11 @@ impl ResponseError for LeaveError {
     }
 }
 
-#[tracing::instrument(name = "Leave server", skip(pool, auth, _websocket_server), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Leave server", skip(pool, auth, websocket_server), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn leave(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    _websocket_server: web::Data<Addr<WebSocketServer>>,
+    websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, LeaveError> {
     let server = get_server_with_id(*server_id, &pool)
@@ -66,6 +66,8 @@ pub async fn leave(
         .commit()
         .await
         .context("Failed to commit SQL transaction.")?;
+
+    websocket_server.do_send(messages::UserLeft::new(auth.claims.id, *server_id));
 
     Ok(HttpResponse::Ok().finish())
 }

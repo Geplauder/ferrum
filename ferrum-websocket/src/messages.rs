@@ -32,6 +32,10 @@ pub enum WebSocketMessage {
         server_id: Uuid,
         user: UserResponse,
     },
+    DeleteUser {
+        server_id: Uuid,
+        user_id: Uuid,
+    },
     DeleteServer {
         server_id: Uuid,
     },
@@ -45,6 +49,7 @@ pub enum SerializedWebSocketMessage {
     AddServer(ServerResponse, Vec<ChannelResponse>, Vec<UserResponse>),
     AddUser(Uuid, UserResponse),
     DeleteServer(Uuid),
+    DeleteUser(Uuid, Uuid),
     Data(String, Uuid),
 }
 
@@ -122,6 +127,19 @@ pub struct NewUser {
 }
 
 impl NewUser {
+    pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
+        Self { user_id, server_id }
+    }
+}
+
+#[derive(Debug, actix::prelude::Message)]
+#[rtype(result = "()")]
+pub struct UserLeft {
+    pub user_id: Uuid,
+    pub server_id: Uuid,
+}
+
+impl UserLeft {
     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
         Self { user_id, server_id }
     }
