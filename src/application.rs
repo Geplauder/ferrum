@@ -99,6 +99,7 @@ fn run(
             .route("/servers/{id}", web::put().to(servers::join))
             .route("/servers/{id}", web::delete().to(servers::delete))
             .route("/servers/{id}/users", web::get().to(servers::get_users))
+            .route("/servers/{id}/users", web::delete().to(servers::leave))
             .route(
                 "/servers/{id}/channels",
                 web::get().to(servers::get_channels),
