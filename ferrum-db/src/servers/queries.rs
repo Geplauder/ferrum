@@ -87,6 +87,29 @@ pub async fn add_user_to_server(
 }
 
 #[tracing::instrument(
+    name = "Remove a users_servers entry from the database",
+    skip(transaction, user_id, server_id)
+)]
+pub async fn remove_user_from_server(
+    transaction: &mut Transaction<'_, Postgres>,
+    user_id: Uuid,
+    server_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        DELETE FROM users_servers
+        WHERE users_servers.user_id = $1 AND users_servers.server_id = $2
+        "#,
+        user_id,
+        server_id,
+    )
+    .execute(transaction)
+    .await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(
     name = "Saving a new default server channel to the database",
     skip(transaction, server_id)
 )]

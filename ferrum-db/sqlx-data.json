@@ -321,6 +321,19 @@
       ]
     }
   },
+  "81dc9e943767b1f477d88c6f7c5c1954e277bfc5f2db0c90b01034f854589de8": {
+    "query": "\n        DELETE FROM users_servers\n        WHERE users_servers.user_id = $1 AND users_servers.server_id = $2\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "8a0fa61820727382ec64109253953ccc015abc1f771b79ba9f8e2319b36e90dc": {
     "query": "\n        SELECT *\n        FROM messages\n        WHERE messages.channel_id = $1\n        ",
     "describe": {
