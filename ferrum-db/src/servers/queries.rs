@@ -94,8 +94,8 @@ pub async fn remove_user_from_server(
     transaction: &mut Transaction<'_, Postgres>,
     user_id: Uuid,
     server_id: Uuid,
-) -> Result<(), sqlx::Error> {
-    sqlx::query!(
+) -> Result<bool, sqlx::Error> {
+    let query = sqlx::query!(
         r#"
         DELETE FROM users_servers
         WHERE users_servers.user_id = $1 AND users_servers.server_id = $2
@@ -106,7 +106,7 @@ pub async fn remove_user_from_server(
     .execute(transaction)
     .await?;
 
-    Ok(())
+    Ok(query.rows_affected() > 0)
 }
 
 #[tracing::instrument(
