@@ -3,8 +3,7 @@ use ferrum_websocket::messages::WebSocketMessage;
 use uuid::Uuid;
 
 use crate::{
-    assert_next_websocket_message, assert_no_next_websocket_message,
-    helpers::{get_next_websocket_message, send_websocket_message, TestApplication},
+    assert_next_websocket_message, assert_no_next_websocket_message, helpers::TestApplication,
 };
 
 impl TestApplication {
@@ -232,17 +231,9 @@ async fn create_message_sends_websocket_message_to_ready_users() {
         "content": "foobar"
     });
 
-    let (_response, mut connection) = app.websocket().await;
-
-    send_websocket_message(
-        &mut connection,
-        WebSocketMessage::Identify {
-            bearer: app.test_user_token(),
-        },
-    )
-    .await;
-
-    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
 
     // Act
     app.post_create_channel_message(

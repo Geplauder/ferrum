@@ -2,10 +2,7 @@ use actix_http::{encoding::Decoder, Payload};
 use ferrum_websocket::messages::WebSocketMessage;
 use uuid::Uuid;
 
-use crate::{
-    assert_next_websocket_message,
-    helpers::{get_next_websocket_message, send_websocket_message, TestApplication},
-};
+use crate::{assert_next_websocket_message, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn post_create_server_channel(
@@ -224,17 +221,9 @@ async fn create_channel_sends_new_channel_to_authenticated_websocket_users() {
         "name": "foobar"
     });
 
-    let (_response, mut connection) = app.websocket().await;
-
-    send_websocket_message(
-        &mut connection,
-        WebSocketMessage::Identify {
-            bearer: app.test_user_token(),
-        },
-    )
-    .await;
-
-    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
 
     // Act
     app.post_create_server_channel(

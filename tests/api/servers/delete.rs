@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     assert_next_websocket_message, assert_no_next_websocket_message,
-    helpers::{get_next_websocket_message, send_websocket_message, TestApplication, TestUser},
+    helpers::{TestApplication, TestUser},
 };
 
 impl TestApplication {
@@ -121,17 +121,9 @@ async fn delete_server_returns_500_when_server_id_is_not_found() {
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn delete_server_sends_deleted_server_to_users_on_server() {
     // Arrange
-    let (_response, mut connection) = app.websocket().await;
-
-    send_websocket_message(
-        &mut connection,
-        WebSocketMessage::Identify {
-            bearer: app.test_user_token(),
-        },
-    )
-    .await;
-
-    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
 
     // Act
     app.delete_server(
@@ -155,18 +147,9 @@ async fn delete_server_does_not_send_websocket_message_to_users_not_on_the_serve
     // Arrange
     let other_user = TestUser::generate();
     other_user.store(&app.db_pool).await;
+    let other_user_token = app.jwt.encode(other_user.id, other_user.email);
 
-    let (_response, mut connection) = app.websocket().await;
-
-    send_websocket_message(
-        &mut connection,
-        WebSocketMessage::Identify {
-            bearer: app.jwt.encode(other_user.id, other_user.email),
-        },
-    )
-    .await;
-
-    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+    let (_response, mut connection) = app.get_ready_websocket_connection(other_user_token).await;
 
     // Act
     app.delete_server(

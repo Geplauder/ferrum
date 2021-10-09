@@ -133,6 +133,42 @@ impl TestApplication {
         self.test_server.as_ref().unwrap().clone()
     }
 
+    ///
+    /// Get a ready websocket connection.
+    ///
+    /// First, a new websocket connection will be established.
+    /// Then a [`WebSocketMessage::Identify`] message will be sent to the websocket server,
+    /// containing the supplied `bearer`.
+    ///
+    /// Note that there is also an assertion that a [`WebSocketMessage::Ready`] will be received.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// #[ferrum_macros::test(strategy = "UserAndOwnServer")]
+    /// async fn some_test() {
+    ///     let (response, mut connection) = app
+    ///         .get_ready_websocket_connection(app.test_user_token())
+    ///         .await;
+    ///
+    ///     // ...
+    /// }
+    /// ```
+    pub async fn get_ready_websocket_connection(
+        &self,
+        bearer: String,
+    ) -> (
+        awc::ClientResponse,
+        actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+    ) {
+        let (response, mut connection) = self.websocket().await;
+
+        send_websocket_message(&mut connection, WebSocketMessage::Identify { bearer }).await;
+        assert_next_websocket_message!(WebSocketMessage::Ready, &mut connection, ());
+
+        (response, connection)
+    }
+
     pub async fn websocket(
         &self,
     ) -> (
