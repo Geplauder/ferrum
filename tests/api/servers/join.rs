@@ -160,6 +160,40 @@ async fn join_sends_new_server_to_joining_user() {
     }
 }
 
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
+async fn join_does_not_send_new_user_websocket_message_to_new_user() {
+    // Arrange
+    let (_response, mut connection) = app.websocket().await;
+
+    send_websocket_message(
+        &mut connection,
+        WebSocketMessage::Identify {
+            bearer: app.test_user_token(),
+        },
+    )
+    .await;
+
+    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+
+    // Act
+    app.put_join_server(
+        app.test_server().id.to_string(),
+        Some(app.test_user_token()),
+    )
+    .await;
+
+    // Assert
+    get_next_websocket_message(&mut connection).await; // New Server websocket message
+
+    let message = get_next_websocket_message(&mut connection).await; // No further websocket messages should be received
+
+    assert!(
+        message.is_none(),
+        "Received a websocket message: {:#?}",
+        message
+    );
+}
+
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn join_sends_new_user_to_existing_users() {
     // Arrange
