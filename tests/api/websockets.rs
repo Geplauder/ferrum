@@ -1,4 +1,5 @@
 use actix_http::ws;
+use claim::assert_ok;
 use ferrum_websocket::messages::WebSocketMessage;
 use futures::SinkExt;
 
@@ -37,7 +38,7 @@ async fn websocket_closes_successfully() {
     let close_request = connection.send(ws::Message::Close(None)).await;
 
     // Assert
-    assert!(close_request.is_ok());
+    assert_ok!(close_request);
 
     tokio::time::sleep(std::time::Duration::from_secs(1)).await; // Wait until server processed that message
 }

@@ -51,6 +51,7 @@ impl DatabaseSettings {
     }
 }
 
+#[derive(Debug)]
 pub enum Environment {
     Local,
     Production,
@@ -102,6 +103,8 @@ pub fn get_settings() -> Result<Settings, ConfigError> {
 
 #[cfg(test)]
 mod tests {
+    use claim::{assert_err, assert_ok};
+
     use super::*;
 
     #[test]
@@ -109,7 +112,7 @@ mod tests {
         for env in ["local", "production", "testing"] {
             let env: Result<Environment, String> = env.to_string().try_into();
 
-            assert!(env.is_ok());
+            assert_ok!(env);
         }
     }
 
@@ -117,7 +120,7 @@ mod tests {
     fn invalid_environment_variable_is_rejected() {
         let env: Result<Environment, String> = "foobar".to_string().try_into();
 
-        assert!(env.is_err());
+        assert_err!(env);
     }
 
     #[test]
