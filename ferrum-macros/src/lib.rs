@@ -56,6 +56,8 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
 
                     #body
 
+                    app.db_pool.close().await;
+
                     crate::helpers::teardown(&app.settings.database).await;
                 })
         }
