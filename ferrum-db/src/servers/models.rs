@@ -27,6 +27,7 @@ impl From<ServerModel> for ServerResponse {
     }
 }
 
+#[derive(Debug)]
 pub struct ServerName(String);
 
 impl ServerName {
@@ -54,6 +55,7 @@ impl std::fmt::Display for ServerName {
 #[cfg(test)]
 mod tests {
     use super::ServerName;
+    use claim::assert_err;
     use fake::Fake;
 
     #[test]
@@ -61,7 +63,7 @@ mod tests {
         for x in ["", "abc"] {
             let name = x.to_string();
 
-            assert!(ServerName::parse(name).is_err());
+            assert_err!(ServerName::parse(name));
         }
     }
 
@@ -69,7 +71,7 @@ mod tests {
     fn name_too_long_is_rejected() {
         let name = (0..=65).map(|_| "x").collect::<String>();
 
-        assert!(ServerName::parse(name).is_err());
+        assert_err!(ServerName::parse(name));
     }
 
     #[test]

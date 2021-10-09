@@ -33,6 +33,7 @@ impl From<UserModel> for UserResponse {
     }
 }
 
+#[derive(Debug)]
 pub struct UserEmail(String);
 
 impl UserEmail {
@@ -57,6 +58,7 @@ impl std::fmt::Display for UserEmail {
     }
 }
 
+#[derive(Debug)]
 pub struct UserName(String);
 
 impl UserName {
@@ -81,6 +83,7 @@ impl std::fmt::Display for UserName {
     }
 }
 
+#[derive(Debug)]
 pub struct UserPassword(String);
 
 impl UserPassword {
@@ -108,6 +111,7 @@ impl AsRef<str> for UserPassword {
 #[cfg(test)]
 mod tests {
     use super::{UserEmail, UserName, UserPassword};
+    use claim::assert_err;
     use fake::faker::internet::en::{Password, SafeEmail, Username};
     use fake::Fake;
 
@@ -115,21 +119,21 @@ mod tests {
     fn email_empty_string_is_rejected() {
         let email = "".to_string();
 
-        assert!(UserEmail::parse(email).is_err());
+        assert_err!(UserEmail::parse(email));
     }
 
     #[test]
     fn email_missing_at_symbol_is_rejected() {
         let email = "foobar.com".to_string();
 
-        assert!(UserEmail::parse(email).is_err());
+        assert_err!(UserEmail::parse(email));
     }
 
     #[test]
     fn email_missing_subject_is_rejected() {
         let email = "@bar.com".to_string();
 
-        assert!(UserEmail::parse(email).is_err());
+        assert_err!(UserEmail::parse(email));
     }
 
     #[test]
@@ -162,7 +166,7 @@ mod tests {
         for x in ["", "ab"] {
             let name = x.to_string();
 
-            assert!(UserName::parse(name).is_err());
+            assert_err!(UserName::parse(name));
         }
     }
 
@@ -170,7 +174,7 @@ mod tests {
     fn name_too_long_is_rejected() {
         let name = (0..=33).map(|_| "x").collect::<String>();
 
-        assert!(UserName::parse(name).is_err());
+        assert_err!(UserName::parse(name));
     }
 
     #[test]
@@ -203,7 +207,7 @@ mod tests {
         for x in ["", "abc", "foobar"] {
             let pasword = x.to_string();
 
-            assert!(UserPassword::parse(pasword).is_err());
+            assert_err!(UserPassword::parse(pasword));
         }
     }
 
@@ -211,7 +215,7 @@ mod tests {
     fn passsword_too_long_is_rejected() {
         let password = (0..=65).map(|_| "x").collect::<String>();
 
-        assert!(UserPassword::parse(password).is_err());
+        assert_err!(UserPassword::parse(password));
     }
 
     #[derive(Debug, Clone)]

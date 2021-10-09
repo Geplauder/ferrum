@@ -1,4 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
+use claim::{assert_ok, assert_some};
 
 use crate::helpers::TestApplication;
 
@@ -35,12 +36,12 @@ async fn test_login_returns_200_for_valid_json_data() {
     assert_eq!(200, response.status().as_u16());
 
     let response_data = response.json::<LoginResponse>().await;
-    assert!(response_data.is_ok());
+    assert_ok!(&response_data);
 
     let response_data = response_data.unwrap();
 
     let claims = app.jwt.get_claims(&response_data.token);
-    assert!(claims.is_some());
+    assert_some!(&claims);
 
     let claims = claims.unwrap();
     assert_eq!(app.test_user().email, claims.email);

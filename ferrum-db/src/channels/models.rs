@@ -27,6 +27,7 @@ impl From<ChannelModel> for ChannelResponse {
     }
 }
 
+#[derive(Debug)]
 pub struct ChannelName(String);
 
 impl ChannelName {
@@ -54,6 +55,7 @@ impl std::fmt::Display for ChannelName {
 #[cfg(test)]
 mod tests {
     use super::ChannelName;
+    use claim::assert_err;
     use fake::Fake;
 
     #[test]
@@ -61,7 +63,7 @@ mod tests {
         for x in ["", "abc"] {
             let name = x.to_string();
 
-            assert!(ChannelName::parse(name).is_err());
+            assert_err!(ChannelName::parse(name));
         }
     }
 
@@ -69,7 +71,7 @@ mod tests {
     fn name_too_long_is_rejected() {
         let name = (0..=33).map(|_| "x").collect::<String>();
 
-        assert!(ChannelName::parse(name).is_err());
+        assert_err!(ChannelName::parse(name));
     }
 
     #[test]

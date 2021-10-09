@@ -1,4 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
+use claim::assert_err;
 use ferrum_websocket::messages::WebSocketMessage;
 
 use crate::{
@@ -70,7 +71,7 @@ async fn leave_removes_users_servers_entry_from_the_database() {
     .fetch_one(&app.db_pool)
     .await;
 
-    assert!(saved_user_server.is_err());
+    assert_err!(saved_user_server);
 }
 
 #[ferrum_macros::test(strategy = "UserAndOtherServer")]

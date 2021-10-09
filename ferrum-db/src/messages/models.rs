@@ -31,6 +31,7 @@ impl MessageModel {
     }
 }
 
+#[derive(Debug)]
 pub struct MessageContent(String);
 
 impl MessageContent {
@@ -58,18 +59,19 @@ impl std::fmt::Display for MessageContent {
 #[cfg(test)]
 mod tests {
     use super::MessageContent;
+    use claim::assert_err;
     use fake::Fake;
 
     #[test]
     fn content_to_short_is_rejected() {
-        assert!(MessageContent::parse("".to_string()).is_err());
+        assert_err!(MessageContent::parse("".to_string()));
     }
 
     #[test]
     fn content_too_long_is_rejected() {
         let content = (0..=1001).map(|_| "x").collect::<String>();
 
-        assert!(MessageContent::parse(content).is_err());
+        assert_err!(MessageContent::parse(content));
     }
 
     #[test]

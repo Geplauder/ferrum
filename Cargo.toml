@@ -60,3 +60,4 @@ tokio = { version = "1", features = ["macros"] }
 fake = "~2.3.0"
 quickcheck = "0.9.2"
 quickcheck_macros = "0.9.1"
+claim = "0.5.0"
