@@ -1,7 +1,10 @@
 use actix_http::{encoding::Decoder, Payload};
 use ferrum_websocket::messages::WebSocketMessage;
 
-use crate::helpers::{get_next_websocket_message, send_websocket_message, TestApplication};
+use crate::{
+    assert_next_websocket_message,
+    helpers::{get_next_websocket_message, send_websocket_message, TestApplication},
+};
 
 impl TestApplication {
     pub async fn post_create_server(
@@ -192,19 +195,17 @@ async fn create_sends_new_server_to_owner_per_websocket() {
         .await;
 
     // Assert
-    let message = get_next_websocket_message(&mut connection).await;
-
-    match message {
-        Some(WebSocketMessage::NewServer {
+    assert_next_websocket_message!(
+        WebSocketMessage::NewServer {
             server: new_server,
             channels,
-            users,
-        }) => {
+            users
+        },
+        &mut connection,
+        {
             assert_eq!("foobar", new_server.name);
             assert_eq!(1, channels.len());
             assert_eq!(1, users.len());
         }
-        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
-        None => assert!(false, "Received no message"),
-    }
+    );
 }

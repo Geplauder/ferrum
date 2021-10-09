@@ -2,8 +2,9 @@ use actix_http::{encoding::Decoder, Payload};
 use ferrum_websocket::messages::WebSocketMessage;
 use uuid::Uuid;
 
-use crate::helpers::{
-    get_next_websocket_message, send_websocket_message, TestApplication, TestUser,
+use crate::{
+    assert_next_websocket_message,
+    helpers::{get_next_websocket_message, send_websocket_message, TestApplication, TestUser},
 };
 
 impl TestApplication {
@@ -140,15 +141,13 @@ async fn delete_server_sends_deleted_server_to_users_on_server() {
     .await;
 
     // Assert
-    let message = get_next_websocket_message(&mut connection).await;
-
-    match message {
-        Some(WebSocketMessage::DeleteServer { server_id }) => {
+    assert_next_websocket_message!(
+        WebSocketMessage::DeleteServer { server_id },
+        &mut connection,
+        {
             assert_eq!(app.test_server().id, server_id);
         }
-        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
-        None => assert!(false, "Received no message"),
-    }
+    );
 }
 
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]

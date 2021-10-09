@@ -1,8 +1,9 @@
 use actix_http::{encoding::Decoder, Payload};
 use ferrum_websocket::messages::WebSocketMessage;
 
-use crate::helpers::{
-    get_next_websocket_message, send_websocket_message, TestApplication, TestUser,
+use crate::{
+    assert_next_websocket_message,
+    helpers::{get_next_websocket_message, send_websocket_message, TestApplication, TestUser},
 };
 
 impl TestApplication {
@@ -143,21 +144,19 @@ async fn join_sends_new_server_to_joining_user() {
     .await;
 
     // Assert
-    let message = get_next_websocket_message(&mut connection).await;
-
-    match message {
-        Some(WebSocketMessage::NewServer {
+    assert_next_websocket_message!(
+        WebSocketMessage::NewServer {
             server: new_server,
             channels,
-            users,
-        }) => {
+            users
+        },
+        &mut connection,
+        {
             assert_eq!(app.test_server().name, new_server.name);
             assert_eq!(1, channels.len());
             assert_eq!(2, users.len());
         }
-        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
-        None => assert!(false, "Received no message"),
-    }
+    );
 }
 
 #[ferrum_macros::test(strategy = "UserAndOtherServer")]
@@ -218,15 +217,13 @@ async fn join_sends_new_user_to_existing_users() {
         .await;
 
     // Assert
-    let message = get_next_websocket_message(&mut connection).await;
-
-    match message {
-        Some(WebSocketMessage::NewUser { server_id: _, user }) => {
+    assert_next_websocket_message!(
+        WebSocketMessage::NewUser { server_id: _, user },
+        &mut connection,
+        {
             assert_eq!(new_user.id, user.id);
         }
-        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
-        None => assert!(false, "Received no message"),
-    }
+    );
 }
 
 // TODO: Add test for invalid server_id

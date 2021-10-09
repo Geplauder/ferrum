@@ -2,7 +2,10 @@ use actix_http::{encoding::Decoder, Payload};
 use ferrum_websocket::messages::WebSocketMessage;
 use uuid::Uuid;
 
-use crate::helpers::{get_next_websocket_message, send_websocket_message, TestApplication};
+use crate::{
+    assert_next_websocket_message,
+    helpers::{get_next_websocket_message, send_websocket_message, TestApplication},
+};
 
 impl TestApplication {
     pub async fn post_create_channel_message(
@@ -250,16 +253,10 @@ async fn create_message_sends_websocket_message_to_ready_users() {
     .await;
 
     // Assert
-    let message = get_next_websocket_message(&mut connection).await;
-
-    match message {
-        Some(WebSocketMessage::NewMessage { message }) => {
-            assert_eq!("foobar", message.content);
-            assert_eq!(app.test_user().id, message.user.id);
-        }
-        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
-        None => assert!(false, "Received no message"),
-    }
+    assert_next_websocket_message!(WebSocketMessage::NewMessage { message }, &mut connection, {
+        assert_eq!("foobar", message.content);
+        assert_eq!(app.test_user().id, message.user.id);
+    });
 }
 
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]

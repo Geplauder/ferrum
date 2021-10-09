@@ -2,7 +2,10 @@ use actix_http::ws;
 use ferrum_websocket::messages::WebSocketMessage;
 use futures::SinkExt;
 
-use crate::helpers::{get_next_websocket_message, send_websocket_message};
+use crate::{
+    assert_next_websocket_message,
+    helpers::{get_next_websocket_message, send_websocket_message},
+};
 
 #[ferrum_macros::test(strategy = "User")]
 async fn websocket_is_valid_for_valid_request() {
@@ -54,13 +57,7 @@ async fn websocket_receives_ready_message_after_successfull_identify() {
     .await;
 
     // Assert
-    let message = get_next_websocket_message(&mut connection).await;
-
-    match message {
-        Some(WebSocketMessage::Ready) => (),
-        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
-        None => assert!(false, "Received no message"),
-    }
+    assert_next_websocket_message!(WebSocketMessage::Ready, &mut connection, ());
 }
 
 #[ferrum_macros::test(strategy = "User")]
@@ -97,13 +94,7 @@ async fn websocket_responds_to_ping_with_pong() {
     send_websocket_message(&mut connection, WebSocketMessage::Ping).await;
 
     // Assert
-    let message = get_next_websocket_message(&mut connection).await;
-
-    match message {
-        Some(WebSocketMessage::Pong) => (),
-        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
-        None => assert!(false, "Received no message"),
-    }
+    assert_next_websocket_message!(WebSocketMessage::Pong, &mut connection, ());
 }
 
 #[ferrum_macros::test(strategy = "User")]

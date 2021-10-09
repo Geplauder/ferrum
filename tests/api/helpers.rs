@@ -14,6 +14,51 @@ use futures::{select, FutureExt, SinkExt, StreamExt};
 use once_cell::sync::Lazy;
 use sqlx::{postgres::PgPoolOptions, types::Uuid, Connection, Executor, PgConnection, PgPool};
 
+///
+/// This macro can be used to assert the next message a websocket
+/// connection should receive.
+///
+/// It is also able to run further assertions, when the correct message is received.
+///
+/// # Example with further assertions
+///
+/// ```
+/// use crate::helpers::assert_next_websocket_message;
+///
+/// assert_next_websocket_message!(
+///     WebSocketMessage::DeleteUser { user_id, server_id },
+///     &mut connection,
+///     {
+///         assert_eq!("123", user_id);
+///     }
+/// );
+///
+/// ```
+///
+/// # Example without further assertions
+///
+/// ```
+/// use crate::helpers::assert_next_websocket_message;
+///
+/// assert_next_websocket_message!(
+///     WebSocketMessage::Ready,
+///     &mut connection,
+///     ()
+/// );
+/// ```
+#[macro_export]
+macro_rules! assert_next_websocket_message {
+    ($type:pat, $connection:expr, $callback:tt) => {
+        let message = crate::helpers::get_next_websocket_message($connection).await;
+
+        match message {
+            Some($type) => $callback,
+            Some(fallback) => panic!("assertion failed: Wrong message {:?}", fallback),
+            None => panic!("assertion failed: No message"),
+        }
+    };
+}
+
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
     let subscriber_name = "test".to_string();
