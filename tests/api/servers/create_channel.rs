@@ -2,7 +2,10 @@ use actix_http::{encoding::Decoder, Payload};
 use ferrum_websocket::messages::WebSocketMessage;
 use uuid::Uuid;
 
-use crate::helpers::{get_next_websocket_message, send_websocket_message, TestApplication};
+use crate::{
+    assert_next_websocket_message,
+    helpers::{get_next_websocket_message, send_websocket_message, TestApplication},
+};
 
 impl TestApplication {
     pub async fn post_create_server_channel(
@@ -242,15 +245,15 @@ async fn create_channel_sends_new_channel_to_authenticated_websocket_users() {
     .await;
 
     // Assert
-    let message = get_next_websocket_message(&mut connection).await;
-
-    match message {
-        Some(WebSocketMessage::NewChannel {
-            channel: new_channel,
-        }) => assert_eq!("foobar", new_channel.name),
-        Some(fallback) => assert!(false, "Received wrong message type: {:#?}", fallback),
-        None => assert!(false, "Received no message"),
-    }
+    assert_next_websocket_message!(
+        WebSocketMessage::NewChannel {
+            channel: new_channel
+        },
+        &mut connection,
+        {
+            assert_eq!("foobar", new_channel.name);
+        }
+    );
 }
 
 // TODO: Add test to ensure that users not on the server do not get messaged about it
