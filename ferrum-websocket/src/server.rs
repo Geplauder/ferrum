@@ -174,7 +174,11 @@ impl Handler<NewUser> for WebSocketServer {
                 .unwrap()
                 .into();
 
-            for recipient in users.values() {
+            for (user_id, recipient) in &users {
+                if *user_id == msg.user_id {
+                    continue;
+                }
+
                 if let Err(error) = recipient.do_send(SerializedWebSocketMessage::AddUser(
                     msg.server_id,
                     new_user.clone(),
