@@ -3,7 +3,7 @@ use ferrum_websocket::messages::WebSocketMessage;
 
 use crate::{
     assert_next_websocket_message, assert_no_next_websocket_message,
-    helpers::{get_next_websocket_message, send_websocket_message, TestApplication, TestUser},
+    helpers::{TestApplication, TestUser},
 };
 
 impl TestApplication {
@@ -124,17 +124,9 @@ async fn join_returns_401_for_missing_or_invalid_bearer_token() {
 #[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn join_sends_new_server_to_joining_user() {
     // Arrange
-    let (_response, mut connection) = app.websocket().await;
-
-    send_websocket_message(
-        &mut connection,
-        WebSocketMessage::Identify {
-            bearer: app.test_user_token(),
-        },
-    )
-    .await;
-
-    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
 
     // Act
     app.put_join_server(
@@ -162,17 +154,9 @@ async fn join_sends_new_server_to_joining_user() {
 #[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn join_does_not_send_new_user_websocket_message_to_new_user() {
     // Arrange
-    let (_response, mut connection) = app.websocket().await;
-
-    send_websocket_message(
-        &mut connection,
-        WebSocketMessage::Identify {
-            bearer: app.test_user_token(),
-        },
-    )
-    .await;
-
-    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
 
     // Act
     app.put_join_server(
@@ -202,17 +186,9 @@ async fn join_sends_new_user_to_existing_users() {
     new_user.store(&app.db_pool).await;
     let new_user_token = app.jwt.encode(new_user.id, new_user.email);
 
-    let (_response, mut connection) = app.websocket().await;
-
-    send_websocket_message(
-        &mut connection,
-        WebSocketMessage::Identify {
-            bearer: app.test_user_token(),
-        },
-    )
-    .await;
-
-    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
 
     // Act
     app.put_join_server(app.test_server().id.to_string(), Some(new_user_token))

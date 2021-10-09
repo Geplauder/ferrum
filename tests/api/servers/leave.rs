@@ -3,7 +3,7 @@ use ferrum_websocket::messages::WebSocketMessage;
 
 use crate::{
     assert_next_websocket_message,
-    helpers::{get_next_websocket_message, send_websocket_message, TestApplication, TestUser},
+    helpers::{TestApplication, TestUser},
 };
 
 impl TestApplication {
@@ -160,17 +160,9 @@ async fn leave_sends_delete_server_to_leaving_user() {
     )
     .await;
 
-    let (_response, mut connection) = app.websocket().await;
-
-    send_websocket_message(
-        &mut connection,
-        WebSocketMessage::Identify {
-            bearer: app.test_user_token(),
-        },
-    )
-    .await;
-
-    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
 
     // Act
     app.delete_leave_server(
@@ -202,17 +194,9 @@ async fn leave_sends_delete_user_to_users_on_server() {
     )
     .await;
 
-    let (_response, mut connection) = app.websocket().await;
-
-    send_websocket_message(
-        &mut connection,
-        WebSocketMessage::Identify {
-            bearer: app.test_user_token(),
-        },
-    )
-    .await;
-
-    get_next_websocket_message(&mut connection).await; // Accept the "Ready" message
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
 
     // Act
     app.delete_leave_server(app.test_server().id.to_string(), Some(other_user_token))
