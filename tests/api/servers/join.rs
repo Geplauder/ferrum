@@ -2,7 +2,7 @@ use actix_http::{encoding::Decoder, Payload};
 use ferrum_websocket::messages::WebSocketMessage;
 
 use crate::{
-    assert_next_websocket_message,
+    assert_next_websocket_message, assert_no_next_websocket_message,
     helpers::{get_next_websocket_message, send_websocket_message, TestApplication, TestUser},
 };
 
@@ -182,15 +182,17 @@ async fn join_does_not_send_new_user_websocket_message_to_new_user() {
     .await;
 
     // Assert
-    get_next_websocket_message(&mut connection).await; // New Server websocket message
-
-    let message = get_next_websocket_message(&mut connection).await; // No further websocket messages should be received
-
-    assert!(
-        message.is_none(),
-        "Received a websocket message: {:#?}",
-        message
+    assert_next_websocket_message!(
+        WebSocketMessage::NewServer {
+            server: _,
+            channels: _,
+            users: _
+        },
+        &mut connection,
+        ()
     );
+
+    assert_no_next_websocket_message!(&mut connection);
 }
 
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]

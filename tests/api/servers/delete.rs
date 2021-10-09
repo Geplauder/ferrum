@@ -3,7 +3,7 @@ use ferrum_websocket::messages::WebSocketMessage;
 use uuid::Uuid;
 
 use crate::{
-    assert_next_websocket_message,
+    assert_next_websocket_message, assert_no_next_websocket_message,
     helpers::{get_next_websocket_message, send_websocket_message, TestApplication, TestUser},
 };
 
@@ -176,11 +176,5 @@ async fn delete_server_does_not_send_websocket_message_to_users_not_on_the_serve
     .await;
 
     // Assert
-    let message = get_next_websocket_message(&mut connection).await;
-
-    assert!(
-        message.is_none(),
-        "Received a websocket message: {:#?}",
-        message
-    );
+    assert_no_next_websocket_message!(&mut connection);
 }
