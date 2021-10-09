@@ -1,6 +1,32 @@
 use proc_macro::TokenStream;
 use proc_macro2::Span;
 
+///
+/// This macro provides the required setup for ferrum tests and
+/// supplies a `app` variable of type [`TestApplication`] into the call-site.
+///
+/// A setup strategy is required with the `strategy` argument and it has to
+/// match one of the values of [`BootstrapType`].
+///
+/// # Example
+///
+/// ```
+/// #[ferrum_macros::test(strategy = "UserAndOwnServer")]
+/// async fn some_test() {
+///     // Arrange
+///     let client = awc::Client::new();
+///
+///     // Act
+///     let response = client
+///         .get(&format!("{}/health_check", &app.address))
+///         .send()
+///         .await
+///         .expect("Failed to execute request.");
+///
+///     // Assert
+///     assert!(response.status().is_success());
+/// }
+/// ```
 #[proc_macro_attribute]
 pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
     let mut input = syn::parse_macro_input!(item as syn::ItemFn);
