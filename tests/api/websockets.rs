@@ -3,7 +3,7 @@ use ferrum_websocket::messages::WebSocketMessage;
 use futures::SinkExt;
 
 use crate::{
-    assert_next_websocket_message,
+    assert_next_websocket_message, assert_no_next_websocket_message,
     helpers::{get_next_websocket_message, send_websocket_message},
 };
 
@@ -75,13 +75,7 @@ async fn websocket_does_not_receive_ready_message_after_missing_or_invalid_beare
         .await;
 
         // Assert
-        let message = get_next_websocket_message(&mut connection).await;
-
-        assert!(
-            message.is_none(),
-            "Received a websocket message: {:#?}",
-            message
-        );
+        assert_no_next_websocket_message!(&mut connection);
     }
 }
 

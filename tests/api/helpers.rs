@@ -59,6 +59,29 @@ macro_rules! assert_next_websocket_message {
     };
 }
 
+///
+/// This macro can be used to assert that there is no next websocket message.
+///
+/// # Example
+///
+/// ```
+/// use crate::helpers::assert_no_next_websocket_message;
+///
+/// assert_no_next_websocket_message!(&mut connection);
+/// ```
+#[macro_export]
+macro_rules! assert_no_next_websocket_message {
+    ($connection:expr) => {
+        let message = crate::helpers::get_next_websocket_message($connection).await;
+
+        assert!(
+            message.is_none(),
+            "assertion failed: Received websocket message: {:?}",
+            message
+        );
+    };
+}
+
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
     let subscriber_name = "test".to_string();
