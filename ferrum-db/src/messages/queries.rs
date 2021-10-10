@@ -47,3 +47,48 @@ pub async fn insert_message(
     .fetch_one(transaction)
     .await
 }
+
+#[tracing::instrument(
+    name = "Updating an existing message in the database",
+    skip(transaction, new_content, message_id)
+)]
+pub async fn update_message(
+    transaction: &mut Transaction<'_, Postgres>,
+    pool: &PgPool,
+    new_content: String,
+    message_id: Uuid
+) -> Result<MessageModel, sqlx::Error> {
+    sqlx::query_as!(
+        MessageModel,
+        r#"
+        UPDATE messages
+        SET content = $1
+        WHERE id = $2
+        RETURNING *
+        "#,
+        new_content,
+        message_id)
+    .fetch_one(transaction)
+    .await
+}
+
+#[tracing::instrument(
+    name = "Delete a message from the database",
+    skip(transaction, message_id)
+)]
+pub async fn delete_message(
+    transaction: &mut Transaction<'_, Postgres>,
+    message_id: Uuid
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        DELETE FROM messages
+        WHERE id = $1
+        "#,
+        message_id
+    )
+    .execute(transaction)
+    .await?;
+
+    Ok(())
+}
