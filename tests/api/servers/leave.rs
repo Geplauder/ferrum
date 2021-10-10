@@ -1,6 +1,6 @@
 use actix_http::{encoding::Decoder, Payload};
 use claim::assert_err;
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessageType;
 
 use crate::{
     assert_next_websocket_message,
@@ -174,7 +174,7 @@ async fn leave_sends_delete_server_to_leaving_user() {
 
     // Assert
     assert_next_websocket_message!(
-        WebSocketMessage::DeleteServer { server_id },
+        WebSocketMessageType::DeleteServer { server_id },
         &mut connection,
         {
             assert_eq!(app.test_server().id, server_id);
@@ -205,7 +205,7 @@ async fn leave_sends_delete_user_to_users_on_server() {
 
     // Assert
     assert_next_websocket_message!(
-        WebSocketMessage::DeleteUser { user_id, server_id },
+        WebSocketMessageType::DeleteUser { user_id, server_id },
         &mut connection,
         {
             assert_eq!(other_user.id, user_id);

@@ -3,22 +3,50 @@
 pub mod messages;
 mod server;
 
-use std::{collections::HashSet, iter::FromIterator};
+use std::{
+    collections::{HashSet, VecDeque},
+    iter::FromIterator,
+};
 
 use actix::{Actor, ActorContext, Addr, AsyncContext, Handler, StreamHandler};
 use actix_web::{web, HttpRequest, HttpResponse};
 use actix_web_actors::ws;
 use ferrum_shared::jwt::Jwt;
-use messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose, WebSocketMessage};
+use messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose, WebSocketMessageType};
 use uuid::Uuid;
 
 pub use server::WebSocketServer;
+
+macro_rules! save_and_send_message {
+    ($self:expr, $ctx:expr, $message:expr) => {
+        let last_index = $self.messages.back().map(|x| x.0);
+
+        let index = if let Some(index) = last_index {
+            $self.messages.push_back((index + 1, $message.clone()));
+
+            index + 1
+        } else {
+            $self.messages.push_back((0, $message.clone()));
+
+            0
+        };
+
+        $ctx.text(
+            ::serde_json::to_string(&crate::messages::WebSocketMessage {
+                id: index,
+                payload: $message,
+            })
+            .unwrap(),
+        );
+    };
+}
 
 pub struct WebSocketSession {
     pub user_id: Option<Uuid>,
     pub server: Addr<WebSocketServer>,
     pub channels: HashSet<Uuid>,
     pub servers: HashSet<Uuid>,
+    pub messages: VecDeque<(u64, WebSocketMessageType)>,
     jwt: Jwt,
 }
 
@@ -35,45 +63,42 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
                 self.servers = HashSet::from_iter(servers.iter().cloned());
                 self.channels = HashSet::from_iter(channels.iter().cloned());
 
-                ctx.text(serde_json::to_string(&WebSocketMessage::Ready).unwrap());
+                save_and_send_message!(self, ctx, WebSocketMessageType::Ready);
             }
-            SerializedWebSocketMessage::Data(data, channel) => {
+            SerializedWebSocketMessage::Data(message, channel) => {
                 if self.channels.contains(&channel) {
-                    ctx.text(data);
+                    save_and_send_message!(self, ctx, message);
                 }
             }
             SerializedWebSocketMessage::AddChannel(channel) => {
                 self.channels.insert(channel.id);
 
-                ctx.text(serde_json::to_string(&WebSocketMessage::NewChannel { channel }).unwrap());
+                let message = WebSocketMessageType::NewChannel { channel };
+                save_and_send_message!(self, ctx, message);
             }
             SerializedWebSocketMessage::AddServer(server, channels, users) => {
                 self.servers.insert(server.id);
                 self.channels.extend(channels.iter().map(|x| x.id));
 
-                ctx.text(
-                    serde_json::to_string(&WebSocketMessage::NewServer {
-                        server,
-                        channels,
-                        users,
-                    })
-                    .unwrap(),
-                );
+                let message = WebSocketMessageType::NewServer {
+                    server,
+                    channels,
+                    users,
+                };
+
+                save_and_send_message!(self, ctx, message);
             }
             SerializedWebSocketMessage::AddUser(server_id, user) => {
                 if self.servers.contains(&server_id) == false {
                     return;
                 }
 
-                ctx.text(
-                    serde_json::to_string(&WebSocketMessage::NewUser { server_id, user }).unwrap(),
-                );
+                let message = WebSocketMessageType::NewUser { server_id, user };
+                save_and_send_message!(self, ctx, message);
             }
             SerializedWebSocketMessage::DeleteUser(user_id, server_id) => {
-                ctx.text(
-                    serde_json::to_string(&WebSocketMessage::DeleteUser { user_id, server_id })
-                        .unwrap(),
-                );
+                let message = WebSocketMessageType::DeleteUser { user_id, server_id };
+                save_and_send_message!(self, ctx, message);
             }
             SerializedWebSocketMessage::DeleteServer(server_id) => {
                 if self.servers.contains(&server_id) == false {
@@ -82,9 +107,8 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
 
                 self.servers.remove(&server_id);
 
-                ctx.text(
-                    serde_json::to_string(&WebSocketMessage::DeleteServer { server_id }).unwrap(),
-                )
+                let message = WebSocketMessageType::DeleteServer { server_id };
+                save_and_send_message!(self, ctx, message);
             }
         }
     }
@@ -94,16 +118,16 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
     fn handle(&mut self, item: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         match item {
             Ok(ws::Message::Text(text)) => {
-                let message = match serde_json::from_str::<WebSocketMessage>(&text) {
+                let message = match serde_json::from_str::<WebSocketMessageType>(&text) {
                     Ok(value) => value,
                     Err(_) => return,
                 };
 
                 match message {
-                    WebSocketMessage::Ping => {
-                        ctx.text(serde_json::to_string(&WebSocketMessage::Pong).unwrap());
+                    WebSocketMessageType::Ping => {
+                        ctx.text(serde_json::to_string(&WebSocketMessageType::Pong).unwrap());
                     }
-                    WebSocketMessage::Identify { bearer } => {
+                    WebSocketMessageType::Identify { bearer } => {
                         let claims = match self.jwt.get_claims(&bearer) {
                             Some(value) => value,
                             None => return,
@@ -145,6 +169,7 @@ pub async fn websocket(
             server: server.get_ref().clone(),
             channels: HashSet::new(),
             servers: HashSet::new(),
+            messages: VecDeque::new(),
             jwt: jwt.as_ref().clone(),
         },
         &request,
