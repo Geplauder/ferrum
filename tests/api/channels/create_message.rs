@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessageType;
 use uuid::Uuid;
 
 use crate::{
@@ -244,10 +244,14 @@ async fn create_message_sends_websocket_message_to_ready_users() {
     .await;
 
     // Assert
-    assert_next_websocket_message!(WebSocketMessage::NewMessage { message }, &mut connection, {
-        assert_eq!("foobar", message.content);
-        assert_eq!(app.test_user().id, message.user.id);
-    });
+    assert_next_websocket_message!(
+        WebSocketMessageType::NewMessage { message },
+        &mut connection,
+        {
+            assert_eq!("foobar", message.content);
+            assert_eq!(app.test_user().id, message.user.id);
+        }
+    );
 }
 
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]

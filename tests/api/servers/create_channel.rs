@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessageType;
 use uuid::Uuid;
 
 use crate::{assert_next_websocket_message, helpers::TestApplication};
@@ -235,7 +235,7 @@ async fn create_channel_sends_new_channel_to_authenticated_websocket_users() {
 
     // Assert
     assert_next_websocket_message!(
-        WebSocketMessage::NewChannel {
+        WebSocketMessageType::NewChannel {
             channel: new_channel
         },
         &mut connection,

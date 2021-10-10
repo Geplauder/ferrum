@@ -6,10 +6,17 @@ use ferrum_shared::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize, actix::prelude::Message)]
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WebSocketMessage {
+    pub id: u64,
+    #[serde(flatten)]
+    pub payload: WebSocketMessageType,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
 #[serde(tag = "type", content = "payload")]
-pub enum WebSocketMessage {
+pub enum WebSocketMessageType {
     Empty,
     Ping,
     Pong,
@@ -50,7 +57,7 @@ pub enum SerializedWebSocketMessage {
     AddUser(Uuid, UserResponse),
     DeleteServer(Uuid),
     DeleteUser(Uuid, Uuid),
-    Data(String, Uuid),
+    Data(WebSocketMessageType, Uuid),
 }
 
 #[derive(Debug, actix::prelude::Message)]
@@ -82,11 +89,11 @@ pub struct ReadyUser {
 #[rtype(result = "()")]
 pub struct SendMessageToChannel {
     pub channel_id: Uuid,
-    pub message: WebSocketMessage,
+    pub message: WebSocketMessageType,
 }
 
 impl SendMessageToChannel {
-    pub fn new(channel_id: Uuid, message: WebSocketMessage) -> Self {
+    pub fn new(channel_id: Uuid, message: WebSocketMessageType) -> Self {
         Self {
             channel_id,
             message,

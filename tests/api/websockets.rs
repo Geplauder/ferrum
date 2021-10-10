@@ -1,6 +1,6 @@
 use actix_http::ws;
 use claim::assert_ok;
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessageType;
 use futures::SinkExt;
 
 use crate::{
@@ -26,7 +26,7 @@ async fn websocket_closes_successfully() {
 
     send_websocket_message(
         &mut connection,
-        WebSocketMessage::Identify {
+        WebSocketMessageType::Identify {
             bearer: app.test_user_token(),
         },
     )
@@ -51,14 +51,14 @@ async fn websocket_receives_ready_message_after_successfull_identify() {
     // Act
     send_websocket_message(
         &mut connection,
-        WebSocketMessage::Identify {
+        WebSocketMessageType::Identify {
             bearer: app.test_user_token(),
         },
     )
     .await;
 
     // Assert
-    assert_next_websocket_message!(WebSocketMessage::Ready, &mut connection, ());
+    assert_next_websocket_message!(WebSocketMessageType::Ready, &mut connection, ());
 }
 
 #[ferrum_macros::test(strategy = "User")]
@@ -71,7 +71,7 @@ async fn websocket_does_not_receive_ready_message_after_missing_or_invalid_beare
         // Act
         send_websocket_message(
             &mut connection,
-            WebSocketMessage::Identify { bearer: token },
+            WebSocketMessageType::Identify { bearer: token },
         )
         .await;
 
@@ -86,10 +86,10 @@ async fn websocket_responds_to_ping_with_pong() {
     let (_response, mut connection) = app.websocket().await;
 
     // Act
-    send_websocket_message(&mut connection, WebSocketMessage::Ping).await;
+    send_websocket_message(&mut connection, WebSocketMessageType::Ping).await;
 
     // Assert
-    assert_next_websocket_message!(WebSocketMessage::Pong, &mut connection, ());
+    assert_next_websocket_message!(WebSocketMessageType::Pong, &mut connection, ());
 }
 
 #[ferrum_macros::test(strategy = "User")]

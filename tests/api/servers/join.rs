@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessageType;
 
 use crate::{
     assert_next_websocket_message, assert_no_next_websocket_message,
@@ -137,7 +137,7 @@ async fn join_sends_new_server_to_joining_user() {
 
     // Assert
     assert_next_websocket_message!(
-        WebSocketMessage::NewServer {
+        WebSocketMessageType::NewServer {
             server: new_server,
             channels,
             users
@@ -167,7 +167,7 @@ async fn join_does_not_send_new_user_websocket_message_to_new_user() {
 
     // Assert
     assert_next_websocket_message!(
-        WebSocketMessage::NewServer {
+        WebSocketMessageType::NewServer {
             server: _,
             channels: _,
             users: _
@@ -196,7 +196,7 @@ async fn join_sends_new_user_to_existing_users() {
 
     // Assert
     assert_next_websocket_message!(
-        WebSocketMessage::NewUser { server_id: _, user },
+        WebSocketMessageType::NewUser { server_id: _, user },
         &mut connection,
         {
             assert_eq!(new_user.id, user.id);

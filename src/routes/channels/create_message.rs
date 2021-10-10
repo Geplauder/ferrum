@@ -14,7 +14,7 @@ use ferrum_db::{
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::jwt::AuthorizationService;
 use ferrum_websocket::{
-    messages::{self, WebSocketMessage},
+    messages::{self, WebSocketMessageType},
     WebSocketServer,
 };
 use sqlx::PgPool;
@@ -104,7 +104,7 @@ pub async fn create_message(
 
     server.do_send(messages::SendMessageToChannel::new(
         *channel_id,
-        WebSocketMessage::NewMessage {
+        WebSocketMessageType::NewMessage {
             message: message.to_response(user),
         },
     ));

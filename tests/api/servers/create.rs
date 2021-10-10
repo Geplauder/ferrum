@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessageType;
 
 use crate::{assert_next_websocket_message, helpers::TestApplication};
 
@@ -185,7 +185,7 @@ async fn create_sends_new_server_to_owner_per_websocket() {
 
     // Assert
     assert_next_websocket_message!(
-        WebSocketMessage::NewServer {
+        WebSocketMessageType::NewServer {
             server: new_server,
             channels,
             users

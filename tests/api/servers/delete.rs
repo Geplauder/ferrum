@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessageType;
 use uuid::Uuid;
 
 use crate::{
@@ -134,7 +134,7 @@ async fn delete_server_sends_deleted_server_to_users_on_server() {
 
     // Assert
     assert_next_websocket_message!(
-        WebSocketMessage::DeleteServer { server_id },
+        WebSocketMessageType::DeleteServer { server_id },
         &mut connection,
         {
             assert_eq!(app.test_server().id, server_id);

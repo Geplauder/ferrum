@@ -14,7 +14,7 @@ use crate::messages::{DeleteServer, UserLeft};
 
 use super::messages::{
     IdentifyUser, NewChannel, NewServer, NewUser, SendMessageToChannel, SerializedWebSocketMessage,
-    WebSocketClose, WebSocketMessage,
+    WebSocketClose, WebSocketMessageType,
 };
 
 pub struct WebSocketServer {
@@ -30,9 +30,8 @@ impl WebSocketServer {
         }
     }
 
-    pub fn send_message_to_channel(&self, channel_id: Uuid, message: WebSocketMessage) {
-        let client_message =
-            SerializedWebSocketMessage::Data(serde_json::to_string(&message).unwrap(), channel_id);
+    pub fn send_message_to_channel(&self, channel_id: Uuid, message: WebSocketMessageType) {
+        let client_message = SerializedWebSocketMessage::Data(message, channel_id);
 
         for recipient in self.users.values() {
             recipient.do_send(client_message.clone()).expect("");

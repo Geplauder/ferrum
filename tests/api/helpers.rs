@@ -9,7 +9,7 @@ use ferrum::{
     telemetry::{get_subscriber, init_subscriber},
 };
 use ferrum_shared::jwt::Jwt;
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::WebSocketMessageType;
 use futures::{select, FutureExt, SinkExt, StreamExt};
 use once_cell::sync::Lazy;
 use sqlx::{postgres::PgPoolOptions, types::Uuid, Connection, Executor, PgConnection, PgPool};
@@ -163,8 +163,8 @@ impl TestApplication {
     ) {
         let (response, mut connection) = self.websocket().await;
 
-        send_websocket_message(&mut connection, WebSocketMessage::Identify { bearer }).await;
-        assert_next_websocket_message!(WebSocketMessage::Ready, &mut connection, ());
+        send_websocket_message(&mut connection, WebSocketMessageType::Identify { bearer }).await;
+        assert_next_websocket_message!(WebSocketMessageType::Ready, &mut connection, ());
 
         (response, connection)
     }
@@ -324,7 +324,7 @@ async fn configure_database(settings: &DatabaseSettings) -> PgPool {
 
 pub async fn get_next_websocket_message(
     connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
-) -> Option<WebSocketMessage> {
+) -> Option<WebSocketMessageType> {
     let mut message = connection.next().fuse();
     let mut timeout = Box::pin(actix_rt::time::sleep(Duration::from_secs(2)).fuse());
 
@@ -334,7 +334,7 @@ pub async fn get_next_websocket_message(
     };
 
     match x.unwrap().unwrap() {
-        ws::Frame::Text(text) => match serde_json::from_slice::<WebSocketMessage>(&text) {
+        ws::Frame::Text(text) => match serde_json::from_slice::<WebSocketMessageType>(&text) {
             Ok(value) => Some(value),
             Err(_) => None,
         },
@@ -344,7 +344,7 @@ pub async fn get_next_websocket_message(
 
 pub async fn send_websocket_message(
     connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
-    message: WebSocketMessage,
+    message: WebSocketMessageType,
 ) {
     connection
         .send(ws::Message::Text(
