@@ -18,7 +18,7 @@ use super::messages::{
 };
 
 ///
-/// Manages all [`WebSocketSession`] and updates them with appropriate events.
+/// Manages all [`crate::WebSocketSession`] and updates them with appropriate events.
 ///
 pub struct WebSocketServer {
     db_pool: PgPool,
@@ -34,7 +34,7 @@ impl WebSocketServer {
     }
 
     ///
-    /// Send a websocket message to all [`WebSocketSession`] that have access to a specific channel.
+    /// Send a websocket message to all [`crate::WebSocketSession`] that have access to a specific channel.
     ///
     pub fn send_message_to_channel(&self, channel_id: Uuid, message: WebSocketMessage) {
         let client_message =
