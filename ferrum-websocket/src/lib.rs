@@ -32,22 +32,26 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
     fn handle(&mut self, msg: SerializedWebSocketMessage, ctx: &mut Self::Context) -> Self::Result {
         match msg {
             SerializedWebSocketMessage::Ready(servers, channels) => {
+                // Store the servers and channels and inform the client that it is now ready
                 self.servers = HashSet::from_iter(servers.iter().cloned());
                 self.channels = HashSet::from_iter(channels.iter().cloned());
 
                 ctx.text(serde_json::to_string(&WebSocketMessage::Ready).unwrap());
             }
             SerializedWebSocketMessage::Data(data, channel) => {
+                // If the user is part of the channel, send the raw data
                 if self.channels.contains(&channel) {
                     ctx.text(data);
                 }
             }
             SerializedWebSocketMessage::AddChannel(channel) => {
+                // Store the new channel and send it to the client
                 self.channels.insert(channel.id);
 
                 ctx.text(serde_json::to_string(&WebSocketMessage::NewChannel { channel }).unwrap());
             }
             SerializedWebSocketMessage::AddServer(server, channels, users) => {
+                // Store the new server (and channel) and sent it to the client
                 self.servers.insert(server.id);
                 self.channels.extend(channels.iter().map(|x| x.id));
 
@@ -61,6 +65,7 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
                 );
             }
             SerializedWebSocketMessage::AddUser(server_id, user) => {
+                // Check if the user is part of the server, if so send the new user to the client
                 if self.servers.contains(&server_id) == false {
                     return;
                 }
@@ -70,12 +75,15 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
                 );
             }
             SerializedWebSocketMessage::DeleteUser(user_id, server_id) => {
+                // Send the deleted/leaving user to the client
+
                 ctx.text(
                     serde_json::to_string(&WebSocketMessage::DeleteUser { user_id, server_id })
                         .unwrap(),
                 );
             }
             SerializedWebSocketMessage::DeleteServer(server_id) => {
+                // Check if the user is part of the server, if so remove the server and sent the removed server to the client
                 if self.servers.contains(&server_id) == false {
                     return;
                 }
@@ -101,9 +109,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
 
                 match message {
                     WebSocketMessage::Ping => {
+                        // Respond to Ping with Pong
                         ctx.text(serde_json::to_string(&WebSocketMessage::Pong).unwrap());
                     }
                     WebSocketMessage::Identify { bearer } => {
+                        // Check if there are claims for the JWT, if so identify with the websocket server
                         let claims = match self.jwt.get_claims(&bearer) {
                             Some(value) => value,
                             None => return,
@@ -121,6 +131,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession 
                 }
             }
             Ok(ws::Message::Close(reason)) => {
+                // If the user was identified, notify the websocket server about the closed session
                 if let Some(user_id) = self.user_id {
                     self.server.do_send(WebSocketClose::new(user_id));
                 }
