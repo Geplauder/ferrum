@@ -34,6 +34,20 @@ npm install -g bunyan # Globally install bunyan
 cargo run | bunyan    # Start the project and pipe the logs into bunyan
 ```
 
+## Contributing
+
+Ferrum uses `rustfmt` for formatting and `clippy` for linting. Make sure to run them before committing:
+```bash
+cargo fmt
+cargo clippy
+```
+
+When using `sqlx` compile-time checked queries, make sure to update the metadata before committing:
+```bash
+cd ferrum-db
+cargo sqlx prepare # Update sqlx metadata
+```
+
 ## Disclaimer
 
 This project is under heavy development and not suitable for production. It may contain severe security vulnerabilities.
