@@ -20,11 +20,17 @@ use ferrum_websocket::{
 use sqlx::PgPool;
 use uuid::Uuid;
 
+///
+/// Contains the request body for creating messages.
+///
 #[derive(serde::Deserialize)]
 pub struct BodyData {
     content: String,
 }
 
+///
+/// Try to convert [`BodyData`] into a validated instance of [`NewMessage`].
+///
 impl TryFrom<BodyData> for NewMessage {
     type Error = String;
 
@@ -35,12 +41,18 @@ impl TryFrom<BodyData> for NewMessage {
     }
 }
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum CreateMessageError {
+    /// Invalid data was supplied in the request.
     #[error("{0}")]
     ValidationError(String),
+    /// User has no permissions to send messages in this channel.
     #[error("Forbidden")]
     ForbiddenError(#[from] sqlx::Error),
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -69,11 +81,13 @@ pub async fn create_message(
     server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateMessageError> {
+    // Validate the request body
     let new_message: NewMessage = body
         .0
         .try_into()
         .map_err(CreateMessageError::ValidationError)?;
 
+    // Check if the authenticated user has access to the channel, return forbidden error if not
     does_user_have_access_to_channel(&pool, *channel_id, auth.claims.id)
         .await
         .map_err(CreateMessageError::ForbiddenError)?;
@@ -93,15 +107,16 @@ pub async fn create_message(
     .await
     .context("Failed to insert a new channel message to the database.")?;
 
-    let user = get_user_with_id(auth.claims.id, &pool)
-        .await
-        .context("Failed to get user model")?;
-
     transaction
         .commit()
         .await
         .context("Failed to commit SQL transaction to store a new channel message.")?;
 
+    let user = get_user_with_id(auth.claims.id, &pool)
+        .await
+        .context("Failed to get user model")?;
+
+    // Notify the websocket server about the new message
     server.do_send(messages::SendMessageToChannel::new(
         *channel_id,
         WebSocketMessage::NewMessage {

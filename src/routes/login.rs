@@ -1,5 +1,3 @@
-use std::convert::{TryFrom, TryInto};
-
 use crate::telemetry::spawn_blocking_with_tracing;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
@@ -10,6 +8,9 @@ pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::jwt::Jwt;
 use sqlx::{types::Uuid, PgPool};
 
+///
+/// Contains the request body for logging in users.
+///
 #[derive(serde::Deserialize)]
 pub struct BodyData {
     email: String,
@@ -21,23 +22,27 @@ struct LoginUser {
     password: String,
 }
 
-impl TryFrom<BodyData> for LoginUser {
-    type Error = String;
-
-    fn try_from(value: BodyData) -> Result<Self, Self::Error> {
-        Ok(Self {
+///
+/// Try to convert [`BodyData`] into a validated instance of [`LoginUser`].
+///
+impl From<BodyData> for LoginUser {
+    fn from(value: BodyData) -> Self {
+        Self {
             email: value.email,
             password: value.password,
-        })
+        }
     }
 }
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum LoginError {
-    #[error("{0}")]
-    ValidationError(String),
+    /// Login failed due to wrong email or password
     #[error("Login failed")]
     LoginFailed(#[source] anyhow::Error),
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -51,7 +56,6 @@ impl std::fmt::Debug for LoginError {
 impl ResponseError for LoginError {
     fn status_code(&self) -> actix_http::StatusCode {
         match self {
-            LoginError::ValidationError(_) => StatusCode::BAD_REQUEST,
             LoginError::LoginFailed(_) => StatusCode::UNAUTHORIZED,
             LoginError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -64,7 +68,7 @@ pub async fn login(
     pool: web::Data<PgPool>,
     jwt: web::Data<Jwt>,
 ) -> Result<HttpResponse, LoginError> {
-    let login_user: LoginUser = body.0.try_into().map_err(LoginError::ValidationError)?;
+    let login_user: LoginUser = body.0.into();
 
     let (user_id, user_email) = validate_credentials(login_user, &pool).await?;
     tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
@@ -81,10 +85,12 @@ async fn validate_credentials(
     login_user: LoginUser,
     pool: &PgPool,
 ) -> Result<(Uuid, String), LoginError> {
+    // Try to get a user with the supplied email
     let stored_user = get_user_with_email(login_user.email.as_ref(), pool)
         .await
         .context("Failed to retrieve stored user.")?;
 
+    // If no user was found, return a logging failed error
     let user = match stored_user {
         Some(value) => value,
         None => return Err(LoginError::LoginFailed(anyhow::anyhow!(""))),
@@ -92,6 +98,7 @@ async fn validate_credentials(
 
     let user_password = user.password.clone();
 
+    // Check if the supplied password matches the one stored for this user
     spawn_blocking_with_tracing(move || verify_password_hash(user_password, login_user.password))
         .await
         .context("Failed to spawn blocking task.")
@@ -112,6 +119,7 @@ fn verify_password_hash(
         .context("Failed to parse password hash.")
         .map_err(LoginError::UnexpectedError)?;
 
+    // Check the given password against the stored one and return a login failed error if they do not match
     Argon2::default()
         .verify_password(given_password.as_bytes(), &expected_password_hash)
         .context("Invalid password.")

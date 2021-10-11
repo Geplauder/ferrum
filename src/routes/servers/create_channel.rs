@@ -17,11 +17,17 @@ use ferrum_websocket::{messages, WebSocketServer};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+///
+/// Contains the request body for creating channels.
+///
 #[derive(serde::Deserialize)]
 pub struct BodyData {
     name: String,
 }
 
+///
+/// Try to convert [`BodyData`] into a validated instance of [`NewChannel`].
+///
 impl TryFrom<BodyData> for NewChannel {
     type Error = String;
 
@@ -32,12 +38,18 @@ impl TryFrom<BodyData> for NewChannel {
     }
 }
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum CreateChannelError {
+    /// Invalid data was supplied in the request.
     #[error("{0}")]
     ValidationError(String),
+    /// User has no permissions to create a channel.
     #[error("Forbidden")]
     ForbiddenError,
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -66,11 +78,13 @@ pub async fn create_channel(
     websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateChannelError> {
+    // Validate the request body
     let new_channel: NewChannel = body
         .0
         .try_into()
         .map_err(CreateChannelError::ValidationError)?;
 
+    // Check if the user is the owner of this server, return forbidden error if not
     let is_user_owner = is_user_owner_of_server(&pool, *server_id, auth.claims.id)
         .await
         .context("Failed to check if user is owner of the server.")?;
@@ -93,6 +107,7 @@ pub async fn create_channel(
         .await
         .context("Failed to commit SQL transaction to store a new server channel.")?;
 
+    // Notify websocket server about the new channel
     websocket_server.do_send(messages::NewChannel::new(channel.into()));
 
     Ok(HttpResponse::Ok().finish())

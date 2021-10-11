@@ -21,6 +21,12 @@ pub struct Application {
 }
 
 impl Application {
+    ///
+    /// Build a instance of [`Application`] from the supplied [`Settings`].
+    ///
+    /// This also creates a database pool, binds a address for the web server
+    /// and starts the websocket server.
+    ///
     pub async fn build(settings: Settings) -> Result<Self, std::io::Error> {
         let db_pool = get_db_pool(&settings.database)
             .await
@@ -56,6 +62,11 @@ impl Application {
     }
 }
 
+///
+/// Get a [`PgPool`] from the supplied [`DatabaseSettings`].
+///
+/// Also sets a default timeout of 5 seconds.
+///
 pub async fn get_db_pool(settings: &DatabaseSettings) -> Result<PgPool, sqlx::Error> {
     PgPoolOptions::new()
         .connect_timeout(Duration::from_secs(5))

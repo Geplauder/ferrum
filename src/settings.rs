@@ -31,6 +31,9 @@ pub struct DatabaseSettings {
 }
 
 impl DatabaseSettings {
+    ///
+    /// Get [`PgConnectionOptions`] without a specific database.
+    ///
     pub fn without_db(&self) -> PgConnectOptions {
         let ssl_mode = if self.require_ssl {
             PgSslMode::Require
@@ -46,11 +49,17 @@ impl DatabaseSettings {
             .ssl_mode(ssl_mode)
     }
 
+    ///
+    /// Get [`PgConnectionOptions`] with the database specified in the settings.
+    ///
     pub fn with_db(&self) -> PgConnectOptions {
         self.without_db().database(&self.database_name)
     }
 }
 
+///
+/// Available settings environments
+///
 #[derive(Debug)]
 pub enum Environment {
     Local,
@@ -59,6 +68,10 @@ pub enum Environment {
 }
 
 impl Environment {
+    ///
+    /// Get the string representation for an enum.
+    /// This can be used to load the settings files.
+    ///
     pub fn as_str(&self) -> &'static str {
         match self {
             Environment::Local => "local",
@@ -81,6 +94,11 @@ impl TryFrom<String> for Environment {
     }
 }
 
+///
+/// Get an instance of the settings.
+///
+/// This uses the current `APP_ENV` to dertermine the settings file to load.
+///
 pub fn get_settings() -> Result<Settings, ConfigError> {
     let mut settings = Config::default();
     let base_path = std::env::current_dir().expect("Error while getting current directory");

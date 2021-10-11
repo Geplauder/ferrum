@@ -7,8 +7,12 @@ use ferrum_shared::{jwt::AuthorizationService, users::UserResponse};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum GetUsersError {
+    /// User has no permissions to access this server.
     #[error("Forbidden")]
     ForbiddenError,
     #[error(transparent)]
@@ -36,6 +40,7 @@ pub async fn get_users(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, GetUsersError> {
+    // Check if the authenticated user is on the server, return forbidden error if not
     let is_user_on_server = is_user_on_server(&pool, auth.claims.id, *server_id)
         .await
         .context("Failed to check if user is on server")?;
@@ -44,6 +49,7 @@ pub async fn get_users(
         return Err(GetUsersError::ForbiddenError);
     }
 
+    // Get all users for this server and transform them into proper responses
     let server_users: Vec<UserResponse> = get_users_on_server(*server_id, &pool)
         .await
         .context("Failed to retrieve server users")?

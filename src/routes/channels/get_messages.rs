@@ -10,10 +10,15 @@ use ferrum_shared::jwt::AuthorizationService;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum GetMessagesError {
+    /// User has no permissions to access this channel.
     #[error("Forbidden")]
     ForbiddenError(#[from] sqlx::Error),
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -39,10 +44,14 @@ pub async fn get_messages(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, GetMessagesError> {
+    // Check if the authenticated user has access to the channel, return forbidden error if not
     does_user_have_access_to_channel(&pool, *channel_id, auth.claims.id)
         .await
         .map_err(GetMessagesError::ForbiddenError)?;
 
+    // Get all messages for the specified channel and transform them into proper responses.
+    // As these responses contain the user response, we also have to fetch the user for each message
+    // TODO: Improve this
     let channel_messages = get_messages_for_channel(*channel_id, &pool)
         .await
         .context("Failed to retrieve channel messages.")?;
