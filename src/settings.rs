@@ -32,7 +32,7 @@ pub struct DatabaseSettings {
 
 impl DatabaseSettings {
     ///
-    /// Get [`PgConnectionOptions`] without a specific database.
+    /// Get [PgConnectOptions](sqlx::postgres::PgConnectOptions) without a specific database.
     ///
     pub fn without_db(&self) -> PgConnectOptions {
         let ssl_mode = if self.require_ssl {
@@ -50,7 +50,7 @@ impl DatabaseSettings {
     }
 
     ///
-    /// Get [`PgConnectionOptions`] with the database specified in the settings.
+    /// Get [PgConnectOptions](sqlx::postgres::PgConnectOptions) with the database specified in the settings.
     ///
     pub fn with_db(&self) -> PgConnectOptions {
         self.without_db().database(&self.database_name)

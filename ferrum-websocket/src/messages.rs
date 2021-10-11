@@ -42,24 +42,24 @@ pub enum WebSocketMessage {
 }
 
 ///
-/// These messages are sent from the websocket [`Server`] to the [`WebSocketSession`]
+/// These messages are sent from the websocket [`crate::server::WebSocketServer`] to the [`crate::WebSocketSession`]
 ///
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub enum SerializedWebSocketMessage {
-    /// Tells the [`WebSocketSession`] to which servers and channels it belongs.
+    /// Tells the [`crate::WebSocketSession`] to which servers and channels it belongs.
     Ready(Vec<Uuid>, Vec<Uuid>),
-    /// Adds a channel to the [`WebSocketSession`] and tells it to notify the client about it.
+    /// Adds a channel to the [`crate::WebSocketSession`] and tells it to notify the client about it.
     AddChannel(ChannelResponse),
-    /// Adds a server to the [`WebSocketSession`] and tells it to notify the client about it.
+    /// Adds a server to the [`crate::WebSocketSession`] and tells it to notify the client about it.
     AddServer(ServerResponse, Vec<ChannelResponse>, Vec<UserResponse>),
-    /// Tells the [`WebSocketSession`] to notify the client about a new user.
+    /// Tells the [`crate::WebSocketSession`] to notify the client about a new user.
     AddUser(Uuid, UserResponse),
-    /// Removes a server from the [`WebSocketSession`] and tells it to notify the client about it.
+    /// Removes a server from the [`crate::WebSocketSession`] and tells it to notify the client about it.
     DeleteServer(Uuid),
-    /// Removes a channel from the [`WebSocketSession`] and tells it to notify the client about it.
+    /// Removes a channel from the [`crate::WebSocketSession`] and tells it to notify the client about it.
     DeleteUser(Uuid, Uuid),
-    /// Tells the [`WebSocketSession`] to send raw data to the client.
+    /// Tells the [`crate::WebSocketSession`] to send raw data to the client.
     Data(String, Uuid),
 }
 
