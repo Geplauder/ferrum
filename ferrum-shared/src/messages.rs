@@ -3,6 +3,9 @@ use uuid::Uuid;
 
 use crate::users::UserResponse;
 
+///
+/// Model for messages that does not contain sensitive information and can be used for responses.
+///
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MessageResponse {
     pub id: Uuid,
