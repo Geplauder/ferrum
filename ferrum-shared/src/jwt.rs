@@ -15,6 +15,9 @@ pub struct Claims {
     iat: usize,
 }
 
+///
+/// Helper to encode and decode JWTs.
+///
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Jwt {
     secret: String,
@@ -25,6 +28,9 @@ impl Jwt {
         Self { secret }
     }
 
+    ///
+    /// Create a JWT from an users' id and email.
+    ///
     pub fn encode(&self, id: Uuid, email: String) -> String {
         let now = SystemTime::now();
         let since_epoch = now.duration_since(UNIX_EPOCH).unwrap();
@@ -41,6 +47,11 @@ impl Jwt {
         .unwrap()
     }
 
+    ///
+    /// Get the claims for a JWT.
+    ///
+    /// Note: Currently tokens are not checked for expiration.
+    ///
     pub fn get_claims(&self, token: &str) -> Option<Claims> {
         let validation = Validation {
             validate_exp: false,
@@ -58,6 +69,12 @@ impl Jwt {
     }
 }
 
+///
+/// This can be used to restrict a route to authenticated users
+/// by having it as a parameter in the request handler.
+///
+/// If the user is unauthenticated, the request will result in a 401 Unauthorized.
+///
 pub struct AuthorizationService {
     pub claims: Claims,
 }
