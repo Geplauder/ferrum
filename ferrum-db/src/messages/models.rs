@@ -4,10 +4,16 @@ use uuid::Uuid;
 
 use crate::users::models::UserModel;
 
+///
+/// Contains validated data to create a new message.
+///
 pub struct NewMessage {
     pub content: MessageContent,
 }
 
+///
+/// Model to fetch a message from the database with.
+///
 #[derive(sqlx::FromRow, serde::Serialize, serde::Deserialize)]
 pub struct MessageModel {
     pub id: Uuid,
@@ -31,10 +37,18 @@ impl MessageModel {
     }
 }
 
+///
+/// Provides a validated message content.
+///
 #[derive(Debug)]
 pub struct MessageContent(String);
 
 impl MessageContent {
+    ///
+    /// Parse a [`MessageContent`] from a [`String`].
+    ///
+    /// This ensures that it is fully validated.
+    ///
     pub fn parse(value: String) -> Result<MessageContent, String> {
         if validator::validate_length(&value, Some(1), Some(1000), None) {
             Ok(Self(value))

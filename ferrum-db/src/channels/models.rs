@@ -2,10 +2,16 @@ use chrono::{DateTime, Utc};
 use ferrum_shared::channels::ChannelResponse;
 use uuid::Uuid;
 
+///
+/// Contains validated data to create a new channel.
+///
 pub struct NewChannel {
     pub name: ChannelName,
 }
 
+///
+/// Model to fetch a channel from the database with.
+///
 #[derive(Debug, Clone, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
 pub struct ChannelModel {
     pub id: Uuid,
@@ -27,10 +33,18 @@ impl From<ChannelModel> for ChannelResponse {
     }
 }
 
+///
+/// Provides a validated channel name.
+///
 #[derive(Debug)]
 pub struct ChannelName(String);
 
 impl ChannelName {
+    ///
+    /// Parse a [`ChannelName`] from a [`String`].
+    ///
+    /// This ensures that it is fully validated.
+    ///
     pub fn parse(value: String) -> Result<ChannelName, String> {
         if validator::validate_length(&value, Some(4), Some(32), None) {
             Ok(Self(value))

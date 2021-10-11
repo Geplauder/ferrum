@@ -2,10 +2,15 @@ use chrono::{DateTime, Utc};
 use ferrum_shared::servers::ServerResponse;
 use uuid::Uuid;
 
+///
+/// Contains validated data to create a new server.
 pub struct NewServer {
     pub name: ServerName,
 }
 
+///
+/// Model to fetch a server from the database with.
+///
 #[derive(Debug, Clone, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
 pub struct ServerModel {
     pub id: Uuid,
@@ -27,10 +32,18 @@ impl From<ServerModel> for ServerResponse {
     }
 }
 
+///
+/// Provides a validated server name.
+///
 #[derive(Debug)]
 pub struct ServerName(String);
 
 impl ServerName {
+    ///
+    /// Parse a [`ServerName`] from a [`String`].
+    ///
+    /// This ensures that it is fully validated.
+    ///
     pub fn parse(value: String) -> Result<ServerName, String> {
         if validator::validate_length(&value, Some(4), Some(64), None) {
             Ok(Self(value))
