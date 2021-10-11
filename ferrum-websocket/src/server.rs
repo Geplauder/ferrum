@@ -17,6 +17,9 @@ use super::messages::{
     WebSocketClose, WebSocketMessage,
 };
 
+///
+/// Manages all [`WebSocketSession`] and updates them with appropriate events.
+///
 pub struct WebSocketServer {
     db_pool: PgPool,
     users: HashMap<Uuid, Recipient<SerializedWebSocketMessage>>,
@@ -30,6 +33,9 @@ impl WebSocketServer {
         }
     }
 
+    ///
+    /// Send a websocket message to all [`WebSocketSession`] that have access to a specific channel.
+    ///
     pub fn send_message_to_channel(&self, channel_id: Uuid, message: WebSocketMessage) {
         let client_message =
             SerializedWebSocketMessage::Data(serde_json::to_string(&message).unwrap(), channel_id);
@@ -56,6 +62,7 @@ impl Handler<IdentifyUser> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: IdentifyUser, ctx: &mut Self::Context) -> Self::Result {
+        // Store the user
         self.identify_user(msg.user_id, msg.addr.clone());
 
         let addr = msg.addr;
@@ -64,6 +71,7 @@ impl Handler<IdentifyUser> for WebSocketServer {
         let user_id = msg.user_id;
 
         async move {
+            // Get all channels and servers for this user and inform their websocket session about them
             let channels = get_channels_for_user(user_id, &db_pool).await.unwrap();
             let servers = get_servers_for_user(user_id, &db_pool).await.unwrap();
 
@@ -102,6 +110,7 @@ impl Handler<NewChannel> for WebSocketServer {
         let users = self.users.clone();
 
         async move {
+            // Get all users that should be notified about the new channel and send it to them
             let affected_users = get_users_on_server(msg.channel.server_id, &db_pool)
                 .await
                 .unwrap();
@@ -127,11 +136,13 @@ impl Handler<NewServer> for WebSocketServer {
         let users = self.users.clone();
 
         async move {
+            // Get the server and transform it into a response
             let server: ServerResponse = get_server_with_id(msg.server_id, &db_pool)
                 .await
                 .unwrap()
                 .into();
 
+            // Get all channels and users of this server and transform them into proper responses
             let channels: Vec<ChannelResponse> = get_channels_for_server(msg.server_id, &db_pool)
                 .await
                 .unwrap()
@@ -146,6 +157,7 @@ impl Handler<NewServer> for WebSocketServer {
                 .map(|x| x.clone().into())
                 .collect();
 
+            // Send them all to the new servers' owner
             if let Some(recipient) = users.get(&msg.user_id) {
                 recipient
                     .do_send(SerializedWebSocketMessage::AddServer(
@@ -169,11 +181,13 @@ impl Handler<NewUser> for WebSocketServer {
         let users = self.users.clone();
 
         async move {
+            // Get the new user and transform them into a response
             let new_user: UserResponse = get_user_with_id(msg.user_id, &db_pool)
                 .await
                 .unwrap()
                 .into();
 
+            // Send the new user to all websocket sessions, letting them reject it if necessary
             for (user_id, recipient) in &users {
                 if *user_id == msg.user_id {
                     continue;
@@ -206,6 +220,7 @@ impl Handler<UserLeft> for WebSocketServer {
         let users = self.users.clone();
 
         async move {
+            // Get all users that are on the server and notify them about the leaving user
             let affected_users = get_users_on_server(msg.server_id, &db_pool).await.unwrap();
 
             for user in &affected_users {
@@ -228,6 +243,7 @@ impl Handler<DeleteServer> for WebSocketServer {
     type Result = ();
 
     fn handle(&mut self, msg: DeleteServer, _ctx: &mut Self::Context) -> Self::Result {
+        // Send the deleted server to all websocket sessions, letting them reject it if necessary
         for recipient in self.users.values() {
             recipient
                 .do_send(SerializedWebSocketMessage::DeleteServer(msg.server_id))

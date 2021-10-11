@@ -6,53 +6,66 @@ use ferrum_shared::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+///
+/// These messages are sent and received via the websocket server.
+///
 #[derive(Debug, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
 #[serde(tag = "type", content = "payload")]
 pub enum WebSocketMessage {
+    /// Empty message.
     Empty,
+    /// Sent periodically from the client, the server has to respond with a [`WebSocketMessage::Pong`].
     Ping,
+    /// Sent as a response to a [`WebSocketMessage::Ping`] message.
     Pong,
+    /// Sent to the client to indicate that the handshake was successful.
     Ready,
-    Identify {
-        bearer: String,
-    },
-    NewMessage {
-        message: MessageResponse,
-    },
-    NewChannel {
-        channel: ChannelResponse,
-    },
+    /// Sent from the client for authentication purposes.
+    Identify { bearer: String },
+    /// Sent to the client to inform about a new message.
+    NewMessage { message: MessageResponse },
+    /// Sent to the client to inform about a new channel.
+    NewChannel { channel: ChannelResponse },
+    /// Sent to the client to inform about a new server.
     NewServer {
         server: ServerResponse,
         channels: Vec<ChannelResponse>,
         users: Vec<UserResponse>,
     },
-    NewUser {
-        server_id: Uuid,
-        user: UserResponse,
-    },
-    DeleteUser {
-        server_id: Uuid,
-        user_id: Uuid,
-    },
-    DeleteServer {
-        server_id: Uuid,
-    },
+    /// Sent to the client to inform about a new user.
+    NewUser { server_id: Uuid, user: UserResponse },
+    /// Sent to the client to inform them that a user is no longer part of a server.
+    DeleteUser { server_id: Uuid, user_id: Uuid },
+    /// Sent to the client to inform them that they have no longer access to a server.
+    DeleteServer { server_id: Uuid },
 }
 
+///
+/// These messages are sent from the websocket [`Server`] to the [`WebSocketSession`]
+///
 #[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub enum SerializedWebSocketMessage {
+    /// Tells the [`WebSocketSession`] to which servers and channels it belongs.
     Ready(Vec<Uuid>, Vec<Uuid>),
+    /// Adds a channel to the [`WebSocketSession`] and tells it to notify the client about it.
     AddChannel(ChannelResponse),
+    /// Adds a server to the [`WebSocketSession`] and tells it to notify the client about it.
     AddServer(ServerResponse, Vec<ChannelResponse>, Vec<UserResponse>),
+    /// Tells the [`WebSocketSession`] to notify the client about a new user.
     AddUser(Uuid, UserResponse),
+    /// Removes a server from the [`WebSocketSession`] and tells it to notify the client about it.
     DeleteServer(Uuid),
+    /// Removes a channel from the [`WebSocketSession`] and tells it to notify the client about it.
     DeleteUser(Uuid, Uuid),
+    /// Tells the [`WebSocketSession`] to send raw data to the client.
     Data(String, Uuid),
 }
 
+///
+/// Message to notify the websocket server about closing client sessions.
+///
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct WebSocketClose {
@@ -65,6 +78,9 @@ impl WebSocketClose {
     }
 }
 
+///
+/// Message to notify the websocket server about identifying clients.
+///
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct IdentifyUser {
@@ -78,6 +94,9 @@ pub struct ReadyUser {
     pub channels: Vec<Uuid>,
 }
 
+///
+/// Message to notify the websocket server about a new message in a channel.
+///
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct SendMessageToChannel {
@@ -94,6 +113,9 @@ impl SendMessageToChannel {
     }
 }
 
+///
+/// Message to notify the websocket server about a new channel.
+///
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct NewChannel {
@@ -106,6 +128,9 @@ impl NewChannel {
     }
 }
 
+///
+/// Message to notify the websocket server about a new server.
+///
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct NewServer {
@@ -119,6 +144,9 @@ impl NewServer {
     }
 }
 
+///
+/// Message to notify the websocket server about a new user.
+///
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct NewUser {
@@ -132,6 +160,9 @@ impl NewUser {
     }
 }
 
+///
+/// Message to notify the websocket server about a leaving user.
+///
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct UserLeft {
@@ -145,6 +176,8 @@ impl UserLeft {
     }
 }
 
+///
+/// Message to notify the websocket server about a deleted server.
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct DeleteServer {
