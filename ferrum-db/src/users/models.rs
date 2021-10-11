@@ -6,12 +6,18 @@ use chrono::{DateTime, Utc};
 use ferrum_shared::users::UserResponse;
 use uuid::Uuid;
 
+///
+/// Contains validated data to create a new user.
+///
 pub struct NewUser {
     pub name: UserName,
     pub email: UserEmail,
     pub password: UserPassword,
 }
 
+///
+/// Model to fetch a user from the database with.
+///
 #[derive(Debug, Clone, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
 pub struct UserModel {
     pub id: Uuid,
@@ -33,10 +39,18 @@ impl From<UserModel> for UserResponse {
     }
 }
 
+///
+/// Provides a validated user email.
+///
 #[derive(Debug)]
 pub struct UserEmail(String);
 
 impl UserEmail {
+    ///
+    /// Parse a [`UserEmail`] from a [`String`].
+    ///
+    /// This ensures that it is fully validated.
+    ///
     pub fn parse(value: String) -> Result<UserEmail, String> {
         if validator::validate_email(&value) {
             Ok(Self(value))
@@ -58,10 +72,18 @@ impl std::fmt::Display for UserEmail {
     }
 }
 
+///
+/// Provides a validated user name.
+///
 #[derive(Debug)]
 pub struct UserName(String);
 
 impl UserName {
+    ///
+    /// Parse a [UserName] from a [String].
+    ///
+    /// This ensures that it is fully validated.
+    ///
     pub fn parse(value: String) -> Result<UserName, String> {
         if validator::validate_length(&value, Some(3), Some(32), None) {
             Ok(Self(value))
@@ -83,10 +105,18 @@ impl std::fmt::Display for UserName {
     }
 }
 
+///
+/// Provides a validated user password.
+///
 #[derive(Debug)]
 pub struct UserPassword(String);
 
 impl UserPassword {
+    ///
+    /// Parse a [UserPassword] from a [String].
+    ///
+    /// This ensures that it is fully validated.
+    ///
     pub fn parse(value: String) -> Result<UserPassword, String> {
         if validator::validate_length(&value, Some(8), Some(64), None) {
             let argon = Argon2::default();
