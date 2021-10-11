@@ -8,10 +8,15 @@ use ferrum_websocket::{messages, WebSocketServer};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum DeleteServerError {
+    /// User has no permissions to delete a server.
     #[error("Forbidden")]
     ForbiddenError,
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -38,6 +43,7 @@ pub async fn delete(
     websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, DeleteServerError> {
+    // Check if the user is the owner of this server, return forbidden error if not
     let is_user_owner = is_user_owner_of_server(&pool, *server_id, auth.claims.id)
         .await
         .context("Failed to check if user is owner of the server.")?;
@@ -60,6 +66,7 @@ pub async fn delete(
         .await
         .context("Failed to commit SQL transaction to store a new server.")?;
 
+    // Notify websocket server about the deleted server
     websocket_server.do_send(messages::DeleteServer::new(*server_id));
 
     Ok(HttpResponse::Ok().finish())

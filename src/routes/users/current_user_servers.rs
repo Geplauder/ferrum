@@ -5,8 +5,12 @@ pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::{jwt::AuthorizationService, servers::ServerResponse};
 use sqlx::PgPool;
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum CurrentUserServersError {
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -24,6 +28,7 @@ pub async fn current_user_servers(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CurrentUserServersError> {
+    // Get servers for the currently authenticated user and return them.
     let user_servers: Vec<ServerResponse> = get_servers_for_user(auth.claims.id, &pool)
         .await
         .context("Failed to retrieve server users")?

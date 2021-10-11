@@ -10,6 +10,9 @@ use ferrum_db::users::{
 pub use ferrum_shared::error_chain_fmt;
 use sqlx::PgPool;
 
+///
+/// Contains the request body for registering users.
+///
 #[derive(serde::Deserialize)]
 pub struct BodyData {
     name: String,
@@ -17,6 +20,9 @@ pub struct BodyData {
     password: String,
 }
 
+///
+/// Try to convert [`BodyData`] into a validated instance of [`NewUser`].
+///
 impl TryFrom<BodyData> for NewUser {
     type Error = String;
 
@@ -33,10 +39,15 @@ impl TryFrom<BodyData> for NewUser {
     }
 }
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum RegisterError {
+    /// Invalid data was supplied in the request.
     #[error("{0}")]
     ValidationError(String),
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -61,6 +72,7 @@ pub async fn register(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
 ) -> Result<HttpResponse, RegisterError> {
+    // Validate the request body
     let new_user: NewUser = body.0.try_into().map_err(RegisterError::ValidationError)?;
 
     let mut transaction = pool

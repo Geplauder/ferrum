@@ -13,11 +13,17 @@ use ferrum_shared::jwt::AuthorizationService;
 use ferrum_websocket::{messages, WebSocketServer};
 use sqlx::PgPool;
 
+///
+/// Contains the request body for creating servers.
+///
 #[derive(serde::Deserialize)]
 pub struct BodyData {
     name: String,
 }
 
+///
+/// Try to convert [`BodyData`] into a validated instance of [`NewServer`].
+///
 impl TryFrom<BodyData> for NewServer {
     type Error = String;
 
@@ -28,10 +34,15 @@ impl TryFrom<BodyData> for NewServer {
     }
 }
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum CreateError {
+    /// Invalid data was supplied in the request.
     #[error("{0}")]
     ValidationError(String),
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -58,6 +69,7 @@ pub async fn create(
     websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateError> {
+    // Validate the request body
     let new_server: NewServer = body.0.try_into().map_err(CreateError::ValidationError)?;
 
     let mut transaction = pool
@@ -65,14 +77,17 @@ pub async fn create(
         .await
         .context("Failed to acquire a postgres connection from pool")?;
 
+    // Create the server
     let server = insert_server(&mut transaction, &new_server, auth.claims.id)
         .await
         .context("Failed to insert new server in the database.")?;
 
+    // Add a default channel
     add_default_channel_to_server(&mut transaction, server.id)
         .await
         .context("Failed to insert default server channel to the database.")?;
 
+    // Add the owner to the server
     add_user_to_server(&mut transaction, auth.claims.id, server.id)
         .await
         .context("Failed to insert new users_servers entry to the database.")?;
@@ -82,6 +97,7 @@ pub async fn create(
         .await
         .context("Failed to commit SQL transaction to store a new server.")?;
 
+    // Notify websocket server about the new server
     websocket_server.do_send(messages::NewServer::new(auth.claims.id, server.id));
 
     Ok(HttpResponse::Ok().finish())

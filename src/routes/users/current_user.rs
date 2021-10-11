@@ -5,8 +5,12 @@ pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::{jwt::AuthorizationService, users::UserResponse};
 use sqlx::PgPool;
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum UsersError {
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -24,6 +28,7 @@ pub async fn current_user(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, UsersError> {
+    // Get the user data for the currently authenticated user and return it, if found.
     let user_data: UserResponse = get_user_with_id(auth.claims.id, &pool)
         .await
         .context("Failed to retrieve stored user.")?

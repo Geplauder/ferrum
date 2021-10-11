@@ -9,12 +9,18 @@ use ferrum_websocket::{messages, WebSocketServer};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum JoinError {
+    /// Invalid data was supplied in the request.
     #[error("Server id has an invalid format!")]
     ValidationError(#[from] uuid::Error),
+    /// User is already member of this server.
     #[error("User is already member of that server")]
     AlreadyJoinedError,
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -47,6 +53,7 @@ pub async fn join(
         .await
         .context("Failed to acquire a postgres connection from the pool")?;
 
+    // Try to add the user to the server, return already joined error if the user is already on it
     match add_user_to_server(&mut transaction, auth.claims.id, *server_id).await {
         Ok(_) => Ok(()),
         Err(error) => {
@@ -65,6 +72,8 @@ pub async fn join(
         .await
         .context("Failed to commit SQL transaction to store a new users_servers entry.")?;
 
+    // Notify the websocket server about the new user
+    // TODO: Handle everything in one websocket message
     websocket_server.do_send(messages::NewServer::new(auth.claims.id, *server_id));
     websocket_server.do_send(messages::NewUser::new(auth.claims.id, *server_id));
 

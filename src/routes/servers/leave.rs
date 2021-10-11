@@ -8,12 +8,18 @@ use ferrum_websocket::{messages, WebSocketServer};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum LeaveError {
+    /// User is not a member of this server
     #[error("User is not a member of this server")]
     NotOnServerError,
+    /// User is the owner of this server
     #[error("User is owner of this server")]
     UserIsOwnerError,
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -41,6 +47,8 @@ pub async fn leave(
     websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, LeaveError> {
+    // Get the current server and check if the authenticated user is the owner of it,
+    // return user is owner error if so.
     let server = get_server_with_id(*server_id, &pool)
         .await
         .context("Could not fetch server")?;
@@ -54,6 +62,7 @@ pub async fn leave(
         .await
         .context("Failed to acquire a postgres connection from the pool")?;
 
+    // Try to remove the user from the server, return a not on server error if the user was not on it
     let was_user_on_server = remove_user_from_server(&mut transaction, auth.claims.id, *server_id)
         .await
         .context("Failed to remove users_servers entry from the database")?;
@@ -67,6 +76,7 @@ pub async fn leave(
         .await
         .context("Failed to commit SQL transaction.")?;
 
+    // Notify the websocket server about the leaving user
     websocket_server.do_send(messages::UserLeft::new(auth.claims.id, *server_id));
 
     Ok(HttpResponse::Ok().finish())

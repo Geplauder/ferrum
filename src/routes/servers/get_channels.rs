@@ -7,10 +7,15 @@ use ferrum_shared::{channels::ChannelResponse, jwt::AuthorizationService};
 use sqlx::PgPool;
 use uuid::Uuid;
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum GetChannelsError {
+    /// User has no permissions to access this server.
     #[error("Forbidden")]
     ForbiddenError,
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }
@@ -36,6 +41,7 @@ pub async fn get_channels(
     pool: web::Data<PgPool>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, GetChannelsError> {
+    // Check if the authenticated user is on the server, return forbidden error if not
     let is_user_on_server = is_user_on_server(&pool, auth.claims.id, *server_id)
         .await
         .context("Failed to check if user is on server")?;
@@ -44,6 +50,7 @@ pub async fn get_channels(
         return Err(GetChannelsError::ForbiddenError);
     }
 
+    // Get all channels for this server and transform them into proper responses
     let server_channels: Vec<ChannelResponse> = get_channels_for_server(*server_id, &pool)
         .await
         .context("Failed to retrieve server channels.")?
