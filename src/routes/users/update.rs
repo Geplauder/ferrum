@@ -70,7 +70,7 @@ impl std::fmt::Debug for UserUpdateError {
 impl ResponseError for UserUpdateError {
     fn status_code(&self) -> actix_http::StatusCode {
         match *self {
-            UserUpdateError::WrongPasswordError => StatusCode::BAD_REQUEST,
+            UserUpdateError::WrongPasswordError => StatusCode::FORBIDDEN,
             UserUpdateError::ValidationError(_) => StatusCode::BAD_REQUEST,
             UserUpdateError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
