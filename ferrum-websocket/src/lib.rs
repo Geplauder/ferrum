@@ -14,6 +14,14 @@ use uuid::Uuid;
 
 pub use server::WebSocketServer;
 
+///
+/// This contains data for the websocket connection for a specific user.
+///
+/// For each new websocket client, a new session will be created.
+/// Due to that, reconnections are currently not supported.
+///
+/// When a websocket client closes the connection, the session will also be stopped and disposed.
+///
 pub struct WebSocketSession {
     pub user_id: Option<Uuid>,
     pub server: Addr<WebSocketServer>,
@@ -100,6 +108,8 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
 
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession {
     fn handle(&mut self, item: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+        // Currently we're only handling (and sending) text messages.
+        // In the future, we should probably move to binary messages to reduce overhead.
         match item {
             Ok(ws::Message::Text(text)) => {
                 let message = match serde_json::from_str::<WebSocketMessage>(&text) {
