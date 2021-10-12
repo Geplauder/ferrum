@@ -23,6 +23,7 @@ pub fn verify_password_hash(
     let expected_password_hash =
         PasswordHash::new(&expected_password_hash).context("Failed to parse password hash.")?;
 
+    // Check the given password against the stored one
     if Argon2::default()
         .verify_password(given_password.as_bytes(), &expected_password_hash)
         .is_err()
@@ -33,12 +34,18 @@ pub fn verify_password_hash(
     Ok(true)
 }
 
+///
+/// Contains validated data to create a new user.
+///
 pub struct NewUser {
     pub name: UserName,
     pub email: UserEmail,
     pub password: UserPassword,
 }
 
+///
+/// Contains validated data to update a new user.
+///
 pub struct UpdateUser {
     pub name: Option<UserName>,
     pub email: Option<UserEmail>,

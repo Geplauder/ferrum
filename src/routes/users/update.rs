@@ -12,6 +12,9 @@ use sqlx::PgPool;
 
 use crate::telemetry::spawn_blocking_with_tracing;
 
+///
+/// Contains the request body for updating the current user.
+///
 #[derive(serde::Deserialize)]
 pub struct BodyData {
     name: Option<String>,
@@ -20,6 +23,9 @@ pub struct BodyData {
     current_password: String,
 }
 
+///
+/// Try to convert [`BodyData`] into a validated instance of [`UpdateUser`].
+///
 impl TryFrom<BodyData> for UpdateUser {
     type Error = String;
 
@@ -51,12 +57,18 @@ impl TryFrom<BodyData> for UpdateUser {
     }
 }
 
+///
+/// Possibles errors that can occur on this route.
+///
 #[derive(thiserror::Error)]
 pub enum UserUpdateError {
+    /// User provided the wrong current password
     #[error("Wrong password")]
     WrongPasswordError,
+    /// Invalid data was supplied in the request.
     #[error("{0}")]
     ValidationError(String),
+    /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
 }

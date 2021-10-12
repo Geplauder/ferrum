@@ -87,10 +87,12 @@ async fn validate_credentials(
     login_user: LoginUser,
     pool: &PgPool,
 ) -> Result<(Uuid, String), LoginError> {
+    // Try to get a user with the supplied email
     let stored_user = get_user_with_email(login_user.email.as_ref(), pool)
         .await
         .context("Failed to retrieve stored user.")?;
 
+    // If no user was found, return a logging failed error
     let user = match stored_user {
         Some(value) => value,
         None => return Err(LoginError::LoginFailed),
@@ -98,6 +100,7 @@ async fn validate_credentials(
 
     let user_password = user.password.clone();
 
+    // Check if the supplied password matches the one stored for this user
     let is_password_correct = spawn_blocking_with_tracing(move || {
         verify_password_hash(user_password, login_user.password)
     })
