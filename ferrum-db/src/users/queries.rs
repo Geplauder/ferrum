@@ -130,3 +130,69 @@ pub async fn is_user_on_server(
 
     Ok(row.is_some())
 }
+
+#[tracing::instrument(name = "Update a existing users' name", skip(pool, user_id, name))]
+pub async fn update_user_name(
+    pool: &PgPool,
+    user_id: Uuid,
+    name: &UserName,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE users
+        SET username = $1
+        WHERE id = $2
+        "#,
+        name.as_ref(),
+        user_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(name = "Update a existing users' email", skip(pool, user_id, email))]
+pub async fn update_user_email(
+    pool: &PgPool,
+    user_id: Uuid,
+    email: &UserEmail,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE users
+        SET email = $1
+        WHERE id = $2
+        "#,
+        email.as_ref(),
+        user_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+#[tracing::instrument(
+    name = "Update a existing users' password",
+    skip(pool, user_id, password)
+)]
+pub async fn update_user_password(
+    pool: &PgPool,
+    user_id: Uuid,
+    password: &UserPassword,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE users
+        SET password = $1
+        WHERE id = $2
+        "#,
+        password.as_ref(),
+        user_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
