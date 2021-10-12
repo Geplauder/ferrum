@@ -8,6 +8,9 @@ use uuid::Uuid;
 
 use crate::error_chain_fmt;
 
+///
+/// Contains information about the user, decoded from the JWT.
+///
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub id: Uuid,
@@ -53,11 +56,13 @@ impl Jwt {
     /// Note: Currently tokens are not checked for expiration.
     ///
     pub fn get_claims(&self, token: &str) -> Option<Claims> {
+        // Validate without checking for expiration
         let validation = Validation {
             validate_exp: false,
             ..Default::default()
         };
 
+        // Try to decode the JWT. Either returning the associated claims ore none, if decoding was not possible
         match jsonwebtoken::decode::<Claims>(
             token,
             &DecodingKey::from_secret(self.secret.as_bytes()),
@@ -79,8 +84,15 @@ pub struct AuthorizationService {
     pub claims: Claims,
 }
 
+///
+/// Possible errors that can occur in the [`AuthorizationService`].
+///
+/// Due to the nature of that middleware, it only contains an Unauthorized
+/// error, which returns a 401 for the request.
+///
 #[derive(thiserror::Error)]
 pub enum AuthorizationError {
+    /// User could not be authenticated.
     #[error("Unauthorized")]
     Unauthorized,
 }
@@ -108,6 +120,8 @@ impl FromRequest for AuthorizationService {
         request: &actix_web::HttpRequest,
         _payload: &mut actix_http::Payload,
     ) -> Self::Future {
+        // Check if the request contains a Authorization header.
+        // If so, it strips the "Bearer " prefix.
         let token = request
             .headers()
             .get("Authorization")
@@ -116,6 +130,7 @@ impl FromRequest for AuthorizationService {
 
         let jwt = request.app_data::<Data<Jwt>>().unwrap();
 
+        // Try to decode the JWT, returning an Unauthorized error if not possible
         if let Some(service) = token.as_ref().and_then(|token| {
             jwt.get_claims(token)
                 .map(|claims| AuthorizationService { claims })

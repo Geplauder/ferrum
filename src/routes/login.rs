@@ -68,11 +68,14 @@ pub async fn login(
     pool: web::Data<PgPool>,
     jwt: web::Data<Jwt>,
 ) -> Result<HttpResponse, LoginError> {
+    // Validate the request body
     let login_user: LoginUser = body.0.into();
 
+    // Validate the supplied credentials
     let (user_id, user_email) = validate_credentials(login_user, &pool).await?;
     tracing::Span::current().record("user_id", &tracing::field::display(&user_id));
 
+    // Create a JWT for the user and return it
     let token = jwt.encode(user_id, user_email);
 
     Ok(HttpResponse::Ok().json(serde_json::json!({
