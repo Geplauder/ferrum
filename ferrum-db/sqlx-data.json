@@ -271,6 +271,32 @@
       "nullable": []
     }
   },
+  "5c423a9cd5866ce580445d8571fce3998f1aef67570e8a3ef42bcfbde7f42566": {
+    "query": "\n        UPDATE users\n        SET username = $1\n        WHERE id = $2\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
+  "5cc9bef857c2874669af2f9c350efeabe7339cd310b2435c1f6284056464c79e": {
+    "query": "\n        UPDATE users\n        SET email = $1\n        WHERE id = $2\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "810f9468c3d69cffa133b2b0aaae899120570f16f6047f7ff9c398a97b9f5bdf": {
     "query": "\n        SELECT *\n        FROM users\n        WHERE email = $1\n        ",
     "describe": {
@@ -647,6 +673,19 @@
         false,
         false
       ]
+    }
+  },
+  "efb0457a3cd638fe2bfac62c4c58bd9e37e420a4ad4e3af477be2c0e611e0695": {
+    "query": "\n        UPDATE users\n        SET password = $1\n        WHERE id = $2\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      },
+      "nullable": []
     }
   },
   "f4d063f3346a9a54378fb6cee747440de1aee1708f5656dad3d0586ebd642ccb": {

@@ -2,8 +2,7 @@ use crate::telemetry::spawn_blocking_with_tracing;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use argon2::{Argon2, PasswordHash, PasswordVerifier};
-use ferrum_db::users::queries::get_user_with_email;
+use ferrum_db::users::{models::verify_password_hash, queries::get_user_with_email};
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::jwt::Jwt;
 use sqlx::{types::Uuid, PgPool};
@@ -41,7 +40,7 @@ impl From<BodyData> for LoginUser {
 pub enum LoginError {
     /// Login failed due to wrong email or password
     #[error("Login failed")]
-    LoginFailed(#[source] anyhow::Error),
+    LoginFailed,
     /// An unexpected error has occoured while processing the request.
     #[error(transparent)]
     UnexpectedError(#[from] anyhow::Error),
@@ -56,7 +55,7 @@ impl std::fmt::Debug for LoginError {
 impl ResponseError for LoginError {
     fn status_code(&self) -> actix_http::StatusCode {
         match self {
-            LoginError::LoginFailed(_) => StatusCode::UNAUTHORIZED,
+            LoginError::LoginFailed => StatusCode::UNAUTHORIZED,
             LoginError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -88,43 +87,27 @@ async fn validate_credentials(
     login_user: LoginUser,
     pool: &PgPool,
 ) -> Result<(Uuid, String), LoginError> {
-    // Try to get a user with the supplied email
     let stored_user = get_user_with_email(login_user.email.as_ref(), pool)
         .await
         .context("Failed to retrieve stored user.")?;
 
-    // If no user was found, return a logging failed error
     let user = match stored_user {
         Some(value) => value,
-        None => return Err(LoginError::LoginFailed(anyhow::anyhow!(""))),
+        None => return Err(LoginError::LoginFailed),
     };
 
     let user_password = user.password.clone();
 
-    // Check if the supplied password matches the one stored for this user
-    spawn_blocking_with_tracing(move || verify_password_hash(user_password, login_user.password))
-        .await
-        .context("Failed to spawn blocking task.")
-        .map_err(LoginError::UnexpectedError)??;
+    let is_password_correct = spawn_blocking_with_tracing(move || {
+        verify_password_hash(user_password, login_user.password)
+    })
+    .await
+    .context("Failed to spawn blocking task.")
+    .map_err(LoginError::UnexpectedError)??;
+
+    if is_password_correct == false {
+        return Err(LoginError::LoginFailed);
+    }
 
     Ok((user.id, user.email))
-}
-
-#[tracing::instrument(
-    name = "Verify credentials",
-    skip(expected_password_hash, given_password)
-)]
-fn verify_password_hash(
-    expected_password_hash: String,
-    given_password: String,
-) -> Result<(), LoginError> {
-    let expected_password_hash = PasswordHash::new(&expected_password_hash)
-        .context("Failed to parse password hash.")
-        .map_err(LoginError::UnexpectedError)?;
-
-    // Check the given password against the stored one and return a login failed error if they do not match
-    Argon2::default()
-        .verify_password(given_password.as_bytes(), &expected_password_hash)
-        .context("Invalid password.")
-        .map_err(LoginError::LoginFailed)
 }

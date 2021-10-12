@@ -1,18 +1,49 @@
+use anyhow::Context;
 use argon2::{
     password_hash::{rand_core::OsRng, SaltString},
-    Argon2, PasswordHasher,
+    Argon2, PasswordHash, PasswordHasher, PasswordVerifier,
 };
 use chrono::{DateTime, Utc};
 use ferrum_shared::users::UserResponse;
 use uuid::Uuid;
 
 ///
-/// Contains validated data to create a new user.
+/// Check if the given password matches with the expected password hash.
 ///
+/// Note: This has to be executed in a new thread, to prevent the blocking.
+///
+#[tracing::instrument(
+    name = "Verify credentials",
+    skip(expected_password_hash, given_password)
+)]
+pub fn verify_password_hash(
+    expected_password_hash: String,
+    given_password: String,
+) -> Result<bool, anyhow::Error> {
+    let expected_password_hash =
+        PasswordHash::new(&expected_password_hash).context("Failed to parse password hash.")?;
+
+    if Argon2::default()
+        .verify_password(given_password.as_bytes(), &expected_password_hash)
+        .is_err()
+    {
+        return Ok(false);
+    }
+
+    Ok(true)
+}
+
 pub struct NewUser {
     pub name: UserName,
     pub email: UserEmail,
     pub password: UserPassword,
+}
+
+pub struct UpdateUser {
+    pub name: Option<UserName>,
+    pub email: Option<UserEmail>,
+    pub password: Option<UserPassword>,
+    pub current_password: String,
 }
 
 ///
