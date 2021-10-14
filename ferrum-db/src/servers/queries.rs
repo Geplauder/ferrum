@@ -165,3 +165,24 @@ pub async fn get_servers_for_user(
     .fetch_all(pool)
     .await
 }
+
+#[tracing::instrument(name = "Update a existing servers' name", skip(pool, server_id, name))]
+pub async fn update_server_name(
+    pool: &PgPool,
+    server_id: Uuid,
+    name: &ServerName,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE servers
+        SET name = $1
+        WHERE id = $2
+        "#,
+        name.as_ref(),
+        server_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}

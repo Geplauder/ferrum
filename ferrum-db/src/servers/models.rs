@@ -9,6 +9,13 @@ pub struct NewServer {
 }
 
 ///
+/// Contains validated data to update an existing server.
+///
+pub struct UpdateServer {
+    pub name: Option<ServerName>,
+}
+
+///
 /// Model to fetch a server from the database with.
 ///
 #[derive(Debug, Clone, sqlx::FromRow, serde::Serialize, serde::Deserialize)]

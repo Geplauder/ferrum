@@ -39,7 +39,7 @@ impl TryFrom<BodyData> for NewChannel {
 }
 
 ///
-/// Possibles errors that can occur on this route.
+/// Possible errors that can occur on this route.
 ///
 #[derive(thiserror::Error)]
 pub enum CreateChannelError {
