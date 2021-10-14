@@ -16,7 +16,7 @@ impl TestApplication {
         }
 
         client
-            .send_json(&body)
+            .send_json(body)
             .await
             .expect("Failed to execute request.")
     }
