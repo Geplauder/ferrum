@@ -44,7 +44,7 @@ pub struct NewUser {
 }
 
 ///
-/// Contains validated data to update a new user.
+/// Contains validated data to update an existing user.
 ///
 pub struct UpdateUser {
     pub name: Option<UserName>,

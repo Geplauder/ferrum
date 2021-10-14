@@ -6,7 +6,7 @@ use ferrum_shared::{jwt::AuthorizationService, users::UserResponse};
 use sqlx::PgPool;
 
 ///
-/// Possibles errors that can occur on this route.
+/// Possible errors that can occur on this route.
 ///
 #[derive(thiserror::Error)]
 pub enum UsersError {
