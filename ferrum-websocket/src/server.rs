@@ -10,7 +10,7 @@ use ferrum_shared::{channels::ChannelResponse, servers::ServerResponse, users::U
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::messages::{DeleteServer, UserLeft};
+use crate::messages::{DeleteServer, UpdateServer, UserLeft};
 
 use super::messages::{
     IdentifyUser, NewChannel, NewServer, NewUser, SendMessageToChannel, SerializedWebSocketMessage,
@@ -249,5 +249,35 @@ impl Handler<DeleteServer> for WebSocketServer {
                 .do_send(SerializedWebSocketMessage::DeleteServer(msg.server_id))
                 .unwrap();
         }
+    }
+}
+
+impl Handler<UpdateServer> for WebSocketServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: UpdateServer, ctx: &mut Self::Context) -> Self::Result {
+        let db_pool = self.db_pool.clone();
+        let users = self.users.clone();
+
+        async move {
+            // Get updated server response
+            let server: ServerResponse = get_server_with_id(msg.server_id, &db_pool)
+                .await
+                .unwrap()
+                .into();
+
+            // Get all users that are on the server and notify them about the updated server
+            let affected_users = get_users_on_server(msg.server_id, &db_pool).await.unwrap();
+
+            for user in &affected_users {
+                if let Some(recipient) = users.get(&user.id) {
+                    recipient
+                        .do_send(SerializedWebSocketMessage::UpdateServer(server.clone()))
+                        .unwrap();
+                }
+            }
+        }
+        .into_actor(self)
+        .wait(ctx)
     }
 }
