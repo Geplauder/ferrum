@@ -1,6 +1,10 @@
 use actix_http::{encoding::Decoder, Payload};
+use ferrum_websocket::messages::WebSocketMessage;
 
-use crate::helpers::TestApplication;
+use crate::{
+    assert_next_websocket_message, assert_no_next_websocket_message,
+    helpers::{TestApplication, TestUser},
+};
 
 impl TestApplication {
     pub async fn post_update_server(
@@ -154,4 +158,60 @@ async fn update_persists_changes_to_server() {
     .expect("Failed to fetch saved server");
 
     assert_eq!("FooBar", saved_server.name);
+}
+
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
+async fn update_sends_update_server_websockt_message_to_users_on_server() {
+    // Arrange
+    let body = serde_json::json!({
+        "name": "FooBar",
+    });
+
+    let (_, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
+
+    // Act
+    app.post_update_server(
+        app.test_server().id.to_string(),
+        &body,
+        Some(app.test_user_token()),
+    )
+    .await;
+
+    // Assert
+    assert_next_websocket_message!(
+        WebSocketMessage::UpdateServer { server },
+        &mut connection,
+        {
+            assert_eq!(app.test_server().id, server.id);
+            assert_eq!("FooBar", server.name);
+        }
+    );
+}
+
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
+async fn update_does_not_send_update_websocket_message_to_users_not_on_server() {
+    // Arrange
+    let body = serde_json::json!({
+        "name": "FooBar",
+    });
+
+    let other_user = TestUser::generate();
+    other_user.store(&app.db_pool).await;
+
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.jwt.encode(other_user.id, other_user.email))
+        .await;
+
+    // Act
+    app.post_update_server(
+        app.test_server().id.to_string(),
+        &body,
+        Some(app.test_user_token()),
+    )
+    .await;
+
+    // Assert
+    assert_no_next_websocket_message!(&mut connection);
 }
