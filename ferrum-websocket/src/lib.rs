@@ -102,6 +102,13 @@ impl Handler<SerializedWebSocketMessage> for WebSocketSession {
                     serde_json::to_string(&WebSocketMessage::DeleteServer { server_id }).unwrap(),
                 )
             }
+            SerializedWebSocketMessage::UpdateServer(server) => {
+                // Send the updated server to the client
+
+                ctx.text(
+                    serde_json::to_string(&WebSocketMessage::UpdateServer { server }).unwrap(),
+                );
+            }
         }
     }
 }

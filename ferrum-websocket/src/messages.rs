@@ -39,6 +39,8 @@ pub enum WebSocketMessage {
     DeleteUser { server_id: Uuid, user_id: Uuid },
     /// Sent to the client to inform them that they have no longer access to a server.
     DeleteServer { server_id: Uuid },
+    /// Sent to the client to inform them about the updated server.
+    UpdateServer { server: ServerResponse },
 }
 
 ///
@@ -59,6 +61,8 @@ pub enum SerializedWebSocketMessage {
     DeleteServer(Uuid),
     /// Removes a channel from the [`crate::WebSocketSession`] and tells it to notify the client about it.
     DeleteUser(Uuid, Uuid),
+    /// Tells the [`crate::WebSocketSession`] to notify the client about a updated server.
+    UpdateServer(ServerResponse),
     /// Tells the [`crate::WebSocketSession`] to send raw data to the client.
     Data(String, Uuid),
 }
@@ -178,6 +182,7 @@ impl UserLeft {
 
 ///
 /// Message to notify the websocket server about a deleted server.
+///
 #[derive(Debug, actix::prelude::Message)]
 #[rtype(result = "()")]
 pub struct DeleteServer {
@@ -185,6 +190,21 @@ pub struct DeleteServer {
 }
 
 impl DeleteServer {
+    pub fn new(server_id: Uuid) -> Self {
+        Self { server_id }
+    }
+}
+
+///
+/// Message to notify the websocket server about an updated server.
+///
+#[derive(Debug, actix::prelude::Message)]
+#[rtype(result = "()")]
+pub struct UpdateServer {
+    pub server_id: Uuid,
+}
+
+impl UpdateServer {
     pub fn new(server_id: Uuid) -> Self {
         Self { server_id }
     }
