@@ -161,6 +161,31 @@ async fn update_persists_changes_to_server() {
 }
 
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]
+async fn update_with_empty_body_does_not_change_anything() {
+    // Arrange
+    let body = serde_json::json!({});
+
+    // Act
+    app.post_update_server(
+        app.test_server().id.to_string(),
+        &body,
+        Some(app.test_user_token()),
+    )
+    .await;
+
+    // Assert
+    let saved_server = sqlx::query!(
+        "SELECT name FROM servers WHERE id = $1",
+        app.test_server().id,
+    )
+    .fetch_one(&app.db_pool)
+    .await
+    .expect("Failed to fetch saved server");
+
+    assert_eq!(app.test_server().name, saved_server.name);
+}
+
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
 async fn update_sends_update_server_websockt_message_to_users_on_server() {
     // Arrange
     let body = serde_json::json!({
