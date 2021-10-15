@@ -82,6 +82,7 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
 
                     #body
 
+                    tokio::time::sleep(std::time::Duration::from_millis(50)).await;
                     app.db_pool.close().await;
 
                     crate::helpers::teardown(&app.settings.database).await;
