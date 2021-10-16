@@ -38,7 +38,6 @@ actix-codec = "0.4.0"
 awc = "3.0.0-beta.8"
 anyhow = "1.0.40"
 argon2 = { version = "0.3", features = ["std"] }
-config = { version = "0.11", features = ["json"] }
 chrono = { version = "0.4", features = ["serde"] }
 rand = { version = "0.8", features= ["std_rng"] }
 serde = "1.0"

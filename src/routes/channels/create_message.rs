@@ -73,12 +73,12 @@ impl ResponseError for CreateMessageError {
     }
 }
 
-#[tracing::instrument(name = "Create a new channel message", skip(body, pool, auth, server), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Create a new channel message", skip(body, pool, auth, /*server*/), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn create_message(
     channel_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    server: web::Data<Addr<WebSocketServer>>,
+    // server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateMessageError> {
     // Validate the request body
@@ -116,13 +116,14 @@ pub async fn create_message(
         .await
         .context("Failed to get user model")?;
 
+    // WSTODO
     // Notify the websocket server about the new message
-    server.do_send(messages::SendMessageToChannel::new(
-        *channel_id,
-        WebSocketMessage::NewMessage {
-            message: message.to_response(user),
-        },
-    ));
+    // server.do_send(messages::SendMessageToChannel::new(
+    //     *channel_id,
+    //     WebSocketMessage::NewMessage {
+    //         message: message.to_response(user),
+    //     },
+    // ));
 
     Ok(HttpResponse::Ok().finish())
 }

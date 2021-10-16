@@ -41,11 +41,11 @@ impl ResponseError for JoinError {
     }
 }
 
-#[tracing::instrument(name = "Join server", skip(pool, auth, websocket_server), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Join server", skip(pool, auth, /*websocket_server*/), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn join(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    websocket_server: web::Data<Addr<WebSocketServer>>,
+    // websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, JoinError> {
     let mut transaction = pool
@@ -74,8 +74,9 @@ pub async fn join(
 
     // Notify the websocket server about the new user
     // TODO: Handle everything in one websocket message
-    websocket_server.do_send(messages::NewServer::new(auth.claims.id, *server_id));
-    websocket_server.do_send(messages::NewUser::new(auth.claims.id, *server_id));
+    // WSTODO
+    // websocket_server.do_send(messages::NewServer::new(auth.claims.id, *server_id));
+    // websocket_server.do_send(messages::NewUser::new(auth.claims.id, *server_id));
 
     Ok(HttpResponse::Ok().finish())
 }

@@ -70,12 +70,12 @@ impl ResponseError for CreateChannelError {
     }
 }
 
-#[tracing::instrument(name = "Create a new server channel", skip(body, pool, websocket_server, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, channel_name = %body.name))]
+#[tracing::instrument(name = "Create a new server channel", skip(body, pool,/* websocket_server,*/ auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, channel_name = %body.name))]
 pub async fn create_channel(
     server_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    websocket_server: web::Data<Addr<WebSocketServer>>,
+    // websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateChannelError> {
     // Validate the request body
@@ -108,7 +108,8 @@ pub async fn create_channel(
         .context("Failed to commit SQL transaction to store a new server channel.")?;
 
     // Notify websocket server about the new channel
-    websocket_server.do_send(messages::NewChannel::new(channel.into()));
+    // WSTODO
+    // websocket_server.do_send(messages::NewChannel::new(channel.into()));
 
     Ok(HttpResponse::Ok().finish())
 }

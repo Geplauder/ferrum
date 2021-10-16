@@ -36,11 +36,11 @@ impl ResponseError for DeleteServerError {
     }
 }
 
-#[tracing::instrument("Delete server", skip(pool, websocket_server, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument("Delete server", skip(pool, /*websocket_server,*/ auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn delete(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    websocket_server: web::Data<Addr<WebSocketServer>>,
+    // websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, DeleteServerError> {
     // Check if the user is the owner of this server, return forbidden error if not
@@ -67,7 +67,8 @@ pub async fn delete(
         .context("Failed to commit SQL transaction to store a new server.")?;
 
     // Notify websocket server about the deleted server
-    websocket_server.do_send(messages::DeleteServer::new(*server_id));
+    // WSTODO
+    // websocket_server.do_send(messages::DeleteServer::new(*server_id));
 
     Ok(HttpResponse::Ok().finish())
 }

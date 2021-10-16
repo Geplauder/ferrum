@@ -1,0 +1,13 @@
+{
+    "application": {
+        "base_url": "http://127.0.0.1"
+    },
+    "database": {
+        "username": "postgres",
+        "password": "password",
+        "host": "127.0.0.1",
+        "port": 5432,
+        "database_name": "ferrum",
+        "require_ssl": false
+    }
+}

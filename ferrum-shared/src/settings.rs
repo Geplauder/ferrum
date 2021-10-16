@@ -10,6 +10,7 @@ use sqlx::postgres::{PgConnectOptions, PgSslMode};
 pub struct Settings {
     pub application: ApplicationSettings,
     pub database: DatabaseSettings,
+    pub broker: BrokerSettings,
 }
 
 #[derive(Deserialize, Clone)]
@@ -28,6 +29,15 @@ pub struct DatabaseSettings {
     pub port: u16,
     pub database_name: String,
     pub require_ssl: bool,
+}
+
+#[derive(Deserialize, Clone)]
+pub struct BrokerSettings {
+    pub username: String,
+    pub password: String,
+    pub host: String,
+    pub port: u16,
+    pub queue: String,
 }
 
 impl DatabaseSettings {
@@ -54,6 +64,15 @@ impl DatabaseSettings {
     ///
     pub fn with_db(&self) -> PgConnectOptions {
         self.without_db().database(&self.database_name)
+    }
+}
+
+impl BrokerSettings {
+    pub fn get_connection_string<'a>(&self) -> String {
+        format!(
+            "amqp://{}:{}@{}:{}",
+            self.username, self.password, self.host, self.port
+        )
     }
 }
 

@@ -13,5 +13,14 @@ services:
     ports:
       - "5434:5432"
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq:/var/lib/rabbitmq/
+
 volumes:
-    postgres:
+  postgres:
+  rabbitmq:

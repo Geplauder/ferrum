@@ -1,11 +1,17 @@
 use std::collections::{HashMap, HashSet};
 
-use ferrum_shared::jwt::Jwt;
-use ferrum_websocket::{WebSocketServer, WebSocketSession};
+use ferrum_shared::{jwt::Jwt, settings::get_settings};
+use ferrum_websocket::{messages::BrokerEvent, WebSocketServer, WebSocketSession};
 use futures_util::StreamExt;
+use lapin::{
+    options::{BasicAckOptions, BasicConsumeOptions},
+    types::FieldTable,
+    Connection, ConnectionProperties,
+};
 use meio::{Address, System};
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::{TcpListener, TcpStream};
+use tokio_amqp::LapinTokioExt;
 use tokio_tungstenite::accept_async;
 
 async fn handle_connection(
@@ -32,15 +38,54 @@ async fn handle_connection(
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
-    let pool = PgPoolOptions::new().connect("uri").await.unwrap();
+    let settings = get_settings().expect("Failed to read settings");
+
+    let pool = PgPoolOptions::new()
+        .connect_with(settings.database.with_db())
+        .await
+        .unwrap();
 
     let address = System::spawn(WebSocketServer {
         users: HashMap::new(),
         db_pool: pool,
     });
 
+    let address_clone = address.clone();
+
     let addr = "127.0.0.1:8001";
     let listener = TcpListener::bind(&addr).await.unwrap();
+
+    tokio::spawn(async move {
+        let connection = Connection::connect(
+            &settings.broker.get_connection_string(),
+            ConnectionProperties::default().with_tokio(),
+        )
+        .await
+        .unwrap();
+
+        let channel = connection.create_channel().await.unwrap();
+
+        let mut consumer = channel
+            .basic_consume(
+                &settings.broker.queue,
+                "websocket_server",
+                BasicConsumeOptions::default(),
+                FieldTable::default(),
+            )
+            .await
+            .unwrap();
+
+        while let Some(message) = consumer.next().await {
+            let (_, delivery) = message.unwrap();
+
+            delivery.ack(BasicAckOptions::default()).await.unwrap();
+
+            let broker_event: BrokerEvent = bincode::deserialize(&delivery.data).unwrap();
+            println!("{:#?}", broker_event);
+
+            address_clone.clone().act(broker_event).await.unwrap();
+        }
+    });
 
     while let Ok((stream, _)) = listener.accept().await {
         tokio::spawn(handle_connection(stream, address.clone()));
