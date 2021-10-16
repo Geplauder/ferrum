@@ -2,8 +2,8 @@ pub mod channels;
 pub mod jwt;
 pub mod messages;
 pub mod servers;
-pub mod users;
 pub mod settings;
+pub mod users;
 
 pub fn error_chain_fmt(
     e: &impl std::error::Error,

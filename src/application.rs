@@ -3,12 +3,19 @@ use std::{net::TcpListener, time::Duration};
 use actix::Actor;
 use actix_cors::Cors;
 use actix_web::{dev::Server, web, web::Data, App, HttpServer};
-use ferrum_shared::{jwt::Jwt, settings::{DatabaseSettings, Settings}};
-use ferrum_websocket::WebSocketServer;
+use ferrum_shared::{
+    jwt::Jwt,
+    settings::{DatabaseSettings, Settings},
+};
+use lapin::{Connection, ConnectionProperties};
 use sqlx::{postgres::PgPoolOptions, PgPool};
+use tokio_amqp::LapinTokioExt;
 use tracing_actix_web::TracingLogger;
 
-use crate::routes::{channels, health_check, login, register, servers, users};
+use crate::{
+    broker::Broker,
+    routes::{channels, health_check, login, register, servers, users},
+};
 
 pub struct ApplicationBaseUrl(pub String);
 
@@ -37,14 +44,26 @@ impl Application {
         let listener = TcpListener::bind(&address)?;
         let port = listener.local_addr().unwrap().port();
 
-        let websocket_server = WebSocketServer::new(db_pool.clone());
+        let ampq_connection = Connection::connect(
+            &settings.broker.get_connection_string(),
+            ConnectionProperties::default().with_tokio(),
+        )
+        .await
+        .unwrap();
+
+        let channel = ampq_connection.create_channel().await.unwrap();
+
+        let broker = Broker {
+            queue: settings.broker.queue,
+            channel,
+        };
 
         let server = run(
             listener,
             db_pool,
             settings.application.base_url,
             settings.application.jwt_secret,
-            // websocket_server,
+            broker,
         )?;
 
         Ok(Self { port, server })
@@ -76,12 +95,12 @@ fn run(
     db_pool: PgPool,
     base_url: String,
     jwt_secret: String,
-    // websocket_server: WebSocketServer,
+    broker: Broker,
 ) -> Result<Server, std::io::Error> {
     let db_pool = Data::new(db_pool);
     let base_url = Data::new(ApplicationBaseUrl(base_url));
     let jwt = Data::new(Jwt::new(jwt_secret));
-    // let websocket_server = Data::new(websocket_server.start());
+    let broker = Data::new(broker.start());
 
     let server = HttpServer::new(move || {
         App::new()
@@ -95,7 +114,7 @@ fn run(
             .app_data(db_pool.clone())
             .app_data(base_url.clone())
             .app_data(jwt.clone())
-            // .app_data(websocket_server.clone())
+            .app_data(broker.clone())
             .route("/health_check", web::get().to(health_check))
             .route("/register", web::post().to(register))
             .route("/login", web::post().to(login))

@@ -9,9 +9,11 @@ use ferrum_db::servers::{
     queries::{is_user_owner_of_server, update_server_name},
 };
 use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
-use ferrum_websocket::{messages, WebSocketServer};
+use ferrum_websocket::messages::BrokerEvent;
 use sqlx::PgPool;
 use uuid::Uuid;
+
+use crate::broker::{Broker, PublishBrokerEvent};
 
 ///
 /// Contains the request body for updating a server.
@@ -70,12 +72,12 @@ impl ResponseError for ServerUpdateError {
     }
 }
 
-#[tracing::instrument(name = "Update existing server", skip(body, pool, /*websocket_server,*/ auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Update existing server", skip(body, pool, broker, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn update(
     server_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    // websocket_server: web::Data<Addr<WebSocketServer>>,
+    broker: web::Data<Addr<Broker>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, ServerUpdateError> {
     // Validate the request body
@@ -101,7 +103,11 @@ pub async fn update(
     }
 
     // WSTODO
-    // websocket_server.do_send(messages::UpdateServer::new(*server_id));
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::UpdateServer {
+            server_id: *server_id,
+        },
+    });
 
     Ok(HttpResponse::Ok().finish())
 }

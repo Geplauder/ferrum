@@ -27,7 +27,7 @@ async fn handle_connection(
         user_id: None,
         channels: HashSet::new(),
         servers: HashSet::new(),
-        jwt: Jwt::new("foobar".to_string()),
+        jwt: Jwt::new("foo".to_string()),
         server,
     });
 
@@ -80,8 +80,7 @@ async fn main() -> Result<(), std::io::Error> {
 
             delivery.ack(BasicAckOptions::default()).await.unwrap();
 
-            let broker_event: BrokerEvent = bincode::deserialize(&delivery.data).unwrap();
-            println!("{:#?}", broker_event);
+            let broker_event: BrokerEvent = serde_json::from_slice(&delivery.data).unwrap();
 
             address_clone.clone().act(broker_event).await.unwrap();
         }

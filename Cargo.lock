@@ -472,15 +472,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a32fd6af2b5827bce66c29053ba0e7c42b9dcab01835835058558c10851a46b"
 
 [[package]]
-name = "bincode"
-version = "1.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1f45e9417d87227c7a56d22e471c6206462cba514c7590c09aff4cf6d1ddcad"
-dependencies = [
- "serde 1.0.130",
-]
-
-[[package]]
 name = "bitflags"
 version = "1.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -856,6 +847,7 @@ dependencies = [
  "ferrum-websocket",
  "futures",
  "jsonwebtoken",
+ "lapin",
  "once_cell",
  "quickcheck",
  "quickcheck_macros",
@@ -865,6 +857,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tokio",
+ "tokio-amqp",
  "tracing",
  "tracing-actix-web",
  "tracing-bunyan-formatter",
@@ -927,7 +920,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bincode",
  "ferrum-db",
  "ferrum-shared",
  "futures-util",

@@ -5,9 +5,11 @@ use anyhow::Context;
 use ferrum_db::servers::queries::add_user_to_server;
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::jwt::AuthorizationService;
-use ferrum_websocket::{messages, WebSocketServer};
+use ferrum_websocket::messages::BrokerEvent;
 use sqlx::PgPool;
 use uuid::Uuid;
+
+use crate::broker::{Broker, PublishBrokerEvent};
 
 ///
 /// Possible errors that can occur on this route.
@@ -41,11 +43,11 @@ impl ResponseError for JoinError {
     }
 }
 
-#[tracing::instrument(name = "Join server", skip(pool, auth, /*websocket_server*/), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Join server", skip(pool, auth, broker), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn join(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    // websocket_server: web::Data<Addr<WebSocketServer>>,
+    broker: web::Data<Addr<Broker>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, JoinError> {
     let mut transaction = pool
@@ -74,9 +76,19 @@ pub async fn join(
 
     // Notify the websocket server about the new user
     // TODO: Handle everything in one websocket message
-    // WSTODO
-    // websocket_server.do_send(messages::NewServer::new(auth.claims.id, *server_id));
-    // websocket_server.do_send(messages::NewUser::new(auth.claims.id, *server_id));
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::NewServer {
+            user_id: auth.claims.id,
+            server_id: *server_id,
+        },
+    });
+
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::NewUser {
+            user_id: auth.claims.id,
+            server_id: *server_id,
+        },
+    });
 
     Ok(HttpResponse::Ok().finish())
 }
