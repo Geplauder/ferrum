@@ -1,6 +1,9 @@
 use std::collections::{HashMap, HashSet};
 
-use ferrum_shared::{jwt::Jwt, settings::get_settings};
+use ferrum_shared::{
+    jwt::Jwt,
+    settings::{get_settings, Settings},
+};
 use ferrum_websocket::{messages::BrokerEvent, WebSocketServer, WebSocketSession};
 use futures_util::StreamExt;
 use lapin::{
@@ -15,6 +18,7 @@ use tokio_amqp::LapinTokioExt;
 use tokio_tungstenite::accept_async;
 
 async fn handle_connection(
+    settings: Settings,
     stream: TcpStream,
     server: Address<WebSocketServer>,
 ) -> tokio_tungstenite::tungstenite::Result<()> {
@@ -27,7 +31,7 @@ async fn handle_connection(
         user_id: None,
         channels: HashSet::new(),
         servers: HashSet::new(),
-        jwt: Jwt::new("foo".to_string()),
+        jwt: Jwt::new(settings.application.jwt_secret.to_owned()),
         server,
     });
 
@@ -39,6 +43,7 @@ async fn handle_connection(
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
     let settings = get_settings().expect("Failed to read settings");
+    let broker_settings = settings.clone();
 
     let pool = PgPoolOptions::new()
         .connect_with(settings.database.with_db())
@@ -57,7 +62,7 @@ async fn main() -> Result<(), std::io::Error> {
 
     tokio::spawn(async move {
         let connection = Connection::connect(
-            &settings.broker.get_connection_string(),
+            &broker_settings.broker.get_connection_string(),
             ConnectionProperties::default().with_tokio(),
         )
         .await
@@ -67,7 +72,7 @@ async fn main() -> Result<(), std::io::Error> {
 
         let mut consumer = channel
             .basic_consume(
-                &settings.broker.queue,
+                &broker_settings.broker.queue,
                 "websocket_server",
                 BasicConsumeOptions::default(),
                 FieldTable::default(),
@@ -87,7 +92,7 @@ async fn main() -> Result<(), std::io::Error> {
     });
 
     while let Ok((stream, _)) = listener.accept().await {
-        tokio::spawn(handle_connection(stream, address.clone()));
+        tokio::spawn(handle_connection(settings.clone(), stream, address.clone()));
     }
 
     Ok(())

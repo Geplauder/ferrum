@@ -68,7 +68,7 @@ impl DatabaseSettings {
 }
 
 impl BrokerSettings {
-    pub fn get_connection_string<'a>(&self) -> String {
+    pub fn get_connection_string(&self) -> String {
         format!(
             "amqp://{}:{}@{}:{}",
             self.username, self.password, self.host, self.port

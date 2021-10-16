@@ -113,8 +113,8 @@ impl WebSocketServer {
             .into();
 
         // Send the new user to all websocket sessions, letting them reject it if necessary
-        for (user_id, mut recipient) in self.users.clone() {
-            if user_id == user_id {
+        for (existing_user_id, mut recipient) in self.users.clone() {
+            if existing_user_id == user_id {
                 continue;
             }
 
