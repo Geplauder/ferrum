@@ -27,6 +27,10 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
+      rabbitmq:
+        image: rabbitmq:3
+        ports:
+          - 5672:5672
     steps:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
@@ -110,6 +114,10 @@ jobs:
           POSTGRES_DB: postgres
         ports:
           - 5432:5432
+      rabbitmq:
+        image: rabbitmq:3
+        ports:
+          - 5672:5672
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
