@@ -5,14 +5,19 @@ mod server;
 
 use std::{collections::HashSet, iter::FromIterator};
 
-use actix::{Actor, ActorContext, Addr, AsyncContext, Handler, StreamHandler};
-use actix_web::{web, HttpRequest, HttpResponse};
-use actix_web_actors::ws;
+use async_trait::async_trait;
 use ferrum_shared::jwt::Jwt;
+use futures_util::{stream::SplitSink, SinkExt};
+use meio::{ActionHandler, Actor, Address, Consumer, Context, StartedBy, StreamAcceptor, System};
 use messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose, WebSocketMessage};
+use tokio::net::TcpStream;
+use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 use uuid::Uuid;
 
 pub use server::WebSocketServer;
+
+type TungsteniteMessage =
+    tokio_tungstenite::tungstenite::Result<tokio_tungstenite::tungstenite::Message>;
 
 ///
 /// This contains data for the websocket connection for a specific user.
@@ -23,161 +28,208 @@ pub use server::WebSocketServer;
 /// When a websocket client closes the connection, the session will also be stopped and disposed.
 ///
 pub struct WebSocketSession {
+    pub connection: SplitSink<WebSocketStream<TcpStream>, Message>,
     pub user_id: Option<Uuid>,
-    pub server: Addr<WebSocketServer>,
+    pub server: Address<WebSocketServer>,
     pub channels: HashSet<Uuid>,
     pub servers: HashSet<Uuid>,
-    jwt: Jwt,
+    pub jwt: Jwt,
 }
 
 impl Actor for WebSocketSession {
-    type Context = ws::WebsocketContext<Self>;
+    type GroupBy = ();
 }
 
-impl Handler<SerializedWebSocketMessage> for WebSocketSession {
-    type Result = ();
+#[async_trait]
+impl StartedBy<System> for WebSocketSession {
+    async fn handle(&mut self, _ctx: &mut Context<Self>) -> Result<(), anyhow::Error> {
+        Ok(())
+    }
+}
 
-    fn handle(&mut self, msg: SerializedWebSocketMessage, ctx: &mut Self::Context) -> Self::Result {
+#[async_trait]
+impl Consumer<TungsteniteMessage> for WebSocketSession {
+    async fn handle(
+        &mut self,
+        message: TungsteniteMessage,
+        ctx: &mut Context<Self>,
+    ) -> Result<(), anyhow::Error> {
+        println!("got message");
+
+        // Currently we're only handling (and sending) text messages.
+        // In the future, we should probably move to binary messages to reduce overhead.
+        match message {
+            Ok(Message::Text(text)) => {
+                let message = match serde_json::from_str::<WebSocketMessage>(&text) {
+                    Ok(value) => value,
+                    Err(_) => return Err(anyhow::anyhow!("todo")),
+                };
+
+                match message {
+                    WebSocketMessage::Ping => {
+                        // Respond to Ping with Pong
+                        self.connection
+                            .send(Message::Text(
+                                serde_json::to_string(&WebSocketMessage::Pong).unwrap(),
+                            ))
+                            .await
+                            .unwrap();
+                        // ctx.text(serde_json::to_string(&WebSocketMessage::Pong).unwrap());
+                    }
+                    WebSocketMessage::Identify { bearer } => {
+                        // Check if there are claims for the JWT, if so identify with the websocket server
+                        let claims = match self.jwt.get_claims(&bearer) {
+                            Some(value) => value,
+                            None => return Err(anyhow::anyhow!("todo")),
+                        };
+
+                        let address = ctx.address();
+
+                        self.user_id = Some(claims.id);
+                        self.server
+                            .act(IdentifyUser {
+                                user_id: claims.id,
+                                addr: address.clone(),
+                            })
+                            .await
+                            .unwrap();
+                    }
+                    _ => (),
+                }
+            }
+            Ok(Message::Close(_reason)) => {
+                // If the user was identified, notify the websocket server about the closed session
+                if let Some(user_id) = self.user_id {
+                    self.server.act(WebSocketClose::new(user_id)).await.unwrap();
+                }
+
+                self.connection.close().await.unwrap();
+                ctx.stop();
+            }
+            _ => (),
+        }
+
+        Ok(())
+    }
+
+    async fn finished(&mut self, ctx: &mut Context<Self>) -> Result<(), anyhow::Error> {
+        ctx.shutdown();
+
+        Ok(())
+    }
+}
+
+impl StreamAcceptor<TungsteniteMessage> for WebSocketSession {
+    fn stream_group(&self) -> Self::GroupBy {}
+}
+
+#[async_trait]
+impl ActionHandler<SerializedWebSocketMessage> for WebSocketSession {
+    async fn handle(
+        &mut self,
+        msg: SerializedWebSocketMessage,
+        _ctx: &mut Context<Self>,
+    ) -> Result<(), anyhow::Error> {
         match msg {
             SerializedWebSocketMessage::Ready(servers, channels) => {
                 // Store the servers and channels and inform the client that it is now ready
                 self.servers = HashSet::from_iter(servers.iter().cloned());
                 self.channels = HashSet::from_iter(channels.iter().cloned());
 
-                ctx.text(serde_json::to_string(&WebSocketMessage::Ready).unwrap());
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&WebSocketMessage::Ready).unwrap(),
+                    ))
+                    .await
+                    .unwrap();
             }
             SerializedWebSocketMessage::Data(data, channel) => {
                 // If the user is part of the channel, send the raw data
                 if self.channels.contains(&channel) {
-                    ctx.text(data);
+                    self.connection.send(Message::Text(data)).await.unwrap();
                 }
             }
             SerializedWebSocketMessage::AddChannel(channel) => {
                 // Store the new channel and send it to the client
                 self.channels.insert(channel.id);
 
-                ctx.text(serde_json::to_string(&WebSocketMessage::NewChannel { channel }).unwrap());
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&WebSocketMessage::NewChannel { channel }).unwrap(),
+                    ))
+                    .await
+                    .unwrap();
             }
             SerializedWebSocketMessage::AddServer(server, channels, users) => {
                 // Store the new server (and channel) and sent it to the client
                 self.servers.insert(server.id);
                 self.channels.extend(channels.iter().map(|x| x.id));
 
-                ctx.text(
-                    serde_json::to_string(&WebSocketMessage::NewServer {
-                        server,
-                        channels,
-                        users,
-                    })
-                    .unwrap(),
-                );
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&WebSocketMessage::NewServer {
+                            server,
+                            channels,
+                            users,
+                        })
+                        .unwrap(),
+                    ))
+                    .await
+                    .unwrap();
             }
             SerializedWebSocketMessage::AddUser(server_id, user) => {
                 // Check if the user is part of the server, if so send the new user to the client
                 if self.servers.contains(&server_id) == false {
-                    return;
+                    return Err(anyhow::anyhow!("todo"));
                 }
 
-                ctx.text(
-                    serde_json::to_string(&WebSocketMessage::NewUser { server_id, user }).unwrap(),
-                );
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&WebSocketMessage::NewUser { server_id, user })
+                            .unwrap(),
+                    ))
+                    .await
+                    .unwrap();
             }
             SerializedWebSocketMessage::DeleteUser(user_id, server_id) => {
                 // Send the deleted/leaving user to the client
 
-                ctx.text(
-                    serde_json::to_string(&WebSocketMessage::DeleteUser { user_id, server_id })
-                        .unwrap(),
-                );
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&WebSocketMessage::DeleteUser { user_id, server_id })
+                            .unwrap(),
+                    ))
+                    .await
+                    .unwrap();
             }
             SerializedWebSocketMessage::DeleteServer(server_id) => {
                 // Check if the user is part of the server, if so remove the server and sent the removed server to the client
                 if self.servers.contains(&server_id) == false {
-                    return;
+                    return Err(anyhow::anyhow!("todo"));
                 }
 
                 self.servers.remove(&server_id);
 
-                ctx.text(
-                    serde_json::to_string(&WebSocketMessage::DeleteServer { server_id }).unwrap(),
-                )
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&WebSocketMessage::DeleteServer { server_id })
+                            .unwrap(),
+                    ))
+                    .await
+                    .unwrap();
             }
             SerializedWebSocketMessage::UpdateServer(server) => {
                 // Send the updated server to the client
 
-                ctx.text(
-                    serde_json::to_string(&WebSocketMessage::UpdateServer { server }).unwrap(),
-                );
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&WebSocketMessage::UpdateServer { server }).unwrap(),
+                    ))
+                    .await
+                    .unwrap();
             }
         }
+
+        Ok(())
     }
-}
-
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WebSocketSession {
-    fn handle(&mut self, item: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        // Currently we're only handling (and sending) text messages.
-        // In the future, we should probably move to binary messages to reduce overhead.
-        match item {
-            Ok(ws::Message::Text(text)) => {
-                let message = match serde_json::from_str::<WebSocketMessage>(&text) {
-                    Ok(value) => value,
-                    Err(_) => return,
-                };
-
-                match message {
-                    WebSocketMessage::Ping => {
-                        // Respond to Ping with Pong
-                        ctx.text(serde_json::to_string(&WebSocketMessage::Pong).unwrap());
-                    }
-                    WebSocketMessage::Identify { bearer } => {
-                        // Check if there are claims for the JWT, if so identify with the websocket server
-                        let claims = match self.jwt.get_claims(&bearer) {
-                            Some(value) => value,
-                            None => return,
-                        };
-
-                        let address = ctx.address();
-
-                        self.user_id = Some(claims.id);
-                        self.server.do_send(IdentifyUser {
-                            user_id: claims.id,
-                            addr: address.recipient(),
-                        });
-                    }
-                    _ => (),
-                }
-            }
-            Ok(ws::Message::Close(reason)) => {
-                // If the user was identified, notify the websocket server about the closed session
-                if let Some(user_id) = self.user_id {
-                    self.server.do_send(WebSocketClose::new(user_id));
-                }
-
-                ctx.close(reason);
-                ctx.stop();
-            }
-            _ => (),
-        }
-    }
-}
-
-pub async fn websocket(
-    request: HttpRequest,
-    stream: web::Payload,
-    jwt: web::Data<Jwt>,
-    server: web::Data<Addr<WebSocketServer>>,
-) -> Result<HttpResponse, actix_web::Error> {
-    let response = ws::start(
-        WebSocketSession {
-            user_id: None,
-            server: server.get_ref().clone(),
-            channels: HashSet::new(),
-            servers: HashSet::new(),
-            jwt: jwt.as_ref().clone(),
-        },
-        &request,
-        stream,
-    )?;
-
-    Ok(response)
 }
