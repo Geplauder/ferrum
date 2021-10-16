@@ -9,5 +9,8 @@
         "port": 5432,
         "database_name": "ferrum",
         "require_ssl": false
+    },
+    "broker": {
+        "queue": "geplauder_testing"
     }
 }

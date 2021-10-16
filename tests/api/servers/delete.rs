@@ -1,11 +1,8 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::BrokerEvent;
 use uuid::Uuid;
 
-use crate::{
-    assert_next_websocket_message, assert_no_next_websocket_message,
-    helpers::{TestApplication, TestUser},
-};
+use crate::{assert_next_broker_meessage, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn delete_server(
@@ -119,11 +116,8 @@ async fn delete_server_returns_500_when_server_id_is_not_found() {
 }
 
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]
-async fn delete_server_sends_deleted_server_to_users_on_server() {
+async fn delete_server_sends_delete_server_broker_event() {
     // Arrange
-    let (_response, mut connection) = app
-        .get_ready_websocket_connection(app.test_user_token())
-        .await;
 
     // Act
     app.delete_server(
@@ -133,31 +127,11 @@ async fn delete_server_sends_deleted_server_to_users_on_server() {
     .await;
 
     // Assert
-    assert_next_websocket_message!(
-        WebSocketMessage::DeleteServer { server_id },
-        &mut connection,
+    assert_next_broker_meessage!(
+        BrokerEvent::DeleteServer { server_id },
+        &mut app.consumer,
         {
             assert_eq!(app.test_server().id, server_id);
         }
     );
-}
-
-#[ferrum_macros::test(strategy = "UserAndOwnServer")]
-async fn delete_server_does_not_send_websocket_message_to_users_not_on_the_server() {
-    // Arrange
-    let other_user = TestUser::generate();
-    other_user.store(&app.db_pool).await;
-    let other_user_token = app.jwt.encode(other_user.id, other_user.email);
-
-    let (_response, mut connection) = app.get_ready_websocket_connection(other_user_token).await;
-
-    // Act
-    app.delete_server(
-        app.test_server().id.to_string(),
-        Some(app.test_user_token()),
-    )
-    .await;
-
-    // Assert
-    assert_no_next_websocket_message!(&mut connection);
 }

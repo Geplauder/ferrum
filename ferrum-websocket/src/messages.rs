@@ -73,6 +73,7 @@ impl Action for SerializedWebSocketMessage {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BrokerEvent {
+    // TODO: Just use UUID
     NewChannel {
         channel: ChannelResponse,
     },
@@ -94,6 +95,7 @@ pub enum BrokerEvent {
     UpdateServer {
         server_id: Uuid,
     },
+    // TODO: Rework this
     SendMessageToChannel {
         channel_id: Uuid,
         message: WebSocketMessage,

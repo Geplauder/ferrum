@@ -1,7 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::BrokerEvent;
 
-use crate::{assert_next_websocket_message, helpers::TestApplication};
+use crate::{assert_next_broker_meessage, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn post_create_server(
@@ -169,32 +169,25 @@ async fn create_returns_401_for_missing_or_invalid_bearer_token() {
 }
 
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]
-async fn create_sends_new_server_to_owner_per_websocket() {
+async fn create_sends_new_server_broker_event() {
     // Arrange
     let body = serde_json::json!({
         "name": "foobar"
     });
-
-    let (_response, mut connection) = app
-        .get_ready_websocket_connection(app.test_user_token())
-        .await;
 
     // Act
     app.post_create_server(body, Some(app.test_user_token()))
         .await;
 
     // Assert
-    assert_next_websocket_message!(
-        WebSocketMessage::NewServer {
-            server: new_server,
-            channels,
-            users
+    assert_next_broker_meessage!(
+        BrokerEvent::NewServer {
+            server_id: _,
+            user_id
         },
-        &mut connection,
+        &mut app.consumer,
         {
-            assert_eq!("foobar", new_server.name);
-            assert_eq!(1, channels.len());
-            assert_eq!(1, users.len());
+            assert_eq!(app.test_user().id, user_id);
         }
     );
 }

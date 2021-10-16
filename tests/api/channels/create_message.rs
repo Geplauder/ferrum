@@ -1,10 +1,8 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::BrokerEvent;
 use uuid::Uuid;
 
-use crate::{
-    assert_next_websocket_message, assert_no_next_websocket_message, helpers::TestApplication,
-};
+use crate::{assert_next_broker_meessage, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn post_create_channel_message(
@@ -224,16 +222,13 @@ async fn create_message_returns_403_when_user_has_no_access_to_the_channel() {
     assert_eq!(403, response.status().as_u16());
 }
 
+// WSTODO
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]
-async fn create_message_sends_websocket_message_to_ready_users() {
+async fn create_message_sends_new_message_broker_event() {
     // Arrange
     let body = serde_json::json!({
         "content": "foobar"
     });
-
-    let (_response, mut connection) = app
-        .get_ready_websocket_connection(app.test_user_token())
-        .await;
 
     // Act
     app.post_create_channel_message(
@@ -244,29 +239,12 @@ async fn create_message_sends_websocket_message_to_ready_users() {
     .await;
 
     // Assert
-    assert_next_websocket_message!(WebSocketMessage::NewMessage { message }, &mut connection, {
-        assert_eq!("foobar", message.content);
-        assert_eq!(app.test_user().id, message.user.id);
-    });
-}
-
-#[ferrum_macros::test(strategy = "UserAndOwnServer")]
-async fn create_message_does_not_send_websocket_message_to_non_bootstrapped_users() {
-    // Arrange
-    let body = serde_json::json!({
-        "content": "foobar"
-    });
-
-    let (_response, mut connection) = app.websocket().await;
-
-    // Act
-    app.post_create_channel_message(
-        app.test_server().default_channel_id.to_string(),
-        body,
-        Some(app.test_user_token()),
-    )
-    .await;
-
-    // Assert
-    assert_no_next_websocket_message!(&mut connection);
+    assert_next_broker_meessage!(
+        BrokerEvent::SendMessageToChannel {
+            channel_id: _,
+            message: _
+        },
+        &mut app.consumer,
+        {}
+    );
 }

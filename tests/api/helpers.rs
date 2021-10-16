@@ -11,10 +11,16 @@ use ferrum_shared::{
     jwt::Jwt,
     settings::{get_settings, DatabaseSettings, Settings},
 };
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::{BrokerEvent, WebSocketMessage};
 use futures::{select, FutureExt, SinkExt, StreamExt};
+use lapin::{
+    options::{BasicConsumeOptions, QueueDeclareOptions, QueueDeleteOptions},
+    types::FieldTable,
+    Consumer,
+};
 use once_cell::sync::Lazy;
 use sqlx::{postgres::PgPoolOptions, types::Uuid, Connection, Executor, PgConnection, PgPool};
+use tokio_amqp::LapinTokioExt;
 
 ///
 /// This macro can be used to assert the next message a websocket
@@ -84,6 +90,23 @@ macro_rules! assert_no_next_websocket_message {
     };
 }
 
+#[macro_export]
+macro_rules! assert_next_broker_meessage {
+    ($type:pat, $consumer:expr, $callback:tt) => {
+        let message = crate::helpers::get_next_ampq_message($consumer).await;
+
+        // let (_, delivery) = $consumer.next().await.unwrap().unwrap();
+        // let message: ferrum_websocket::messages::BrokerEvent =
+        //     serde_json::from_slice(&delivery.data).unwrap();
+
+        match message {
+            Some($type) => $callback,
+            Some(fallback) => panic!("assertion failed: Wrong message: {:?}", fallback),
+            None => panic!("assertion failed: No message"),
+        }
+    };
+}
+
 static TRACING: Lazy<()> = Lazy::new(|| {
     let default_filter_level = "info".to_string();
     let subscriber_name = "test".to_string();
@@ -106,11 +129,11 @@ pub enum BootstrapType {
 
 pub struct TestApplication {
     pub address: String,
-    pub ws_address: String,
     pub port: u16,
     pub db_pool: PgPool,
     pub jwt: Jwt,
     pub settings: Settings,
+    pub consumer: Consumer,
     test_user: Option<TestUser>,
     test_user_token: Option<String>,
     test_server: Option<TestServer>,
@@ -134,55 +157,6 @@ impl TestApplication {
     pub fn test_server(&self) -> TestServer {
         self.test_server.as_ref().unwrap().clone()
     }
-
-    ///
-    /// Get a ready websocket connection.
-    ///
-    /// First, a new websocket connection will be established.
-    /// Then a [`WebSocketMessage::Identify`] message will be sent to the websocket server,
-    /// containing the supplied `bearer`.
-    ///
-    /// Note that there is also an assertion that a [`WebSocketMessage::Ready`] will be received.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// #[ferrum_macros::test(strategy = "UserAndOwnServer")]
-    /// async fn some_test() {
-    ///     let (response, mut connection) = app
-    ///         .get_ready_websocket_connection(app.test_user_token())
-    ///         .await;
-    ///
-    ///     // ...
-    /// }
-    /// ```
-    pub async fn get_ready_websocket_connection(
-        &self,
-        bearer: String,
-    ) -> (
-        awc::ClientResponse,
-        actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
-    ) {
-        let (response, mut connection) = self.websocket().await;
-
-        send_websocket_message(&mut connection, WebSocketMessage::Identify { bearer }).await;
-        assert_next_websocket_message!(WebSocketMessage::Ready, &mut connection, ());
-
-        (response, connection)
-    }
-
-    pub async fn websocket(
-        &self,
-    ) -> (
-        awc::ClientResponse,
-        actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
-    ) {
-        self.http_client()
-            .ws(&format!("{}/ws", &self.ws_address))
-            .connect()
-            .await
-            .unwrap()
-    }
 }
 
 pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
@@ -192,6 +166,7 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
         let mut settings = get_settings().expect("Failed to read settings");
 
         settings.database.database_name = Uuid::new_v4().to_string();
+        settings.broker.queue = Uuid::new_v4().to_string();
         settings.application.port = 0;
 
         settings
@@ -207,15 +182,21 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
 
     let _ = tokio::spawn(application.run_until_stopped());
 
+    let ampq_connection = get_ampq_connection(&settings).await;
+
+    let channel = ampq_connection.create_channel().await.unwrap();
+    create_ampq_queue(&settings, &channel).await;
+    let consumer = get_ampq_consumer(&settings, &channel).await;
+
     let mut test_application = TestApplication {
         address: format!("http://localhost:{}", application_port),
-        ws_address: format!("ws://localhost:{}", application_port),
         port: application_port,
         db_pool: get_db_pool(&settings.database)
             .await
             .expect("Failed to connect to database"),
         jwt: Jwt::new(settings.application.jwt_secret.to_owned()),
-        settings: settings,
+        settings,
+        consumer,
         test_user_token: None,
         test_user: None,
         test_server: None,
@@ -271,8 +252,17 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
     test_application
 }
 
-pub async fn teardown(settings: &DatabaseSettings) {
-    let mut connection = PgConnection::connect_with(&settings.without_db())
+pub async fn teardown(settings: &Settings) {
+    let ampq_connection = get_ampq_connection(settings).await;
+
+    let channel = ampq_connection.create_channel().await.unwrap();
+
+    channel
+        .queue_delete(&settings.broker.queue, QueueDeleteOptions::default())
+        .await
+        .unwrap();
+
+    let mut connection = PgConnection::connect_with(&settings.database.without_db())
         .await
         .expect("Failed to connect to Postgres");
 
@@ -284,7 +274,7 @@ pub async fn teardown(settings: &DatabaseSettings) {
             WHERE datname = '{}'
             AND pid <> pg_backend_pid();
             "#,
-            settings.database_name
+            settings.database.database_name
         ))
         .await
         .expect("Failed to delete database.");
@@ -292,7 +282,7 @@ pub async fn teardown(settings: &DatabaseSettings) {
     connection
         .execute(&*format!(
             "DROP DATABASE \"{}\" WITH (FORCE)",
-            settings.database_name
+            settings.database.database_name
         ))
         .await
         .expect("Failed to delete database.");
@@ -324,10 +314,8 @@ async fn configure_database(settings: &DatabaseSettings) -> PgPool {
     connection_pool
 }
 
-pub async fn get_next_websocket_message(
-    connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
-) -> Option<WebSocketMessage> {
-    let mut message = connection.next().fuse();
+pub async fn get_next_ampq_message(consumer: &mut Consumer) -> Option<BrokerEvent> {
+    let mut message = consumer.next().fuse();
     let mut timeout = Box::pin(actix_rt::time::sleep(Duration::from_secs(2)).fuse());
 
     let x = select! {
@@ -335,13 +323,9 @@ pub async fn get_next_websocket_message(
         () = timeout => return None,
     };
 
-    match x.unwrap().unwrap() {
-        ws::Frame::Text(text) => match serde_json::from_slice::<WebSocketMessage>(&text) {
-            Ok(value) => Some(value),
-            Err(_) => None,
-        },
-        _ => None,
-    }
+    let (_, x) = x.unwrap().unwrap();
+
+    Some(serde_json::from_slice(&x.data).unwrap())
 }
 
 pub async fn send_websocket_message(
@@ -354,6 +338,38 @@ pub async fn send_websocket_message(
         ))
         .await
         .unwrap();
+}
+
+pub async fn get_ampq_connection(settings: &Settings) -> lapin::Connection {
+    lapin::Connection::connect(
+        &settings.broker.get_connection_string(),
+        lapin::ConnectionProperties::default().with_tokio(),
+    )
+    .await
+    .unwrap()
+}
+
+pub async fn create_ampq_queue(settings: &Settings, channel: &lapin::Channel) {
+    channel
+        .queue_declare(
+            &settings.broker.queue,
+            QueueDeclareOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .unwrap();
+}
+
+pub async fn get_ampq_consumer(settings: &Settings, channel: &lapin::Channel) -> Consumer {
+    channel
+        .basic_consume(
+            &settings.broker.queue,
+            "geplauder_testing",
+            BasicConsumeOptions::default(),
+            FieldTable::default(),
+        )
+        .await
+        .unwrap()
 }
 
 #[derive(Debug, Clone)]

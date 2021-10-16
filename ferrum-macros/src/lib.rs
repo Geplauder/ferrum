@@ -78,14 +78,14 @@ pub fn test(args: TokenStream, item: TokenStream) -> TokenStream {
         #vis #sig {
             actix_rt::System::new()
                 .block_on(async {
-                    let app = crate::helpers::spawn_app(#strategy).await;
+                    let mut app = crate::helpers::spawn_app(#strategy).await;
 
                     #body
 
                     tokio::time::sleep(std::time::Duration::from_millis(50)).await;
                     app.db_pool.close().await;
 
-                    crate::helpers::teardown(&app.settings.database).await;
+                    crate::helpers::teardown(&app.settings).await;
                 })
         }
     })
