@@ -71,6 +71,18 @@ pub enum SerializedWebSocketMessage {
 
 impl Action for SerializedWebSocketMessage {}
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum BrokerEvent {
+    NewChannel { channel: ChannelResponse },
+    NewServer { user_id: Uuid, server_id: Uuid },
+    NewUser { user_id: Uuid, server_id: Uuid },
+    UserLeft { user_id: Uuid, server_id: Uuid },
+    DeleteServer { server_id: Uuid },
+    UpdateServer { server_id: Uuid },
+}
+
+impl Action for BrokerEvent {}
+
 ///
 /// Message to notify the websocket server about closing client sessions.
 ///
@@ -123,101 +135,101 @@ impl SendMessageToChannel {
     }
 }
 
-///
-/// Message to notify the websocket server about a new channel.
-///
-#[derive(Debug)]
-pub struct NewChannel {
-    pub channel: ChannelResponse,
-}
+// ///
+// /// Message to notify the websocket server about a new channel.
+// ///
+// #[derive(Debug)]
+// pub struct NewChannel {
+//     pub channel: ChannelResponse,
+// }
 
-impl Action for NewChannel {}
+// impl Action for NewChannel {}
 
-impl NewChannel {
-    pub fn new(channel: ChannelResponse) -> Self {
-        Self { channel }
-    }
-}
+// impl NewChannel {
+//     pub fn new(channel: ChannelResponse) -> Self {
+//         Self { channel }
+//     }
+// }
 
-///
-/// Message to notify the websocket server about a new server.
-///
-#[derive(Debug)]
-pub struct NewServer {
-    pub user_id: Uuid,
-    pub server_id: Uuid,
-}
+// ///
+// /// Message to notify the websocket server about a new server.
+// ///
+// #[derive(Debug)]
+// pub struct NewServer {
+//     pub user_id: Uuid,
+//     pub server_id: Uuid,
+// }
 
-impl Action for NewServer {}
+// impl Action for NewServer {}
 
-impl NewServer {
-    pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
-        Self { user_id, server_id }
-    }
-}
+// impl NewServer {
+//     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
+//         Self { user_id, server_id }
+//     }
+// }
 
-///
-/// Message to notify the websocket server about a new user.
-///
-#[derive(Debug)]
-pub struct NewUser {
-    pub user_id: Uuid,
-    pub server_id: Uuid,
-}
+// ///
+// /// Message to notify the websocket server about a new user.
+// ///
+// #[derive(Debug)]
+// pub struct NewUser {
+//     pub user_id: Uuid,
+//     pub server_id: Uuid,
+// }
 
-impl Action for NewUser {}
+// impl Action for NewUser {}
 
-impl NewUser {
-    pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
-        Self { user_id, server_id }
-    }
-}
+// impl NewUser {
+//     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
+//         Self { user_id, server_id }
+//     }
+// }
 
-///
-/// Message to notify the websocket server about a leaving user.
-///
-#[derive(Debug)]
-pub struct UserLeft {
-    pub user_id: Uuid,
-    pub server_id: Uuid,
-}
+// ///
+// /// Message to notify the websocket server about a leaving user.
+// ///
+// #[derive(Debug)]
+// pub struct UserLeft {
+//     pub user_id: Uuid,
+//     pub server_id: Uuid,
+// }
 
-impl Action for UserLeft {}
+// impl Action for UserLeft {}
 
-impl UserLeft {
-    pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
-        Self { user_id, server_id }
-    }
-}
+// impl UserLeft {
+//     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
+//         Self { user_id, server_id }
+//     }
+// }
 
-///
-/// Message to notify the websocket server about a deleted server.
-///
-#[derive(Debug)]
-pub struct DeleteServer {
-    pub server_id: Uuid,
-}
+// ///
+// /// Message to notify the websocket server about a deleted server.
+// ///
+// #[derive(Debug)]
+// pub struct DeleteServer {
+//     pub server_id: Uuid,
+// }
 
-impl Action for DeleteServer {}
+// impl Action for DeleteServer {}
 
-impl DeleteServer {
-    pub fn new(server_id: Uuid) -> Self {
-        Self { server_id }
-    }
-}
+// impl DeleteServer {
+//     pub fn new(server_id: Uuid) -> Self {
+//         Self { server_id }
+//     }
+// }
 
-///
-/// Message to notify the websocket server about an updated server.
-///
-#[derive(Debug)]
-pub struct UpdateServer {
-    pub server_id: Uuid,
-}
+// ///
+// /// Message to notify the websocket server about an updated server.
+// ///
+// #[derive(Debug)]
+// pub struct UpdateServer {
+//     pub server_id: Uuid,
+// }
 
-impl Action for UpdateServer {}
+// impl Action for UpdateServer {}
 
-impl UpdateServer {
-    pub fn new(server_id: Uuid) -> Self {
-        Self { server_id }
-    }
-}
+// impl UpdateServer {
+//     pub fn new(server_id: Uuid) -> Self {
+//         Self { server_id }
+//     }
+// }

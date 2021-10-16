@@ -40,11 +40,11 @@ impl ResponseError for LeaveError {
     }
 }
 
-#[tracing::instrument(name = "Leave server", skip(pool, auth, websocket_server), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Leave server", skip(pool, auth,/* websocket_server*/), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn leave(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    websocket_server: web::Data<Addr<WebSocketServer>>,
+    // websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, LeaveError> {
     // Get the current server and check if the authenticated user is the owner of it,
@@ -77,7 +77,8 @@ pub async fn leave(
         .context("Failed to commit SQL transaction.")?;
 
     // Notify the websocket server about the leaving user
-    websocket_server.do_send(messages::UserLeft::new(auth.claims.id, *server_id));
+    // WSTODO
+    // websocket_server.do_send(messages::UserLeft::new(auth.claims.id, *server_id));
 
     Ok(HttpResponse::Ok().finish())
 }

@@ -62,11 +62,11 @@ impl ResponseError for CreateError {
     }
 }
 
-#[tracing::instrument(name = "Create a new server", skip(body, pool, websocket_server, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, server_name = %body.name))]
+#[tracing::instrument(name = "Create a new server", skip(body, pool, /*websocket_server,*/ auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, server_name = %body.name))]
 pub async fn create(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    websocket_server: web::Data<Addr<WebSocketServer>>,
+    // websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateError> {
     // Validate the request body
@@ -98,7 +98,8 @@ pub async fn create(
         .context("Failed to commit SQL transaction to store a new server.")?;
 
     // Notify websocket server about the new server
-    websocket_server.do_send(messages::NewServer::new(auth.claims.id, server.id));
+    // WSTODO
+    // websocket_server.do_send(messages::NewServer::new(auth.claims.id, server.id));
 
     Ok(HttpResponse::Ok().finish())
 }
