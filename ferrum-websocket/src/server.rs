@@ -15,7 +15,7 @@ use crate::{messages::BrokerEvent, WebSocketSession};
 
 use super::messages::{
     IdentifyUser, /*, NewChannel, NewServer, NewUser*/
-    SendMessageToChannel, SerializedWebSocketMessage, WebSocketClose, WebSocketMessage,
+    SerializedWebSocketMessage, WebSocketClose, WebSocketMessage,
 };
 
 ///
@@ -235,208 +235,6 @@ impl ActionHandler<WebSocketClose> for WebSocketServer {
 }
 
 #[async_trait]
-impl ActionHandler<SendMessageToChannel> for WebSocketServer {
-    async fn handle(
-        &mut self,
-        msg: SendMessageToChannel,
-        _ctx: &mut Context<Self>,
-    ) -> Result<(), anyhow::Error> {
-        self.send_message_to_channel(msg.channel_id, msg.message)
-            .await;
-
-        Ok(())
-    }
-}
-
-// #[async_trait]
-// impl ActionHandler<NewChannel> for WebSocketServer {
-//     async fn handle(
-//         &mut self,
-//         msg: NewChannel,
-//         _ctx: &mut Context<Self>,
-//     ) -> Result<(), anyhow::Error> {
-//         // Get all users that should be notified about the new channel and send it to them
-//         let affected_users = get_users_on_server(msg.channel.server_id, &self.db_pool)
-//             .await
-//             .unwrap();
-
-//         for user in &affected_users {
-//             if let Some(recipient) = self.users.get_mut(&user.id) {
-//                 recipient
-//                     .act(SerializedWebSocketMessage::AddChannel(msg.channel.clone()))
-//                     .await
-//                     .unwrap();
-//             }
-//         }
-
-//         Ok(())
-//     }
-// }
-
-// #[async_trait]
-// impl ActionHandler<NewServer> for WebSocketServer {
-//     async fn handle(
-//         &mut self,
-//         msg: NewServer,
-//         _ctx: &mut Context<Self>,
-//     ) -> Result<(), anyhow::Error> {
-//         // Get the server and transform it into a response
-//         let server: ServerResponse = get_server_with_id(msg.server_id, &self.db_pool)
-//             .await
-//             .unwrap()
-//             .into();
-
-//         // Get all channels and users of this server and transform them into proper responses
-//         let channels: Vec<ChannelResponse> = get_channels_for_server(msg.server_id, &self.db_pool)
-//             .await
-//             .unwrap()
-//             .iter()
-//             .map(|x| x.clone().into())
-//             .collect();
-
-//         let users_on_server: Vec<UserResponse> = get_users_on_server(msg.server_id, &self.db_pool)
-//             .await
-//             .unwrap()
-//             .iter()
-//             .map(|x| x.clone().into())
-//             .collect();
-
-//         // Send them all to the new servers' owner
-//         if let Some(recipient) = self.users.get_mut(&msg.user_id) {
-//             recipient
-//                 .act(SerializedWebSocketMessage::AddServer(
-//                     server.clone(),
-//                     channels,
-//                     users_on_server,
-//                 ))
-//                 .await
-//                 .unwrap();
-//         }
-
-//         Ok(())
-//     }
-// }
-
-// #[async_trait]
-// impl ActionHandler<NewUser> for WebSocketServer {
-//     async fn handle(
-//         &mut self,
-//         msg: NewUser,
-//         _ctx: &mut Context<Self>,
-//     ) -> Result<(), anyhow::Error> {
-//         // Get the new user and transform them into a response
-//         let new_user: UserResponse = get_user_with_id(msg.user_id, &self.db_pool)
-//             .await
-//             .unwrap()
-//             .into();
-
-//         // Send the new user to all websocket sessions, letting them reject it if necessary
-//         for (user_id, mut recipient) in self.users.clone() {
-//             if user_id == msg.user_id {
-//                 continue;
-//             }
-
-//             if let Err(error) = recipient
-//                 .act(SerializedWebSocketMessage::AddUser(
-//                     msg.server_id,
-//                     new_user.clone(),
-//                 ))
-//                 .await
-//             {
-//                 println!("Error in NewUser websocket message handler: {:?}", error);
-//             }
-//         }
-
-//         Ok(())
-//     }
-// }
-
-// #[async_trait]
-// impl ActionHandler<UserLeft> for WebSocketServer {
-//     async fn handle(
-//         &mut self,
-//         msg: UserLeft,
-//         _ctx: &mut Context<Self>,
-//     ) -> Result<(), anyhow::Error> {
-//         if let Some(recipient) = self.users.get_mut(&msg.user_id) {
-//             recipient
-//                 .act(SerializedWebSocketMessage::DeleteServer(msg.server_id))
-//                 .await
-//                 .unwrap();
-//         }
-
-//         // Get all users that are on the server and notify them about the leaving user
-//         let affected_users = get_users_on_server(msg.server_id, &self.db_pool)
-//             .await
-//             .unwrap();
-
-//         for user in &affected_users {
-//             if let Some(recipient) = self.users.get_mut(&user.id) {
-//                 recipient
-//                     .act(SerializedWebSocketMessage::DeleteUser(
-//                         msg.user_id,
-//                         msg.server_id,
-//                     ))
-//                     .await
-//                     .unwrap();
-//             }
-//         }
-
-//         Ok(())
-//     }
-// }
-
-// #[async_trait]
-// impl ActionHandler<DeleteServer> for WebSocketServer {
-//     async fn handle(
-//         &mut self,
-//         msg: DeleteServer,
-//         _ctx: &mut Context<Self>,
-//     ) -> Result<(), anyhow::Error> {
-//         // Send the deleted server to all websocket sessions, letting them reject it if necessary
-//         for mut recipient in self.users.values().cloned() {
-//             recipient
-//                 .act(SerializedWebSocketMessage::DeleteServer(msg.server_id))
-//                 .await
-//                 .unwrap();
-//         }
-
-//         Ok(())
-//     }
-// }
-
-// #[async_trait]
-// impl ActionHandler<UpdateServer> for WebSocketServer {
-//     async fn handle(
-//         &mut self,
-//         msg: UpdateServer,
-//         _ctx: &mut Context<Self>,
-//     ) -> Result<(), anyhow::Error> {
-//         // Get updated server response
-//         let server: ServerResponse = get_server_with_id(msg.server_id, &self.db_pool)
-//             .await
-//             .unwrap()
-//             .into();
-
-//         // Get all users that are on the server and notify them about the updated server
-//         let affected_users = get_users_on_server(msg.server_id, &self.db_pool)
-//             .await
-//             .unwrap();
-
-//         for user in &affected_users {
-//             if let Some(recipient) = self.users.get_mut(&user.id) {
-//                 recipient
-//                     .act(SerializedWebSocketMessage::UpdateServer(server.clone()))
-//                     .await
-//                     .unwrap();
-//             }
-//         }
-
-//         Ok(())
-//     }
-// }
-
-#[async_trait]
 impl ActionHandler<BrokerEvent> for WebSocketServer {
     async fn handle(
         &mut self,
@@ -454,6 +252,10 @@ impl ActionHandler<BrokerEvent> for WebSocketServer {
             }
             BrokerEvent::DeleteServer { server_id } => self.delete_server(server_id).await,
             BrokerEvent::UpdateServer { server_id } => self.update_server(server_id).await,
+            BrokerEvent::SendMessageToChannel {
+                channel_id,
+                message,
+            } => self.send_message_to_channel(channel_id, message).await,
         }
 
         Ok(())

@@ -11,7 +11,7 @@ use crate::WebSocketSession;
 ///
 /// These messages are sent and received via the websocket server.
 ///
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum WebSocketMessage {
     /// Empty message.
@@ -73,12 +73,31 @@ impl Action for SerializedWebSocketMessage {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BrokerEvent {
-    NewChannel { channel: ChannelResponse },
-    NewServer { user_id: Uuid, server_id: Uuid },
-    NewUser { user_id: Uuid, server_id: Uuid },
-    UserLeft { user_id: Uuid, server_id: Uuid },
-    DeleteServer { server_id: Uuid },
-    UpdateServer { server_id: Uuid },
+    NewChannel {
+        channel: ChannelResponse,
+    },
+    NewServer {
+        user_id: Uuid,
+        server_id: Uuid,
+    },
+    NewUser {
+        user_id: Uuid,
+        server_id: Uuid,
+    },
+    UserLeft {
+        user_id: Uuid,
+        server_id: Uuid,
+    },
+    DeleteServer {
+        server_id: Uuid,
+    },
+    UpdateServer {
+        server_id: Uuid,
+    },
+    SendMessageToChannel {
+        channel_id: Uuid,
+        message: WebSocketMessage,
+    },
 }
 
 impl Action for BrokerEvent {}
@@ -114,122 +133,3 @@ impl Action for IdentifyUser {}
 pub struct ReadyUser {
     pub channels: Vec<Uuid>,
 }
-
-///
-/// Message to notify the websocket server about a new message in a channel.
-///
-#[derive(Debug)]
-pub struct SendMessageToChannel {
-    pub channel_id: Uuid,
-    pub message: WebSocketMessage,
-}
-
-impl Action for SendMessageToChannel {}
-
-impl SendMessageToChannel {
-    pub fn new(channel_id: Uuid, message: WebSocketMessage) -> Self {
-        Self {
-            channel_id,
-            message,
-        }
-    }
-}
-
-// ///
-// /// Message to notify the websocket server about a new channel.
-// ///
-// #[derive(Debug)]
-// pub struct NewChannel {
-//     pub channel: ChannelResponse,
-// }
-
-// impl Action for NewChannel {}
-
-// impl NewChannel {
-//     pub fn new(channel: ChannelResponse) -> Self {
-//         Self { channel }
-//     }
-// }
-
-// ///
-// /// Message to notify the websocket server about a new server.
-// ///
-// #[derive(Debug)]
-// pub struct NewServer {
-//     pub user_id: Uuid,
-//     pub server_id: Uuid,
-// }
-
-// impl Action for NewServer {}
-
-// impl NewServer {
-//     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
-//         Self { user_id, server_id }
-//     }
-// }
-
-// ///
-// /// Message to notify the websocket server about a new user.
-// ///
-// #[derive(Debug)]
-// pub struct NewUser {
-//     pub user_id: Uuid,
-//     pub server_id: Uuid,
-// }
-
-// impl Action for NewUser {}
-
-// impl NewUser {
-//     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
-//         Self { user_id, server_id }
-//     }
-// }
-
-// ///
-// /// Message to notify the websocket server about a leaving user.
-// ///
-// #[derive(Debug)]
-// pub struct UserLeft {
-//     pub user_id: Uuid,
-//     pub server_id: Uuid,
-// }
-
-// impl Action for UserLeft {}
-
-// impl UserLeft {
-//     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
-//         Self { user_id, server_id }
-//     }
-// }
-
-// ///
-// /// Message to notify the websocket server about a deleted server.
-// ///
-// #[derive(Debug)]
-// pub struct DeleteServer {
-//     pub server_id: Uuid,
-// }
-
-// impl Action for DeleteServer {}
-
-// impl DeleteServer {
-//     pub fn new(server_id: Uuid) -> Self {
-//         Self { server_id }
-//     }
-// }
-
-// ///
-// /// Message to notify the websocket server about an updated server.
-// ///
-// #[derive(Debug)]
-// pub struct UpdateServer {
-//     pub server_id: Uuid,
-// }
-
-// impl Action for UpdateServer {}
-
-// impl UpdateServer {
-//     pub fn new(server_id: Uuid) -> Self {
-//         Self { server_id }
-//     }
-// }

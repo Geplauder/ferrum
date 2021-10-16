@@ -10,8 +10,10 @@ use ferrum_db::servers::{
 };
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::jwt::AuthorizationService;
-use ferrum_websocket::{messages, WebSocketServer};
+use ferrum_websocket::messages::BrokerEvent;
 use sqlx::PgPool;
+
+use crate::broker::{Broker, PublishBrokerEvent};
 
 ///
 /// Contains the request body for creating servers.
@@ -62,11 +64,11 @@ impl ResponseError for CreateError {
     }
 }
 
-#[tracing::instrument(name = "Create a new server", skip(body, pool, /*websocket_server,*/ auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, server_name = %body.name))]
+#[tracing::instrument(name = "Create a new server", skip(body, pool, broker, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, server_name = %body.name))]
 pub async fn create(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    // websocket_server: web::Data<Addr<WebSocketServer>>,
+    broker: web::Data<Addr<Broker>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateError> {
     // Validate the request body
@@ -98,8 +100,12 @@ pub async fn create(
         .context("Failed to commit SQL transaction to store a new server.")?;
 
     // Notify websocket server about the new server
-    // WSTODO
-    // websocket_server.do_send(messages::NewServer::new(auth.claims.id, server.id));
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::NewServer {
+            user_id: auth.claims.id,
+            server_id: server.id,
+        },
+    });
 
     Ok(HttpResponse::Ok().finish())
 }

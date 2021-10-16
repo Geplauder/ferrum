@@ -54,8 +54,6 @@ impl Consumer<TungsteniteMessage> for WebSocketSession {
         message: TungsteniteMessage,
         ctx: &mut Context<Self>,
     ) -> Result<(), anyhow::Error> {
-        println!("got message");
-
         // Currently we're only handling (and sending) text messages.
         // In the future, we should probably move to binary messages to reduce overhead.
         match message {
@@ -74,7 +72,6 @@ impl Consumer<TungsteniteMessage> for WebSocketSession {
                             ))
                             .await
                             .unwrap();
-                        // ctx.text(serde_json::to_string(&WebSocketMessage::Pong).unwrap());
                     }
                     WebSocketMessage::Identify { bearer } => {
                         // Check if there are claims for the JWT, if so identify with the websocket server

@@ -13,12 +13,11 @@ use ferrum_db::{
 };
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::jwt::AuthorizationService;
-use ferrum_websocket::{
-    messages::{self, WebSocketMessage},
-    WebSocketServer,
-};
+use ferrum_websocket::messages::{BrokerEvent, WebSocketMessage};
 use sqlx::PgPool;
 use uuid::Uuid;
+
+use crate::broker::{Broker, PublishBrokerEvent};
 
 ///
 /// Contains the request body for creating messages.
@@ -73,12 +72,12 @@ impl ResponseError for CreateMessageError {
     }
 }
 
-#[tracing::instrument(name = "Create a new channel message", skip(body, pool, auth, /*server*/), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Create a new channel message", skip(body, pool, broker, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn create_message(
     channel_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    // server: web::Data<Addr<WebSocketServer>>,
+    broker: web::Data<Addr<Broker>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateMessageError> {
     // Validate the request body
@@ -116,14 +115,14 @@ pub async fn create_message(
         .await
         .context("Failed to get user model")?;
 
-    // WSTODO
-    // Notify the websocket server about the new message
-    // server.do_send(messages::SendMessageToChannel::new(
-    //     *channel_id,
-    //     WebSocketMessage::NewMessage {
-    //         message: message.to_response(user),
-    //     },
-    // ));
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::SendMessageToChannel {
+            channel_id: *channel_id,
+            message: WebSocketMessage::NewMessage {
+                message: message.to_response(user),
+            },
+        },
+    });
 
     Ok(HttpResponse::Ok().finish())
 }

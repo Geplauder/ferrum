@@ -4,9 +4,11 @@ use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::servers::queries::{get_server_with_id, remove_user_from_server};
 use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
-use ferrum_websocket::{messages, WebSocketServer};
+use ferrum_websocket::messages::BrokerEvent;
 use sqlx::PgPool;
 use uuid::Uuid;
+
+use crate::broker::{Broker, PublishBrokerEvent};
 
 ///
 /// Possible errors that can occur on this route.
@@ -40,11 +42,11 @@ impl ResponseError for LeaveError {
     }
 }
 
-#[tracing::instrument(name = "Leave server", skip(pool, auth,/* websocket_server*/), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Leave server", skip(pool, auth, broker), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn leave(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    // websocket_server: web::Data<Addr<WebSocketServer>>,
+    broker: web::Data<Addr<Broker>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, LeaveError> {
     // Get the current server and check if the authenticated user is the owner of it,
@@ -77,8 +79,12 @@ pub async fn leave(
         .context("Failed to commit SQL transaction.")?;
 
     // Notify the websocket server about the leaving user
-    // WSTODO
-    // websocket_server.do_send(messages::UserLeft::new(auth.claims.id, *server_id));
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::UserLeft {
+            user_id: auth.claims.id,
+            server_id: *server_id,
+        },
+    });
 
     Ok(HttpResponse::Ok().finish())
 }

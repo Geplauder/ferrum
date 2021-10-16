@@ -4,9 +4,11 @@ use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::servers::queries::{delete_server, is_user_owner_of_server};
 use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
-use ferrum_websocket::{messages, WebSocketServer};
+use ferrum_websocket::messages::BrokerEvent;
 use sqlx::PgPool;
 use uuid::Uuid;
+
+use crate::broker::{Broker, PublishBrokerEvent};
 
 ///
 /// Possible errors that can occur on this route.
@@ -36,11 +38,11 @@ impl ResponseError for DeleteServerError {
     }
 }
 
-#[tracing::instrument("Delete server", skip(pool, /*websocket_server,*/ auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument("Delete server", skip(pool, broker, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn delete(
     server_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    // websocket_server: web::Data<Addr<WebSocketServer>>,
+    broker: web::Data<Addr<Broker>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, DeleteServerError> {
     // Check if the user is the owner of this server, return forbidden error if not
@@ -67,8 +69,11 @@ pub async fn delete(
         .context("Failed to commit SQL transaction to store a new server.")?;
 
     // Notify websocket server about the deleted server
-    // WSTODO
-    // websocket_server.do_send(messages::DeleteServer::new(*server_id));
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::DeleteServer {
+            server_id: *server_id,
+        },
+    });
 
     Ok(HttpResponse::Ok().finish())
 }

@@ -13,9 +13,11 @@ use ferrum_db::{
 };
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::jwt::AuthorizationService;
-use ferrum_websocket::{messages, WebSocketServer};
+use ferrum_websocket::messages::BrokerEvent;
 use sqlx::PgPool;
 use uuid::Uuid;
+
+use crate::broker::{Broker, PublishBrokerEvent};
 
 ///
 /// Contains the request body for creating channels.
@@ -70,11 +72,12 @@ impl ResponseError for CreateChannelError {
     }
 }
 
-#[tracing::instrument(name = "Create a new server channel", skip(body, pool,/* websocket_server,*/ auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, channel_name = %body.name))]
+#[tracing::instrument(name = "Create a new server channel", skip(body, pool, broker, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email, channel_name = %body.name))]
 pub async fn create_channel(
     server_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
+    broker: web::Data<Addr<Broker>>,
     // websocket_server: web::Data<Addr<WebSocketServer>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, CreateChannelError> {
@@ -108,8 +111,11 @@ pub async fn create_channel(
         .context("Failed to commit SQL transaction to store a new server channel.")?;
 
     // Notify websocket server about the new channel
-    // WSTODO
-    // websocket_server.do_send(messages::NewChannel::new(channel.into()));
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::NewChannel {
+            channel: channel.into(),
+        },
+    });
 
     Ok(HttpResponse::Ok().finish())
 }
