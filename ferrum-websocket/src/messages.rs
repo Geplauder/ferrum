@@ -1,16 +1,17 @@
-use actix::Recipient;
 use ferrum_shared::{
     channels::ChannelResponse, messages::MessageResponse, servers::ServerResponse,
     users::UserResponse,
 };
+use meio::{Action, Address};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+
+use crate::WebSocketSession;
 
 ///
 /// These messages are sent and received via the websocket server.
 ///
-#[derive(Debug, Serialize, Deserialize, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload")]
 pub enum WebSocketMessage {
     /// Empty message.
@@ -43,11 +44,12 @@ pub enum WebSocketMessage {
     UpdateServer { server: ServerResponse },
 }
 
+impl Action for WebSocketMessage {}
+
 ///
 /// These messages are sent from the websocket [`crate::server::WebSocketServer`] to the [`crate::WebSocketSession`]
 ///
-#[derive(Debug, Clone, Serialize, Deserialize, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SerializedWebSocketMessage {
     /// Tells the [`crate::WebSocketSession`] to which servers and channels it belongs.
     Ready(Vec<Uuid>, Vec<Uuid>),
@@ -67,14 +69,17 @@ pub enum SerializedWebSocketMessage {
     Data(String, Uuid),
 }
 
+impl Action for SerializedWebSocketMessage {}
+
 ///
 /// Message to notify the websocket server about closing client sessions.
 ///
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug)]
 pub struct WebSocketClose {
     pub user_id: Uuid,
 }
+
+impl Action for WebSocketClose {}
 
 impl WebSocketClose {
     pub fn new(user_id: Uuid) -> Self {
@@ -85,15 +90,15 @@ impl WebSocketClose {
 ///
 /// Message to notify the websocket server about identifying clients.
 ///
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug)]
 pub struct IdentifyUser {
     pub user_id: Uuid,
-    pub addr: Recipient<SerializedWebSocketMessage>,
+    pub addr: Address<WebSocketSession>,
 }
 
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+impl Action for IdentifyUser {}
+
+#[derive(Debug)]
 pub struct ReadyUser {
     pub channels: Vec<Uuid>,
 }
@@ -101,12 +106,13 @@ pub struct ReadyUser {
 ///
 /// Message to notify the websocket server about a new message in a channel.
 ///
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug)]
 pub struct SendMessageToChannel {
     pub channel_id: Uuid,
     pub message: WebSocketMessage,
 }
+
+impl Action for SendMessageToChannel {}
 
 impl SendMessageToChannel {
     pub fn new(channel_id: Uuid, message: WebSocketMessage) -> Self {
@@ -120,11 +126,12 @@ impl SendMessageToChannel {
 ///
 /// Message to notify the websocket server about a new channel.
 ///
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug)]
 pub struct NewChannel {
     pub channel: ChannelResponse,
 }
+
+impl Action for NewChannel {}
 
 impl NewChannel {
     pub fn new(channel: ChannelResponse) -> Self {
@@ -135,12 +142,13 @@ impl NewChannel {
 ///
 /// Message to notify the websocket server about a new server.
 ///
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug)]
 pub struct NewServer {
     pub user_id: Uuid,
     pub server_id: Uuid,
 }
+
+impl Action for NewServer {}
 
 impl NewServer {
     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
@@ -151,12 +159,13 @@ impl NewServer {
 ///
 /// Message to notify the websocket server about a new user.
 ///
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug)]
 pub struct NewUser {
     pub user_id: Uuid,
     pub server_id: Uuid,
 }
+
+impl Action for NewUser {}
 
 impl NewUser {
     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
@@ -167,12 +176,13 @@ impl NewUser {
 ///
 /// Message to notify the websocket server about a leaving user.
 ///
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug)]
 pub struct UserLeft {
     pub user_id: Uuid,
     pub server_id: Uuid,
 }
+
+impl Action for UserLeft {}
 
 impl UserLeft {
     pub fn new(user_id: Uuid, server_id: Uuid) -> Self {
@@ -183,11 +193,12 @@ impl UserLeft {
 ///
 /// Message to notify the websocket server about a deleted server.
 ///
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug)]
 pub struct DeleteServer {
     pub server_id: Uuid,
 }
+
+impl Action for DeleteServer {}
 
 impl DeleteServer {
     pub fn new(server_id: Uuid) -> Self {
@@ -198,11 +209,12 @@ impl DeleteServer {
 ///
 /// Message to notify the websocket server about an updated server.
 ///
-#[derive(Debug, actix::prelude::Message)]
-#[rtype(result = "()")]
+#[derive(Debug)]
 pub struct UpdateServer {
     pub server_id: Uuid,
 }
+
+impl Action for UpdateServer {}
 
 impl UpdateServer {
     pub fn new(server_id: Uuid) -> Self {

@@ -99,7 +99,6 @@ fn run(
             .app_data(base_url.clone())
             .app_data(jwt.clone())
             .app_data(websocket_server.clone())
-            .route("/ws", web::get().to(ferrum_websocket::websocket))
             .route("/health_check", web::get().to(health_check))
             .route("/register", web::post().to(register))
             .route("/login", web::post().to(login))
