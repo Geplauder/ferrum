@@ -1,11 +1,8 @@
 use actix_http::{encoding::Decoder, Payload};
 use claim::assert_err;
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::BrokerEvent;
 
-use crate::{
-    assert_next_websocket_message,
-    helpers::{TestApplication, TestUser},
-};
+use crate::{assert_next_broker_meessage, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn delete_leave_server(
@@ -153,7 +150,7 @@ async fn leave_returns_400_when_user_is_owner_of_the_server() {
 }
 
 #[ferrum_macros::test(strategy = "UserAndOtherServer")]
-async fn leave_sends_delete_server_to_leaving_user() {
+async fn leave_sends_user_left_broker_event() {
     // Arrange
     app.put_join_server(
         app.test_server().id.to_string(),
@@ -161,9 +158,23 @@ async fn leave_sends_delete_server_to_leaving_user() {
     )
     .await;
 
-    let (_response, mut connection) = app
-        .get_ready_websocket_connection(app.test_user_token())
-        .await;
+    // TODO:
+    assert_next_broker_meessage!(
+        BrokerEvent::NewServer {
+            server_id: _,
+            user_id: _
+        },
+        &mut app.consumer,
+        {}
+    );
+    assert_next_broker_meessage!(
+        BrokerEvent::NewUser {
+            server_id: _,
+            user_id: _
+        },
+        &mut app.consumer,
+        {}
+    );
 
     // Act
     app.delete_leave_server(
@@ -173,43 +184,12 @@ async fn leave_sends_delete_server_to_leaving_user() {
     .await;
 
     // Assert
-    assert_next_websocket_message!(
-        WebSocketMessage::DeleteServer { server_id },
-        &mut connection,
+    assert_next_broker_meessage!(
+        BrokerEvent::UserLeft { server_id, user_id },
+        &mut app.consumer,
         {
             assert_eq!(app.test_server().id, server_id);
-        }
-    );
-}
-
-#[ferrum_macros::test(strategy = "UserAndOwnServer")]
-async fn leave_sends_delete_user_to_users_on_server() {
-    // Arrange
-    let other_user = TestUser::generate();
-    other_user.store(&app.db_pool).await;
-    let other_user_token = app.jwt.encode(other_user.id, other_user.email);
-
-    app.put_join_server(
-        app.test_server().id.to_string(),
-        Some(other_user_token.clone()),
-    )
-    .await;
-
-    let (_response, mut connection) = app
-        .get_ready_websocket_connection(app.test_user_token())
-        .await;
-
-    // Act
-    app.delete_leave_server(app.test_server().id.to_string(), Some(other_user_token))
-        .await;
-
-    // Assert
-    assert_next_websocket_message!(
-        WebSocketMessage::DeleteUser { user_id, server_id },
-        &mut connection,
-        {
-            assert_eq!(other_user.id, user_id);
-            assert_eq!(app.test_server().id, server_id);
+            assert_eq!(app.test_user().id, user_id);
         }
     );
 }

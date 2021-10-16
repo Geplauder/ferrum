@@ -1,10 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::BrokerEvent;
 
-use crate::{
-    assert_next_websocket_message, assert_no_next_websocket_message,
-    helpers::{TestApplication, TestUser},
-};
+use crate::{assert_next_broker_meessage, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn put_join_server(
@@ -121,12 +118,10 @@ async fn join_returns_401_for_missing_or_invalid_bearer_token() {
     }
 }
 
+// WSTODO
 #[ferrum_macros::test(strategy = "UserAndOtherServer")]
-async fn join_sends_new_server_to_joining_user() {
+async fn join_sends_new_server_and_new_user_broker_events() {
     // Arrange
-    let (_response, mut connection) = app
-        .get_ready_websocket_connection(app.test_user_token())
-        .await;
 
     // Act
     app.put_join_server(
@@ -136,70 +131,21 @@ async fn join_sends_new_server_to_joining_user() {
     .await;
 
     // Assert
-    assert_next_websocket_message!(
-        WebSocketMessage::NewServer {
-            server: new_server,
-            channels,
-            users
-        },
-        &mut connection,
+    assert_next_broker_meessage!(
+        BrokerEvent::NewServer { user_id, server_id },
+        &mut app.consumer,
         {
-            assert_eq!(app.test_server().name, new_server.name);
-            assert_eq!(1, channels.len());
-            assert_eq!(2, users.len());
+            assert_eq!(app.test_server().id, server_id);
+            assert_eq!(app.test_user().id, user_id);
         }
     );
-}
 
-#[ferrum_macros::test(strategy = "UserAndOtherServer")]
-async fn join_does_not_send_new_user_websocket_message_to_new_user() {
-    // Arrange
-    let (_response, mut connection) = app
-        .get_ready_websocket_connection(app.test_user_token())
-        .await;
-
-    // Act
-    app.put_join_server(
-        app.test_server().id.to_string(),
-        Some(app.test_user_token()),
-    )
-    .await;
-
-    // Assert
-    assert_next_websocket_message!(
-        WebSocketMessage::NewServer {
-            server: _,
-            channels: _,
-            users: _
-        },
-        &mut connection,
-        ()
-    );
-
-    assert_no_next_websocket_message!(&mut connection);
-}
-
-#[ferrum_macros::test(strategy = "UserAndOwnServer")]
-async fn join_sends_new_user_to_existing_users() {
-    // Arrange
-    let new_user = TestUser::generate();
-    new_user.store(&app.db_pool).await;
-    let new_user_token = app.jwt.encode(new_user.id, new_user.email);
-
-    let (_response, mut connection) = app
-        .get_ready_websocket_connection(app.test_user_token())
-        .await;
-
-    // Act
-    app.put_join_server(app.test_server().id.to_string(), Some(new_user_token))
-        .await;
-
-    // Assert
-    assert_next_websocket_message!(
-        WebSocketMessage::NewUser { server_id: _, user },
-        &mut connection,
+    assert_next_broker_meessage!(
+        BrokerEvent::NewUser { user_id, server_id },
+        &mut app.consumer,
         {
-            assert_eq!(new_user.id, user.id);
+            assert_eq!(app.test_server().id, server_id);
+            assert_eq!(app.test_user().id, user_id);
         }
     );
 }

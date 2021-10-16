@@ -6,14 +6,14 @@ use config::{Config, ConfigError};
 use serde::Deserialize;
 use sqlx::postgres::{PgConnectOptions, PgSslMode};
 
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub application: ApplicationSettings,
     pub database: DatabaseSettings,
     pub broker: BrokerSettings,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ApplicationSettings {
     pub host: String,
     pub port: u16,
@@ -21,7 +21,7 @@ pub struct ApplicationSettings {
     pub jwt_secret: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct DatabaseSettings {
     pub username: String,
     pub password: String,
@@ -31,7 +31,7 @@ pub struct DatabaseSettings {
     pub require_ssl: bool,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct BrokerSettings {
     pub username: String,
     pub password: String,

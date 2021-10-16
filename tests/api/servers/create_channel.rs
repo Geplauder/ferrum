@@ -1,8 +1,8 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::BrokerEvent;
 use uuid::Uuid;
 
-use crate::{assert_next_websocket_message, helpers::TestApplication};
+use crate::{assert_next_broker_meessage, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn post_create_server_channel(
@@ -214,16 +214,13 @@ async fn create_channel_returns_403_when_user_is_not_owner_of_the_server() {
     assert_eq!(403, response.status().as_u16());
 }
 
+// WSTODO
 #[ferrum_macros::test(strategy = "UserAndOwnServer")]
-async fn create_channel_sends_new_channel_to_authenticated_websocket_users() {
+async fn create_channel_sends_new_channel_broker_event() {
     // Arrange
     let body = serde_json::json!({
         "name": "foobar"
     });
-
-    let (_response, mut connection) = app
-        .get_ready_websocket_connection(app.test_user_token())
-        .await;
 
     // Act
     app.post_create_server_channel(
@@ -234,15 +231,7 @@ async fn create_channel_sends_new_channel_to_authenticated_websocket_users() {
     .await;
 
     // Assert
-    assert_next_websocket_message!(
-        WebSocketMessage::NewChannel {
-            channel: new_channel
-        },
-        &mut connection,
-        {
-            assert_eq!("foobar", new_channel.name);
-        }
-    );
+    assert_next_broker_meessage!(BrokerEvent::NewChannel { channel }, &mut app.consumer, {
+        assert_eq!("foobar", channel.name);
+    });
 }
-
-// TODO: Add test to ensure that users not on the server do not get messaged about it
