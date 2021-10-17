@@ -1,10 +1,16 @@
 // © https://github.com/LukeMathWalker/zero-to-production
 
-use std::{convert::{TryFrom, TryInto}, time::Duration};
+use std::{
+    convert::{TryFrom, TryInto},
+    time::Duration,
+};
 
 use config::{Config, ConfigError};
 use serde::Deserialize;
-use sqlx::{PgPool, postgres::{PgConnectOptions, PgPoolOptions, PgSslMode}};
+use sqlx::{
+    postgres::{PgConnectOptions, PgPoolOptions, PgSslMode},
+    PgPool,
+};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {

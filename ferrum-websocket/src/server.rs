@@ -83,6 +83,8 @@ impl WebSocketServer {
             .await
             .unwrap();
 
+        println!("affected users: {:#?}", affected_users);
+
         for user in &affected_users {
             if let Some(recipient) = self.users.get_mut(&user.id) {
                 recipient
