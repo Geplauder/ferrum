@@ -101,7 +101,6 @@ pub async fn update(
             .context("Failed to update server name")?
     }
 
-    // WSTODO
     broker.do_send(PublishBrokerEvent {
         broker_event: BrokerEvent::UpdateServer {
             server_id: *server_id,

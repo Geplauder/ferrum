@@ -142,6 +142,7 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                     .unwrap();
             }
             WebSocketSessionMessage::AddMessage(message) => {
+                // Send the new message to the client
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&SerializedWebSocketMessage::NewMessage { message })

@@ -132,16 +132,7 @@ async fn join_sends_new_server_and_new_user_broker_events() {
 
     // Assert
     assert_next_broker_meessage!(
-        BrokerEvent::NewServer { user_id, server_id },
-        &mut app.consumer,
-        {
-            assert_eq!(app.test_server().id, server_id);
-            assert_eq!(app.test_user().id, user_id);
-        }
-    );
-
-    assert_next_broker_meessage!(
-        BrokerEvent::NewUser { user_id, server_id },
+        BrokerEvent::UserJoined { user_id, server_id },
         &mut app.consumer,
         {
             assert_eq!(app.test_server().id, server_id);

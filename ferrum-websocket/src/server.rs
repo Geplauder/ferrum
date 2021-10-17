@@ -179,6 +179,14 @@ impl WebSocketServer {
         }
     }
 
+    async fn user_joined(&mut self, user_id: Uuid, server_id: Uuid) {
+        // Send the new server to the joining user
+        self.new_server(user_id, server_id).await;
+
+        // Send the new user to the existing users on the server
+        self.new_user(user_id, server_id).await;
+    }
+
     async fn delete_server(&mut self, server_id: Uuid) {
         // Send the deleted server to all websocket sessions, letting them reject it if necessary
         for mut recipient in self.users.values().cloned() {
@@ -274,9 +282,11 @@ impl ActionHandler<BrokerEvent> for WebSocketServer {
             BrokerEvent::NewServer { user_id, server_id } => {
                 self.new_server(user_id, server_id).await
             }
-            BrokerEvent::NewUser { user_id, server_id } => self.new_user(user_id, server_id).await,
             BrokerEvent::UserLeft { user_id, server_id } => {
                 self.user_left(user_id, server_id).await
+            }
+            BrokerEvent::UserJoined { user_id, server_id } => {
+                self.user_joined(user_id, server_id).await
             }
             BrokerEvent::DeleteServer { server_id } => self.delete_server(server_id).await,
             BrokerEvent::UpdateServer { server_id } => self.update_server(server_id).await,
