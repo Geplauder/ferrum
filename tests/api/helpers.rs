@@ -12,7 +12,7 @@ use ferrum_shared::{
     jwt::Jwt,
     settings::{get_settings, DatabaseSettings, Settings},
 };
-use ferrum_websocket::messages::WebSocketMessage;
+use ferrum_websocket::messages::SerializedWebSocketMessage;
 use futures::{select, FutureExt, SinkExt, StreamExt};
 use lapin::{
     options::{BasicConsumeOptions, QueueDeclareOptions, QueueDeleteOptions},
@@ -331,7 +331,7 @@ pub async fn get_next_ampq_message(consumer: &mut Consumer) -> Option<BrokerEven
 
 pub async fn send_websocket_message(
     connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
-    message: WebSocketMessage,
+    message: SerializedWebSocketMessage,
 ) {
     connection
         .send(ws::Message::Text(
