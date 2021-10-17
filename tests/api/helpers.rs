@@ -1,9 +1,10 @@
 use std::time::Duration;
 
+use actix_http::{client::ConnectionIo, ws};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use fake::Fake;
 use ferrum::{
-    application::Application,
+    application::Application as RestApplication,
     telemetry::{get_subscriber, init_subscriber},
 };
 use ferrum_shared::{
@@ -11,11 +12,14 @@ use ferrum_shared::{
     jwt::Jwt,
     settings::{get_db_pool, get_settings, DatabaseSettings, Settings},
 };
-use futures::{select, FutureExt, StreamExt};
+use ferrum_websocket::{
+    application::Application as WebsocketApplication, messages::SerializedWebSocketMessage,
+};
+use futures::{select, FutureExt, SinkExt, StreamExt};
 use lapin::{
-    options::{BasicConsumeOptions, QueueDeclareOptions, QueueDeleteOptions},
+    options::{BasicConsumeOptions, BasicPublishOptions, QueueDeclareOptions, QueueDeleteOptions},
     types::FieldTable,
-    Consumer,
+    BasicProperties, Channel, Consumer,
 };
 use once_cell::sync::Lazy;
 use sqlx::{postgres::PgPoolOptions, types::Uuid, Connection, Executor, PgConnection, PgPool};
@@ -128,11 +132,14 @@ pub enum BootstrapType {
 
 pub struct TestApplication {
     pub address: String,
-    pub port: u16,
+    pub ws_address: String,
     pub db_pool: PgPool,
     pub jwt: Jwt,
     pub settings: Settings,
     pub consumer: Consumer,
+    pub channel: Channel,
+    pub rest_queue: String,
+    pub websocket_queue: String,
     test_user: Option<TestUser>,
     test_user_token: Option<String>,
     test_server: Option<TestServer>,
@@ -156,12 +163,66 @@ impl TestApplication {
     pub fn test_server(&self) -> TestServer {
         self.test_server.as_ref().unwrap().clone()
     }
+
+    ///
+    /// Get a ready websocket connection.
+    ///
+    /// First, a new websocket connection will be established.
+    /// Then a [`SerializedWebSocketMessage::Identify`] message will be sent to the websocket server,
+    /// containing the supplied `bearer`.
+    ///
+    /// Note that there is also an assertion that a [`SerializedWebSocketMessage::Ready`] will be received.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// #[ferrum_macros::test(strategy = "UserAndOwnServer")]
+    /// async fn some_test() {
+    ///     let (response, mut connection) = app
+    ///         .get_ready_websocket_connection(app.test_user_token())
+    ///         .await;
+    ///
+    ///     // ...
+    /// }
+    /// ```
+    pub async fn get_ready_websocket_connection(
+        &self,
+        bearer: String,
+    ) -> (
+        awc::ClientResponse,
+        actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+    ) {
+        let (response, mut connection) = self.websocket().await;
+
+        send_websocket_message(
+            &mut connection,
+            SerializedWebSocketMessage::Identify { bearer },
+        )
+        .await;
+        assert_next_websocket_message!(SerializedWebSocketMessage::Ready, &mut connection, ());
+
+        (response, connection)
+    }
+
+    pub async fn websocket(
+        &self,
+    ) -> (
+        awc::ClientResponse,
+        actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+    ) {
+        self.http_client()
+            .ws(&self.ws_address)
+            .connect()
+            .await
+            .unwrap()
+    }
 }
 
+// TODO: Cleanup
 pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
     Lazy::force(&TRACING);
 
-    let settings = {
+    let mut settings = {
         let mut settings = get_settings().expect("Failed to read settings");
 
         settings.database.database_name = Uuid::new_v4().to_string();
@@ -171,15 +232,9 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
         settings
     };
 
+    let rest_queue = settings.broker.queue.clone();
+
     configure_database(&settings.database).await;
-
-    let application = Application::build(settings.clone())
-        .await
-        .expect("Failed to build application");
-
-    let application_port = application.port();
-
-    let _ = tokio::spawn(application.run_until_stopped());
 
     let ampq_connection = get_ampq_connection(&settings).await;
 
@@ -187,15 +242,38 @@ pub async fn spawn_app(bootstrap_type: BootstrapType) -> TestApplication {
     create_ampq_queue(&settings, &channel).await;
     let consumer = get_ampq_consumer(&settings, &channel).await;
 
+    let rest_application = RestApplication::build(settings.clone())
+        .await
+        .expect("Failed to build rest application");
+    let rest_application_port = rest_application.port();
+    let _ = tokio::spawn(rest_application.run_until_stopped());
+
+    settings.broker.queue = Uuid::new_v4().to_string();
+    let websocket_queue = settings.broker.queue.clone();
+
+    let ampq_connection = get_ampq_connection(&settings).await;
+
+    let channel = ampq_connection.create_channel().await.unwrap();
+    create_ampq_queue(&settings, &channel).await;
+
+    let websocket_application = WebsocketApplication::build(settings.clone())
+        .await
+        .expect("Failed to build websocket application");
+    let websocket_application_port = websocket_application.port();
+    let _ = tokio::spawn(websocket_application.run_until_stopped());
+
     let mut test_application = TestApplication {
-        address: format!("http://localhost:{}", application_port),
-        port: application_port,
+        address: format!("http://localhost:{}", rest_application_port),
+        ws_address: format!("http://localhost:{}", websocket_application_port),
         db_pool: get_db_pool(&settings.database)
             .await
             .expect("Failed to connect to database"),
         jwt: Jwt::new(settings.application.jwt_secret.to_owned()),
         settings,
         consumer,
+        channel,
+        rest_queue,
+        websocket_queue,
         test_user_token: None,
         test_user: None,
         test_server: None,
@@ -357,6 +435,55 @@ pub async fn get_ampq_consumer(settings: &Settings, channel: &lapin::Channel) ->
         )
         .await
         .unwrap()
+}
+
+pub async fn publish_broker_message(app: &TestApplication, broker_event: BrokerEvent) {
+    app.channel
+        .basic_publish(
+            "",
+            &app.settings.broker.queue,
+            BasicPublishOptions::default(),
+            serde_json::to_vec(&broker_event).unwrap(),
+            BasicProperties::default(),
+        )
+        .await
+        .unwrap()
+        .await
+        .unwrap();
+}
+
+pub async fn get_next_websocket_message(
+    connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+) -> Option<SerializedWebSocketMessage> {
+    let mut message = connection.next().fuse();
+    let mut timeout = Box::pin(actix_rt::time::sleep(Duration::from_secs(5)).fuse());
+
+    let x = select! {
+        x = message => x,
+        () = timeout => return None,
+    };
+
+    match x.unwrap().unwrap() {
+        ws::Frame::Text(text) => {
+            match serde_json::from_slice::<SerializedWebSocketMessage>(&text) {
+                Ok(value) => Some(value),
+                Err(_) => None,
+            }
+        }
+        _ => None,
+    }
+}
+
+pub async fn send_websocket_message(
+    connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+    message: SerializedWebSocketMessage,
+) {
+    connection
+        .send(ws::Message::Text(
+            serde_json::to_string(&message).unwrap().into(),
+        ))
+        .await
+        .unwrap();
 }
 
 #[derive(Debug, Clone)]
