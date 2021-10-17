@@ -177,11 +177,7 @@ impl ActionHandler<SerializedWebSocketMessage> for WebSocketSession {
                     .unwrap();
             }
             SerializedWebSocketMessage::AddUser(server_id, user) => {
-                // Check if the user is part of the server, if so send the new user to the client
-                if self.servers.contains(&server_id) == false {
-                    return Err(anyhow::anyhow!("todo"));
-                }
-
+                // Send the new user to the client
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&WebSocketMessage::NewUser { server_id, user })
@@ -219,7 +215,6 @@ impl ActionHandler<SerializedWebSocketMessage> for WebSocketSession {
             }
             SerializedWebSocketMessage::UpdateServer(server) => {
                 // Send the updated server to the client
-
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&WebSocketMessage::UpdateServer { server }).unwrap(),
