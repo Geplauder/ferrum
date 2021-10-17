@@ -140,11 +140,13 @@ impl ActionHandler<SerializedWebSocketMessage> for WebSocketSession {
                     .await
                     .unwrap();
             }
-            SerializedWebSocketMessage::Data(data, channel) => {
-                // If the user is part of the channel, send the raw data
-                if self.channels.contains(&channel) {
-                    self.connection.send(Message::Text(data)).await.unwrap();
-                }
+            SerializedWebSocketMessage::AddMessage(message) => {
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&WebSocketMessage::NewMessage { message }).unwrap(),
+                    ))
+                    .await
+                    .unwrap();
             }
             SerializedWebSocketMessage::AddChannel(channel) => {
                 // Store the new channel and send it to the client

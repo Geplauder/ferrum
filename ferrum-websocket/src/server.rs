@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use ferrum_db::{
-    channels::queries::{get_channels_for_server, get_channels_for_user},
+    channels::queries::{get_channel_with_id, get_channels_for_server, get_channels_for_user},
+    messages::queries::get_message_with_id,
     servers::queries::{get_server_with_id, get_servers_for_user},
-    users::queries::{get_user_with_id, get_users_on_server},
+    users::queries::{get_user_with_id, get_users_for_channel, get_users_on_server},
 };
 use ferrum_shared::{
     broker::BrokerEvent, channels::ChannelResponse, servers::ServerResponse, users::UserResponse,
@@ -15,10 +16,7 @@ use uuid::Uuid;
 
 use crate::WebSocketSession;
 
-use super::messages::{
-    IdentifyUser, /*, NewChannel, NewServer, NewUser*/
-    SerializedWebSocketMessage, WebSocketClose, WebSocketMessage,
-};
+use super::messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose};
 
 ///
 /// Manages all [`crate::WebSocketSession`] and updates them with appropriate events.
@@ -36,18 +34,6 @@ impl WebSocketServer {
         }
     }
 
-    ///
-    /// Send a websocket message to all [`crate::WebSocketSession`] that have access to a specific channel.
-    ///
-    pub async fn send_message_to_channel(&self, channel_id: Uuid, message: WebSocketMessage) {
-        let client_message =
-            SerializedWebSocketMessage::Data(serde_json::to_string(&message).unwrap(), channel_id);
-
-        for mut recipient in self.users.values().cloned() {
-            recipient.act(client_message.clone()).await.expect("");
-        }
-    }
-
     fn identify_user(&mut self, user_id: Uuid, recipient: Address<WebSocketSession>) {
         self.users.insert(user_id, recipient);
     }
@@ -56,7 +42,42 @@ impl WebSocketServer {
         self.users.remove(&user_id);
     }
 
-    async fn _new_channel(&mut self, channel: ChannelResponse) {
+    pub async fn new_message(&mut self, channel_id: Uuid, message_id: Uuid) {
+        // Get the message and message author and transform them to a response
+        let message = get_message_with_id(message_id, &self.db_pool)
+            .await
+            .unwrap();
+
+        let user = get_user_with_id(message.user_id, &self.db_pool)
+            .await
+            .unwrap();
+
+        let message_response = message.to_response(user);
+
+        // Get all users that should be notified about the new message and send it to them
+        let affected_users = get_users_for_channel(channel_id, &self.db_pool)
+            .await
+            .unwrap();
+
+        for user in &affected_users {
+            if let Some(recipient) = self.users.get_mut(&user.id) {
+                recipient
+                    .act(SerializedWebSocketMessage::AddMessage(
+                        message_response.clone(),
+                    ))
+                    .await
+                    .unwrap();
+            }
+        }
+    }
+
+    async fn new_channel(&mut self, channel_id: Uuid) {
+        // Get the channel and transform it into a response
+        let channel: ChannelResponse = get_channel_with_id(channel_id, &self.db_pool)
+            .await
+            .unwrap()
+            .into();
+
         // Get all users that should be notified about the new channel and send it to them
         let affected_users = get_users_on_server(channel.server_id, &self.db_pool)
             .await
@@ -244,7 +265,7 @@ impl ActionHandler<BrokerEvent> for WebSocketServer {
         _ctx: &mut Context<Self>,
     ) -> Result<(), anyhow::Error> {
         match msg {
-            BrokerEvent::NewChannel { channel_id: _ } => todo!("wstodo"), /*self.new_channel(channel).await*/
+            BrokerEvent::NewChannel { channel_id } => self.new_channel(channel_id).await,
             BrokerEvent::NewServer { user_id, server_id } => {
                 self.new_server(user_id, server_id).await
             }
@@ -255,9 +276,9 @@ impl ActionHandler<BrokerEvent> for WebSocketServer {
             BrokerEvent::DeleteServer { server_id } => self.delete_server(server_id).await,
             BrokerEvent::UpdateServer { server_id } => self.update_server(server_id).await,
             BrokerEvent::NewMessage {
-                channel_id: _,
-                message_id: _,
-            } => todo!("wstodo"), /*self.send_message_to_channel(channel_id, message).await*/
+                channel_id,
+                message_id,
+            } => self.new_message(channel_id, message_id).await,
         }
 
         Ok(())

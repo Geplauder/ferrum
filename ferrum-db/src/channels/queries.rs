@@ -3,6 +3,24 @@ use uuid::Uuid;
 
 use super::models::*;
 
+#[tracing::instrument(name = "Get channel with id", skip(channel_id, pool))]
+pub async fn get_channel_with_id(
+    channel_id: Uuid,
+    pool: &PgPool,
+) -> Result<ChannelModel, sqlx::Error> {
+    sqlx::query_as!(
+        ChannelModel,
+        r#"
+        SELECT *
+        FROM channels
+        WHERE channels.id = $1
+        "#,
+        channel_id,
+    )
+    .fetch_one(pool)
+    .await
+}
+
 #[tracing::instrument(name = "Get channels for server", skip(server_id, pool))]
 pub async fn get_channels_for_server(
     server_id: Uuid,
