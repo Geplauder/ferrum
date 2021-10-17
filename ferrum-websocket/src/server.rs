@@ -135,20 +135,23 @@ impl WebSocketServer {
             .unwrap()
             .into();
 
-        // Send the new user to all websocket sessions, letting them reject it if necessary
-        for (existing_user_id, mut recipient) in self.users.clone() {
-            if existing_user_id == user_id {
+        // Get all users that should be notified about the new user and send it to them
+        let affected_users = get_users_on_server(server_id, &self.db_pool).await.unwrap();
+
+        for user in &affected_users {
+            // Don't send the new user to the new user itself
+            if user.id == user_id {
                 continue;
             }
 
-            if let Err(error) = recipient
-                .act(SerializedWebSocketMessage::AddUser(
-                    server_id,
-                    new_user.clone(),
-                ))
-                .await
-            {
-                println!("Error in NewUser websocket message handler: {:?}", error);
+            if let Some(recipient) = self.users.get_mut(&user.id) {
+                recipient
+                    .act(SerializedWebSocketMessage::AddUser(
+                        server_id,
+                        new_user.clone(),
+                    ))
+                    .await
+                    .unwrap();
             }
         }
     }
