@@ -233,23 +233,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix-web-actors"
-version = "4.0.0-beta.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00b43c8e03f1877bc010316de455ee479aa0de0ae0717d49041db5f38fa192de"
-dependencies = [
- "actix",
- "actix-codec",
- "actix-http",
- "actix-web",
- "bytes",
- "bytestring",
- "futures-core",
- "pin-project",
- "tokio",
-]
-
-[[package]]
 name = "actix-web-codegen"
 version = "0.5.0-beta.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -259,18 +242,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "actix-web-httpauth"
-version = "0.6.0-beta.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "264d0eb4698d59493cafc96554c3919837115f8c4e9040a3790c2b55400ff758"
-dependencies = [
- "actix-service",
- "actix-web",
- "base64 0.13.0",
- "futures-util",
 ]
 
 [[package]]
@@ -833,8 +804,6 @@ dependencies = [
  "actix-http",
  "actix-rt",
  "actix-web",
- "actix-web-actors",
- "actix-web-httpauth",
  "anyhow",
  "argon2",
  "awc",
@@ -849,8 +818,6 @@ dependencies = [
  "jsonwebtoken",
  "lapin",
  "once_cell",
- "quickcheck",
- "quickcheck_macros",
  "rand 0.8.4",
  "serde 1.0.130",
  "serde_json",
@@ -907,7 +874,6 @@ dependencies = [
  "config",
  "futures",
  "jsonwebtoken",
- "lapin",
  "meio",
  "serde 1.0.130",
  "sqlx",
@@ -930,7 +896,6 @@ dependencies = [
  "serde_json",
  "sqlx",
  "tokio",
- "tokio-amqp",
  "tokio-tungstenite",
  "uuid",
 ]
