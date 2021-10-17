@@ -6,11 +6,19 @@ Ferrum is the backend for Geplauder, built with actix-web and sqlx.
 
 For more information on Geplauder, [click here](../../../).
 
+## Architecture
+
+Ferrum consists of two separate services:
+- REST Api: Handles initial data fetching for frontend clients and processes actions from the client.
+- WebSocket Server: Keep connected clients from the frontend up-to-date by providing them with appropriate updates.
+
+<img src="https://cdn.cryma.de/9e41b05a-d5ff-4df1-b854-87eef15a9131.png" width="75%" />
+
 ## Usage
 
 This project supplies a `docker-compose.yml` file for easy development.
 
-Start the Postgres database server:
+Start Postgres and RabbitMQ:
 ```bash
 docker compose up -d
 ```
@@ -23,8 +31,16 @@ sqlx database create   # Create the database specified in '.env'
 sqlx migrate run       # Run migrations
 ```
 
-Start the project:
+As this project contains two services, we need to start them both for proper usage.
+
+Start the REST api:
 ```bash
+cargo run
+```
+
+Start the websocket server:
+```bash
+cd ferrum-websocket
 cargo run
 ```
 
