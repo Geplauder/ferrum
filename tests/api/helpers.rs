@@ -8,10 +8,11 @@ use ferrum::{
     telemetry::{get_subscriber, init_subscriber},
 };
 use ferrum_shared::{
+    broker::BrokerEvent,
     jwt::Jwt,
     settings::{get_settings, DatabaseSettings, Settings},
 };
-use ferrum_websocket::messages::{BrokerEvent, WebSocketMessage};
+use ferrum_websocket::messages::WebSocketMessage;
 use futures::{select, FutureExt, SinkExt, StreamExt};
 use lapin::{
     options::{BasicConsumeOptions, QueueDeclareOptions, QueueDeleteOptions},

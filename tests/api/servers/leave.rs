@@ -1,6 +1,6 @@
 use actix_http::{encoding::Decoder, Payload};
 use claim::assert_err;
-use ferrum_websocket::messages::BrokerEvent;
+use ferrum_shared::broker::BrokerEvent;
 
 use crate::{assert_next_broker_meessage, helpers::TestApplication};
 

@@ -4,8 +4,7 @@ use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::servers::queries::add_user_to_server;
 pub use ferrum_shared::error_chain_fmt;
-use ferrum_shared::jwt::AuthorizationService;
-use ferrum_websocket::messages::BrokerEvent;
+use ferrum_shared::{broker::BrokerEvent, jwt::AuthorizationService};
 use sqlx::PgPool;
 use uuid::Uuid;
 

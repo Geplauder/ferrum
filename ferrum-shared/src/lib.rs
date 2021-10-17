@@ -1,3 +1,4 @@
+pub mod broker;
 pub mod channels;
 pub mod jwt;
 pub mod messages;

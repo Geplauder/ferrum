@@ -3,8 +3,7 @@ use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::servers::queries::{get_server_with_id, remove_user_from_server};
-use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
-use ferrum_websocket::messages::BrokerEvent;
+use ferrum_shared::{broker::BrokerEvent, error_chain_fmt, jwt::AuthorizationService};
 use sqlx::PgPool;
 use uuid::Uuid;
 

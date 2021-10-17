@@ -1,5 +1,5 @@
 use actix::{Actor, Context, ContextFutureSpawner, Handler, WrapFuture};
-use ferrum_websocket::messages::BrokerEvent;
+use ferrum_shared::broker::BrokerEvent;
 use lapin::{options::BasicPublishOptions, BasicProperties, Channel};
 use serde::{Deserialize, Serialize};
 

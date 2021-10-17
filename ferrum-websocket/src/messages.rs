@@ -71,39 +71,6 @@ pub enum SerializedWebSocketMessage {
 
 impl Action for SerializedWebSocketMessage {}
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum BrokerEvent {
-    // TODO: Just use UUID
-    NewChannel {
-        channel: ChannelResponse,
-    },
-    NewServer {
-        user_id: Uuid,
-        server_id: Uuid,
-    },
-    NewUser {
-        user_id: Uuid,
-        server_id: Uuid,
-    },
-    UserLeft {
-        user_id: Uuid,
-        server_id: Uuid,
-    },
-    DeleteServer {
-        server_id: Uuid,
-    },
-    UpdateServer {
-        server_id: Uuid,
-    },
-    // TODO: Rework this
-    SendMessageToChannel {
-        channel_id: Uuid,
-        message: WebSocketMessage,
-    },
-}
-
-impl Action for BrokerEvent {}
-
 ///
 /// Message to notify the websocket server about closing client sessions.
 ///

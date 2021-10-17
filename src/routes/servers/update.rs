@@ -8,8 +8,7 @@ use ferrum_db::servers::{
     models::{ServerName, UpdateServer},
     queries::{is_user_owner_of_server, update_server_name},
 };
-use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
-use ferrum_websocket::messages::BrokerEvent;
+use ferrum_shared::{broker::BrokerEvent, error_chain_fmt, jwt::AuthorizationService};
 use sqlx::PgPool;
 use uuid::Uuid;
 
