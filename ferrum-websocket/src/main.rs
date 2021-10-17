@@ -1,10 +1,11 @@
 use std::collections::{HashMap, HashSet};
 
 use ferrum_shared::{
+    broker::BrokerEvent,
     jwt::Jwt,
     settings::{get_settings, Settings},
 };
-use ferrum_websocket::{messages::BrokerEvent, WebSocketServer, WebSocketSession};
+use ferrum_websocket::{WebSocketServer, WebSocketSession};
 use futures_util::StreamExt;
 use lapin::{
     options::{BasicAckOptions, BasicConsumeOptions},

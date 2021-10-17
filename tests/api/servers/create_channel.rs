@@ -1,5 +1,5 @@
 use actix_http::{encoding::Decoder, Payload};
-use ferrum_websocket::messages::BrokerEvent;
+use ferrum_shared::broker::BrokerEvent;
 use uuid::Uuid;
 
 use crate::{assert_next_broker_meessage, helpers::TestApplication};
@@ -231,7 +231,9 @@ async fn create_channel_sends_new_channel_broker_event() {
     .await;
 
     // Assert
-    assert_next_broker_meessage!(BrokerEvent::NewChannel { channel }, &mut app.consumer, {
-        assert_eq!("foobar", channel.name);
-    });
+    assert_next_broker_meessage!(
+        BrokerEvent::NewChannel { channel_id: _ },
+        &mut app.consumer,
+        {}
+    );
 }

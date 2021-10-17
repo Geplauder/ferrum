@@ -12,8 +12,7 @@ use ferrum_db::{
     servers::queries::is_user_owner_of_server,
 };
 pub use ferrum_shared::error_chain_fmt;
-use ferrum_shared::jwt::AuthorizationService;
-use ferrum_websocket::messages::BrokerEvent;
+use ferrum_shared::{broker::BrokerEvent, jwt::AuthorizationService};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -113,7 +112,7 @@ pub async fn create_channel(
     // Notify websocket server about the new channel
     broker.do_send(PublishBrokerEvent {
         broker_event: BrokerEvent::NewChannel {
-            channel: channel.into(),
+            channel_id: channel.id,
         },
     });
 

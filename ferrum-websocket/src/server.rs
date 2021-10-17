@@ -6,12 +6,14 @@ use ferrum_db::{
     servers::queries::{get_server_with_id, get_servers_for_user},
     users::queries::{get_user_with_id, get_users_on_server},
 };
-use ferrum_shared::{channels::ChannelResponse, servers::ServerResponse, users::UserResponse};
+use ferrum_shared::{
+    broker::BrokerEvent, channels::ChannelResponse, servers::ServerResponse, users::UserResponse,
+};
 use meio::{ActionHandler, Actor, Address, Context, StartedBy, System};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{messages::BrokerEvent, WebSocketSession};
+use crate::WebSocketSession;
 
 use super::messages::{
     IdentifyUser, /*, NewChannel, NewServer, NewUser*/
@@ -54,7 +56,7 @@ impl WebSocketServer {
         self.users.remove(&user_id);
     }
 
-    async fn new_channel(&mut self, channel: ChannelResponse) {
+    async fn _new_channel(&mut self, channel: ChannelResponse) {
         // Get all users that should be notified about the new channel and send it to them
         let affected_users = get_users_on_server(channel.server_id, &self.db_pool)
             .await
@@ -242,7 +244,7 @@ impl ActionHandler<BrokerEvent> for WebSocketServer {
         _ctx: &mut Context<Self>,
     ) -> Result<(), anyhow::Error> {
         match msg {
-            BrokerEvent::NewChannel { channel } => self.new_channel(channel).await,
+            BrokerEvent::NewChannel { channel_id: _ } => todo!("wstodo"), /*self.new_channel(channel).await*/
             BrokerEvent::NewServer { user_id, server_id } => {
                 self.new_server(user_id, server_id).await
             }
@@ -252,10 +254,10 @@ impl ActionHandler<BrokerEvent> for WebSocketServer {
             }
             BrokerEvent::DeleteServer { server_id } => self.delete_server(server_id).await,
             BrokerEvent::UpdateServer { server_id } => self.update_server(server_id).await,
-            BrokerEvent::SendMessageToChannel {
-                channel_id,
-                message,
-            } => self.send_message_to_channel(channel_id, message).await,
+            BrokerEvent::NewMessage {
+                channel_id: _,
+                message_id: _,
+            } => todo!("wstodo"), /*self.send_message_to_channel(channel_id, message).await*/
         }
 
         Ok(())

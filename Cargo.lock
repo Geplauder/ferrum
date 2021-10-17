@@ -908,6 +908,7 @@ dependencies = [
  "futures",
  "jsonwebtoken",
  "lapin",
+ "meio",
  "serde 1.0.130",
  "sqlx",
  "thiserror",

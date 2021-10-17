@@ -9,11 +9,10 @@ use ferrum_db::{
         models::{MessageContent, NewMessage},
         queries::insert_message,
     },
-    users::queries::{does_user_have_access_to_channel, get_user_with_id},
+    users::queries::does_user_have_access_to_channel,
 };
 pub use ferrum_shared::error_chain_fmt;
-use ferrum_shared::jwt::AuthorizationService;
-use ferrum_websocket::messages::{BrokerEvent, WebSocketMessage};
+use ferrum_shared::{broker::BrokerEvent, jwt::AuthorizationService};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -111,16 +110,10 @@ pub async fn create_message(
         .await
         .context("Failed to commit SQL transaction to store a new channel message.")?;
 
-    let user = get_user_with_id(auth.claims.id, &pool)
-        .await
-        .context("Failed to get user model")?;
-
     broker.do_send(PublishBrokerEvent {
-        broker_event: BrokerEvent::SendMessageToChannel {
+        broker_event: BrokerEvent::NewMessage {
             channel_id: *channel_id,
-            message: WebSocketMessage::NewMessage {
-                message: message.to_response(user),
-            },
+            message_id: message.id,
         },
     });
 
