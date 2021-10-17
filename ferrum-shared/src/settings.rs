@@ -1,10 +1,10 @@
 // © https://github.com/LukeMathWalker/zero-to-production
 
-use std::convert::{TryFrom, TryInto};
+use std::{convert::{TryFrom, TryInto}, time::Duration};
 
 use config::{Config, ConfigError};
 use serde::Deserialize;
-use sqlx::postgres::{PgConnectOptions, PgSslMode};
+use sqlx::{PgPool, postgres::{PgConnectOptions, PgPoolOptions, PgSslMode}};
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
@@ -136,6 +136,18 @@ pub fn get_settings() -> Result<Settings, ConfigError> {
     settings.merge(config::Environment::with_prefix("app").separator("__"))?;
 
     settings.try_into()
+}
+
+///
+/// Get a [`PgPool`] from the supplied [`DatabaseSettings`].
+///
+/// Also sets a default timeout of 5 seconds.
+///
+pub async fn get_db_pool(settings: &DatabaseSettings) -> Result<PgPool, sqlx::Error> {
+    PgPoolOptions::new()
+        .connect_timeout(Duration::from_secs(5))
+        .connect_with(settings.with_db())
+        .await
 }
 
 #[cfg(test)]
