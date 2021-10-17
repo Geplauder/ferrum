@@ -53,6 +53,8 @@ impl Action for WebSocketMessage {}
 pub enum SerializedWebSocketMessage {
     /// Tells the [`crate::WebSocketSession`] to which servers and channels it belongs.
     Ready(Vec<Uuid>, Vec<Uuid>),
+    /// Tells the [`crate::WebSocketSession`] to notify the client about a new message.
+    AddMessage(MessageResponse),
     /// Adds a channel to the [`crate::WebSocketSession`] and tells it to notify the client about it.
     AddChannel(ChannelResponse),
     /// Adds a server to the [`crate::WebSocketSession`] and tells it to notify the client about it.
@@ -65,8 +67,6 @@ pub enum SerializedWebSocketMessage {
     DeleteUser(Uuid, Uuid),
     /// Tells the [`crate::WebSocketSession`] to notify the client about a updated server.
     UpdateServer(ServerResponse),
-    /// Tells the [`crate::WebSocketSession`] to send raw data to the client.
-    Data(String, Uuid),
 }
 
 impl Action for SerializedWebSocketMessage {}

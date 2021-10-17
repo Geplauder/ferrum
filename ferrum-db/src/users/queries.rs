@@ -79,6 +79,33 @@ pub async fn get_users_on_server(
     .await
 }
 
+#[tracing::instrument(name = "get users for channel", skip(channel_id, pool))]
+pub async fn get_users_for_channel(
+    channel_id: Uuid,
+    pool: &PgPool,
+) -> Result<Vec<UserModel>, sqlx::Error> {
+    sqlx::query_as!(
+        UserModel,
+        r#"
+        WITH server_query AS (
+            SELECT servers.id as server_id
+            FROM servers
+            INNER JOIN channels ON channels.server_id = servers.id
+            WHERE channels.id = $1
+            LIMIT 1
+        )
+        SELECT users.*
+        FROM users_servers
+        INNER JOIN users ON users.id = users_servers.user_id
+        WHERE users_servers.server_id IN (SELECT server_id FROM server_query)
+        LIMIT 1
+        "#,
+        channel_id
+    )
+    .fetch_all(pool)
+    .await
+}
+
 #[tracing::instrument(
     name = "Check if user has access to a channel",
     skip(pool, channel_id, user_id)
