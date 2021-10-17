@@ -16,7 +16,7 @@ use uuid::Uuid;
 
 use crate::WebSocketSession;
 
-use super::messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose};
+use super::messages::{IdentifyUser, WebSocketClose, WebSocketSessionMessage};
 
 ///
 /// Manages all [`crate::WebSocketSession`] and updates them with appropriate events.
@@ -62,7 +62,7 @@ impl WebSocketServer {
         for user in &affected_users {
             if let Some(recipient) = self.users.get_mut(&user.id) {
                 recipient
-                    .act(SerializedWebSocketMessage::AddMessage(
+                    .act(WebSocketSessionMessage::AddMessage(
                         message_response.clone(),
                     ))
                     .await
@@ -86,7 +86,7 @@ impl WebSocketServer {
         for user in &affected_users {
             if let Some(recipient) = self.users.get_mut(&user.id) {
                 recipient
-                    .act(SerializedWebSocketMessage::AddChannel(channel.clone()))
+                    .act(WebSocketSessionMessage::AddChannel(channel.clone()))
                     .await
                     .unwrap();
             }
@@ -118,7 +118,7 @@ impl WebSocketServer {
         // Send them all to the new servers' owner
         if let Some(recipient) = self.users.get_mut(&user_id) {
             recipient
-                .act(SerializedWebSocketMessage::AddServer(
+                .act(WebSocketSessionMessage::AddServer(
                     server.clone(),
                     channels,
                     users_on_server,
@@ -146,7 +146,7 @@ impl WebSocketServer {
 
             if let Some(recipient) = self.users.get_mut(&user.id) {
                 recipient
-                    .act(SerializedWebSocketMessage::AddUser(
+                    .act(WebSocketSessionMessage::AddUser(
                         server_id,
                         new_user.clone(),
                     ))
@@ -159,7 +159,7 @@ impl WebSocketServer {
     async fn user_left(&mut self, user_id: Uuid, server_id: Uuid) {
         if let Some(recipient) = self.users.get_mut(&user_id) {
             recipient
-                .act(SerializedWebSocketMessage::DeleteServer(server_id))
+                .act(WebSocketSessionMessage::DeleteServer(server_id))
                 .await
                 .unwrap();
         }
@@ -170,7 +170,7 @@ impl WebSocketServer {
         for user in &affected_users {
             if let Some(recipient) = self.users.get_mut(&user.id) {
                 recipient
-                    .act(SerializedWebSocketMessage::DeleteUser(user_id, server_id))
+                    .act(WebSocketSessionMessage::DeleteUser(user_id, server_id))
                     .await
                     .unwrap();
             }
@@ -181,7 +181,7 @@ impl WebSocketServer {
         // Send the deleted server to all websocket sessions, letting them reject it if necessary
         for mut recipient in self.users.values().cloned() {
             recipient
-                .act(SerializedWebSocketMessage::DeleteServer(server_id))
+                .act(WebSocketSessionMessage::DeleteServer(server_id))
                 .await
                 .unwrap();
         }
@@ -200,7 +200,7 @@ impl WebSocketServer {
         for user in &affected_users {
             if let Some(recipient) = self.users.get_mut(&user.id) {
                 recipient
-                    .act(SerializedWebSocketMessage::UpdateServer(server.clone()))
+                    .act(WebSocketSessionMessage::UpdateServer(server.clone()))
                     .await
                     .unwrap();
             }
@@ -236,7 +236,7 @@ impl ActionHandler<IdentifyUser> for WebSocketServer {
         let servers = get_servers_for_user(user_id, &self.db_pool).await.unwrap();
 
         msg.addr
-            .act(SerializedWebSocketMessage::Ready(
+            .act(WebSocketSessionMessage::Ready(
                 servers.iter().map(|x| x.id).collect(),
                 channels.iter().map(|x| x.id).collect(),
             ))

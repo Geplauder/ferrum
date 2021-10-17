@@ -9,13 +9,11 @@ use uuid::Uuid;
 use crate::WebSocketSession;
 
 ///
-/// These messages are sent and received via the websocket server.
+/// These message are received from and sent to the actual websocket client.
 ///
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "payload")]
-pub enum WebSocketMessage {
-    /// Empty message.
-    Empty,
+pub enum SerializedWebSocketMessage {
     /// Sent periodically from the client, the server has to respond with a [`WebSocketMessage::Pong`].
     Ping,
     /// Sent as a response to a [`WebSocketMessage::Ping`] message.
@@ -44,13 +42,13 @@ pub enum WebSocketMessage {
     UpdateServer { server: ServerResponse },
 }
 
-impl Action for WebSocketMessage {}
+impl Action for SerializedWebSocketMessage {}
 
 ///
-/// These messages are sent from the websocket [`crate::server::WebSocketServer`] to the [`crate::WebSocketSession`]
+/// These messages are sent from the [`crate::server::WebSocketServer`] to the [`crate::WebSocketSession`].
 ///
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum SerializedWebSocketMessage {
+pub enum WebSocketSessionMessage {
     /// Tells the [`crate::WebSocketSession`] to which servers and channels it belongs.
     Ready(Vec<Uuid>, Vec<Uuid>),
     /// Tells the [`crate::WebSocketSession`] to notify the client about a new message.
@@ -69,10 +67,10 @@ pub enum SerializedWebSocketMessage {
     UpdateServer(ServerResponse),
 }
 
-impl Action for SerializedWebSocketMessage {}
+impl Action for WebSocketSessionMessage {}
 
 ///
-/// Message to notify the websocket server about closing client sessions.
+/// Message to notify the [`crate::server::WebSocketServer`] about closing [`crate::WebSocketSession`].
 ///
 #[derive(Debug)]
 pub struct WebSocketClose {
@@ -88,7 +86,7 @@ impl WebSocketClose {
 }
 
 ///
-/// Message to notify the websocket server about identifying clients.
+/// Message to notify the [`crate::server::WebSocketServer`] about identifying clients.
 ///
 #[derive(Debug)]
 pub struct IdentifyUser {
