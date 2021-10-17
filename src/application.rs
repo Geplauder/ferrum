@@ -1,14 +1,14 @@
-use std::{net::TcpListener, time::Duration};
+use std::net::TcpListener;
 
 use actix::Actor;
 use actix_cors::Cors;
 use actix_web::{dev::Server, web, web::Data, App, HttpServer};
 use ferrum_shared::{
     jwt::Jwt,
-    settings::{DatabaseSettings, Settings},
+    settings::{get_db_pool, Settings},
 };
 use lapin::{Connection, ConnectionProperties};
-use sqlx::{postgres::PgPoolOptions, PgPool};
+use sqlx::PgPool;
 use tokio_amqp::LapinTokioExt;
 use tracing_actix_web::TracingLogger;
 
@@ -42,7 +42,7 @@ impl Application {
         );
 
         let listener = TcpListener::bind(&address)?;
-        let port = listener.local_addr().unwrap().port();
+        let port = listener.local_addr()?.port();
 
         let ampq_connection = Connection::connect(
             &settings.broker.get_connection_string(),
@@ -76,18 +76,6 @@ impl Application {
     pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {
         self.server.await
     }
-}
-
-///
-/// Get a [`PgPool`] from the supplied [`DatabaseSettings`].
-///
-/// Also sets a default timeout of 5 seconds.
-///
-pub async fn get_db_pool(settings: &DatabaseSettings) -> Result<PgPool, sqlx::Error> {
-    PgPoolOptions::new()
-        .connect_timeout(Duration::from_secs(5))
-        .connect_with(settings.with_db())
-        .await
 }
 
 fn run(

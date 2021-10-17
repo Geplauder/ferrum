@@ -1,5 +1,6 @@
 #![allow(clippy::bool_comparison)]
 
+pub mod application;
 pub mod messages;
 mod server;
 

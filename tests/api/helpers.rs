@@ -1,19 +1,17 @@
 use std::time::Duration;
 
-use actix_http::{client::ConnectionIo, ws};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use fake::Fake;
 use ferrum::{
-    application::{get_db_pool, Application},
+    application::Application,
     telemetry::{get_subscriber, init_subscriber},
 };
 use ferrum_shared::{
     broker::BrokerEvent,
     jwt::Jwt,
-    settings::{get_settings, DatabaseSettings, Settings},
+    settings::{get_db_pool, get_settings, DatabaseSettings, Settings},
 };
-use ferrum_websocket::messages::SerializedWebSocketMessage;
-use futures::{select, FutureExt, SinkExt, StreamExt};
+use futures::{select, FutureExt, StreamExt};
 use lapin::{
     options::{BasicConsumeOptions, QueueDeclareOptions, QueueDeleteOptions},
     types::FieldTable,
@@ -327,18 +325,6 @@ pub async fn get_next_ampq_message(consumer: &mut Consumer) -> Option<BrokerEven
     let (_, x) = x.unwrap().unwrap();
 
     Some(serde_json::from_slice(&x.data).unwrap())
-}
-
-pub async fn send_websocket_message(
-    connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
-    message: SerializedWebSocketMessage,
-) {
-    connection
-        .send(ws::Message::Text(
-            serde_json::to_string(&message).unwrap().into(),
-        ))
-        .await
-        .unwrap();
 }
 
 pub async fn get_ampq_connection(settings: &Settings) -> lapin::Connection {

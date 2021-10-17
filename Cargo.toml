@@ -10,10 +10,6 @@ path = "src/lib.rs"
 path = "src/main.rs"
 name = "ferrum"
 
-# [[bin]]
-# path = "ferrum-websocket/src/main.rs"
-# name = "ferrum-websocket"
-
 [workspace]
 resolver = "2"
 members = [
