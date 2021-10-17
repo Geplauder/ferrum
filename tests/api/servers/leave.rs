@@ -158,17 +158,8 @@ async fn leave_sends_user_left_broker_event() {
     )
     .await;
 
-    // TODO:
     assert_next_broker_meessage!(
-        BrokerEvent::NewServer {
-            server_id: _,
-            user_id: _
-        },
-        &mut app.consumer,
-        {}
-    );
-    assert_next_broker_meessage!(
-        BrokerEvent::NewUser {
+        BrokerEvent::UserJoined {
             server_id: _,
             user_id: _
         },

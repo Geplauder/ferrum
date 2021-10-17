@@ -76,14 +76,7 @@ pub async fn join(
     // Notify the websocket server about the new user
     // TODO: Handle everything in one websocket message
     broker.do_send(PublishBrokerEvent {
-        broker_event: BrokerEvent::NewServer {
-            user_id: auth.claims.id,
-            server_id: *server_id,
-        },
-    });
-
-    broker.do_send(PublishBrokerEvent {
-        broker_event: BrokerEvent::NewUser {
+        broker_event: BrokerEvent::UserJoined {
             user_id: auth.claims.id,
             server_id: *server_id,
         },

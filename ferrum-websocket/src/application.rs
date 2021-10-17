@@ -114,6 +114,8 @@ async fn handle_connection(
 
     let (outgoing, incoming) = websocket_stream.split();
 
+    // We're creating a new WebSocketSession for each client that connects.
+    // In the future, we may want to support reconnecting, for which the behaviour has to change.
     let mut session = System::spawn(WebSocketSession {
         connection: outgoing,
         user_id: None,
