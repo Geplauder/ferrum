@@ -11,6 +11,7 @@ env:
   APP_ENV: testing
   SQLX_VERSION: 0.5.9
   SQLX_FEATURES: postgres
+  TARPAULIN_TAG: c54ad80
 
 jobs:
   test:
@@ -153,11 +154,28 @@ jobs:
           sqlx database create
           sqlx migrate run
 
-      - name: Run cargo-tarpaulin
-        uses: actions-rs/tarpaulin@v0.1
+      - name: Cache cargo-tarpaulin
+        uses: actions/cache@v2
+        id: cache-cargo-tarpaulin
         with:
-          version: '0.15.0'
-          args: '--ignore-tests --workspace --exclude=ferrum-macros'
+          path: |
+            ~/.cargo/bin/cargo-tarpaulin
+          key: ${{ runner.os }}-cargo-tarpaulin-${{ env.TARPAULIN_TAG }}
+      - name: Install cargo-tarpaulin
+        uses: actions-rs/cargo@v1
+        if: steps.cache-cargo-tarpaulin.outputs.cache-hit != 'true'
+        with:
+          command: install
+          args: >
+            cargo-tarpaulin
+            --git=https://github.com/xd009642/tarpaulin
+            --branch=develop
+            --tag=${{ env.TARPAULIN_TAG }}
+            --locked
+
+      - name: Run cargo-tarpaulin
+        run: |
+          cargo tarpaulin --ignore-tests --workspace --exclude=ferrum-macros --out Xml
 
       - name: Upload to codecov.io
         uses: codecov/codecov-action@v1.0.2
