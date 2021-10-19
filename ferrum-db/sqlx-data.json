@@ -44,56 +44,6 @@
       ]
     }
   },
-  "29f7f44342bb52dbc0f646710c7f576846d395131c9f81116d099b22e0004050": {
-    "query": "\n        WITH server_query AS (\n            SELECT servers.id as server_id\n            FROM servers\n            INNER JOIN channels ON channels.server_id = servers.id\n            WHERE channels.id = $1\n            LIMIT 1\n        )\n        SELECT users.*\n        FROM users_servers\n        INNER JOIN users ON users.id = users_servers.user_id\n        WHERE users_servers.server_id IN (SELECT server_id FROM server_query)\n        LIMIT 1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Uuid"
-        },
-        {
-          "ordinal": 1,
-          "name": "username",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "email",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "password",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 4,
-          "name": "updated_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 5,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "2c5fdf988417e514df5a66d385b6cd853e510476a72c0d5bd64e3a9b4d19be45": {
     "query": "\n        UPDATE servers\n        SET name = $1\n        WHERE id = $2\n        ",
     "describe": {
@@ -358,6 +308,56 @@
         ]
       },
       "nullable": []
+    }
+  },
+  "6ce6ec27d6cd1910d51b1a2d1098e5b696b267a6874031e8ca913da86613e77d": {
+    "query": "\n        WITH server_query AS (\n            SELECT servers.id as server_id\n            FROM servers\n            INNER JOIN channels ON channels.server_id = servers.id\n            WHERE channels.id = $1\n        )\n        SELECT users.*\n        FROM users_servers\n        INNER JOIN users ON users.id = users_servers.user_id\n        WHERE users_servers.server_id IN (SELECT server_id FROM server_query)\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "username",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "email",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "password",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 4,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 5,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
     }
   },
   "810f9468c3d69cffa133b2b0aaae899120570f16f6047f7ff9c398a97b9f5bdf": {
