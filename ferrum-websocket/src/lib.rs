@@ -32,7 +32,6 @@ pub struct WebSocketSession {
     pub connection: SplitSink<WebSocketStream<TcpStream>, Message>,
     pub user_id: Option<Uuid>,
     pub server: Address<WebSocketServer>,
-    pub channels: HashSet<Uuid>,
     pub servers: HashSet<Uuid>,
     pub jwt: Jwt,
 }
@@ -129,10 +128,9 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
         _ctx: &mut Context<Self>,
     ) -> Result<(), anyhow::Error> {
         match msg {
-            WebSocketSessionMessage::Ready(servers, channels) => {
-                // Store the servers and channels and inform the client that it is now ready
+            WebSocketSessionMessage::Ready(servers) => {
+                // Store the servers and inform the client that it is now ready
                 self.servers = HashSet::from_iter(servers.iter().cloned());
-                self.channels = HashSet::from_iter(channels.iter().cloned());
 
                 self.connection
                     .send(Message::Text(
@@ -152,9 +150,7 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                     .unwrap();
             }
             WebSocketSessionMessage::AddChannel(channel) => {
-                // Store the new channel and send it to the client
-                self.channels.insert(channel.id);
-
+                // Send the new channel to the client
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&SerializedWebSocketMessage::NewChannel { channel })
@@ -164,10 +160,8 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                     .unwrap();
             }
             WebSocketSessionMessage::AddServer(server, channels, users) => {
-                // Store the new server (and channel) and sent it to the client
+                // Store the new server and sent it to the client
                 self.servers.insert(server.id);
-                self.channels.extend(channels.iter().map(|x| x.id));
-
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&SerializedWebSocketMessage::NewServer {
@@ -195,7 +189,6 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
             }
             WebSocketSessionMessage::DeleteUser(user_id, server_id) => {
                 // Send the deleted/leaving user to the client
-
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&SerializedWebSocketMessage::DeleteUser {
