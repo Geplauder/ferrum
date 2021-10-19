@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use ferrum_shared::{
     broker::BrokerEvent,
@@ -37,10 +37,7 @@ impl Application {
             settings.application.host, settings.application.port
         );
 
-        let websocket_server = System::spawn(WebSocketServer {
-            users: HashMap::new(),
-            db_pool,
-        });
+        let websocket_server = System::spawn(WebSocketServer::new(db_pool));
 
         let ampq_connection = Connection::connect(
             &settings.broker.get_connection_string(),
