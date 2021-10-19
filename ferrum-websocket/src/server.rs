@@ -170,6 +170,10 @@ impl WebSocketServer {
         let affected_users = get_users_on_server(server_id, &self.db_pool).await.unwrap();
 
         for user in &affected_users {
+            if user.id == user_id {
+                continue;
+            }
+
             if let Some(recipient) = self.users.get_mut(&user.id) {
                 recipient
                     .act(WebSocketSessionMessage::DeleteUser(user_id, server_id))

@@ -208,22 +208,18 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                     .unwrap();
             }
             WebSocketSessionMessage::DeleteServer(server_id) => {
-                // Check if the user is part of the server, if so remove the server and sent the removed server to the client
-                if self.servers.contains(&server_id) == false {
-                    return Err(anyhow::anyhow!("todo"));
+                // Try to remove the server from the users' servers, if it was successful notify the client about it
+                if self.servers.remove(&server_id) {
+                    self.connection
+                        .send(Message::Text(
+                            serde_json::to_string(&SerializedWebSocketMessage::DeleteServer {
+                                server_id,
+                            })
+                            .unwrap(),
+                        ))
+                        .await
+                        .unwrap();
                 }
-
-                self.servers.remove(&server_id);
-
-                self.connection
-                    .send(Message::Text(
-                        serde_json::to_string(&SerializedWebSocketMessage::DeleteServer {
-                            server_id,
-                        })
-                        .unwrap(),
-                    ))
-                    .await
-                    .unwrap();
             }
             WebSocketSessionMessage::UpdateServer(server) => {
                 // Send the updated server to the client
