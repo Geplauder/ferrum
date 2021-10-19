@@ -878,6 +878,12 @@ dependencies = [
  "serde 1.0.130",
  "sqlx",
  "thiserror",
+ "tracing",
+ "tracing-actix-web",
+ "tracing-bunyan-formatter",
+ "tracing-futures",
+ "tracing-log",
+ "tracing-subscriber",
  "uuid",
 ]
 
@@ -897,6 +903,7 @@ dependencies = [
  "sqlx",
  "tokio",
  "tokio-tungstenite",
+ "tracing",
  "uuid",
 ]
 

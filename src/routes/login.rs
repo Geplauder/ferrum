@@ -1,10 +1,10 @@
-use crate::telemetry::spawn_blocking_with_tracing;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
 use ferrum_db::users::{models::verify_password_hash, queries::get_user_with_email};
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::jwt::Jwt;
+use ferrum_shared::telemetry::spawn_blocking_with_tracing;
 use sqlx::{types::Uuid, PgPool};
 
 ///

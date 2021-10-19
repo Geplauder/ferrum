@@ -7,10 +7,9 @@ use ferrum_db::users::{
     models::{verify_password_hash, UpdateUser, UserEmail, UserName, UserPassword},
     queries::{get_user_with_id, update_user_email, update_user_name, update_user_password},
 };
+use ferrum_shared::telemetry::spawn_blocking_with_tracing;
 use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
 use sqlx::PgPool;
-
-use crate::telemetry::spawn_blocking_with_tracing;
 
 ///
 /// Contains the request body for updating the current user.

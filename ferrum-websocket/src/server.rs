@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use anyhow::Context as AnyhowContext;
 use async_trait::async_trait;
 use ferrum_db::{
     channels::queries::{get_channel_with_id, get_channels_for_server},
@@ -42,22 +43,26 @@ impl WebSocketServer {
         self.users.remove(&user_id);
     }
 
-    pub async fn new_message(&mut self, channel_id: Uuid, message_id: Uuid) {
+    #[tracing::instrument(
+        name = "Handle new message broker event",
+        skip(self, channel_id, message_id)
+    )]
+    pub async fn new_message(&mut self, channel_id: Uuid, message_id: Uuid) -> anyhow::Result<()> {
         // Get the message and message author and transform them to a response
         let message = get_message_with_id(message_id, &self.db_pool)
             .await
-            .unwrap();
+            .context("Error while fetching message")?;
 
         let user = get_user_with_id(message.user_id, &self.db_pool)
             .await
-            .unwrap();
+            .context("Error while fetching user")?;
 
         let message_response = message.to_response(user);
 
         // Get all users that should be notified about the new message and send it to them
         let affected_users = get_users_for_channel(channel_id, &self.db_pool)
             .await
-            .unwrap();
+            .context("Error while fetching affected users")?;
 
         for user in &affected_users {
             if let Some(recipient) = self.users.get_mut(&user.id) {
@@ -66,53 +71,66 @@ impl WebSocketServer {
                         message_response.clone(),
                     ))
                     .await
-                    .unwrap();
+                    .context(format!(
+                        "Error while sending message to recipient: {:?}",
+                        user.id
+                    ))?;
             }
         }
+
+        Ok(())
     }
 
-    async fn new_channel(&mut self, channel_id: Uuid) {
+    #[tracing::instrument(name = "Handle new channel broker event", skip(self, channel_id))]
+    async fn new_channel(&mut self, channel_id: Uuid) -> anyhow::Result<()> {
         // Get the channel and transform it into a response
         let channel: ChannelResponse = get_channel_with_id(channel_id, &self.db_pool)
             .await
-            .unwrap()
+            .context("Error while fetching channel")?
             .into();
 
         // Get all users that should be notified about the new channel and send it to them
         let affected_users = get_users_on_server(channel.server_id, &self.db_pool)
             .await
-            .unwrap();
-
-        println!("affected users: {:#?}", affected_users);
+            .context("Error while fetching affected users")?;
 
         for user in &affected_users {
             if let Some(recipient) = self.users.get_mut(&user.id) {
                 recipient
                     .act(WebSocketSessionMessage::AddChannel(channel.clone()))
                     .await
-                    .unwrap();
+                    .context(format!(
+                        "Error while sending message to recipient: {:?}",
+                        user.id
+                    ))?;
             }
         }
+
+        Ok(())
     }
 
-    async fn new_server(&mut self, user_id: Uuid, server_id: Uuid) {
+    #[tracing::instrument(
+        name = "Handle new server broker event",
+        skip(self, user_id, server_id)
+    )]
+    async fn new_server(&mut self, user_id: Uuid, server_id: Uuid) -> anyhow::Result<()> {
         // Get the server and transform it into a response
         let server: ServerResponse = get_server_with_id(server_id, &self.db_pool)
             .await
-            .unwrap()
+            .context("Error while fetching server")?
             .into();
 
         // Get all channels and users of this server and transform them into proper responses
         let channels: Vec<ChannelResponse> = get_channels_for_server(server_id, &self.db_pool)
             .await
-            .unwrap()
+            .context("Error while fetching channels")?
             .iter()
             .map(|x| x.clone().into())
             .collect();
 
         let users_on_server: Vec<UserResponse> = get_users_on_server(server_id, &self.db_pool)
             .await
-            .unwrap()
+            .context("Error while fetching users on server")?
             .iter()
             .map(|x| x.clone().into())
             .collect();
@@ -126,19 +144,27 @@ impl WebSocketServer {
                     users_on_server,
                 ))
                 .await
-                .unwrap();
+                .context(format!(
+                    "Error while sending message to recipient: {:?}",
+                    user_id
+                ))?;
         }
+
+        Ok(())
     }
 
-    async fn new_user(&mut self, user_id: Uuid, server_id: Uuid) {
+    #[tracing::instrument(name = "Handle new user broker event", skip(self, user_id, server_id))]
+    async fn new_user(&mut self, user_id: Uuid, server_id: Uuid) -> anyhow::Result<()> {
         // Get the new user and transform them into a response
         let new_user: UserResponse = get_user_with_id(user_id, &self.db_pool)
             .await
-            .unwrap()
+            .context("Error while fetching user")?
             .into();
 
         // Get all users that should be notified about the new user and send it to them
-        let affected_users = get_users_on_server(server_id, &self.db_pool).await.unwrap();
+        let affected_users = get_users_on_server(server_id, &self.db_pool)
+            .await
+            .context("Error while fetching affected users")?;
 
         for user in &affected_users {
             // Don't send the new user to the new user itself
@@ -153,21 +179,32 @@ impl WebSocketServer {
                         new_user.clone(),
                     ))
                     .await
-                    .unwrap();
+                    .context(format!(
+                        "Error while sending message to recipient: {:?}",
+                        user.id
+                    ))?;
             }
         }
+
+        Ok(())
     }
 
-    async fn user_left(&mut self, user_id: Uuid, server_id: Uuid) {
+    #[tracing::instrument(name = "Handle user left broker event", skip(self, user_id, server_id))]
+    async fn user_left(&mut self, user_id: Uuid, server_id: Uuid) -> anyhow::Result<()> {
         if let Some(recipient) = self.users.get_mut(&user_id) {
             recipient
                 .act(WebSocketSessionMessage::DeleteServer(server_id))
                 .await
-                .unwrap();
+                .context(format!(
+                    "Error while sending delete server message to recipient: {:?}",
+                    user_id
+                ))?;
         }
 
         // Get all users that are on the server and notify them about the leaving user
-        let affected_users = get_users_on_server(server_id, &self.db_pool).await.unwrap();
+        let affected_users = get_users_on_server(server_id, &self.db_pool)
+            .await
+            .context("Error while fetching affected users")?;
 
         for user in &affected_users {
             if user.id == user_id {
@@ -178,47 +215,72 @@ impl WebSocketServer {
                 recipient
                     .act(WebSocketSessionMessage::DeleteUser(user_id, server_id))
                     .await
-                    .unwrap();
+                    .context(format!(
+                        "Error while sending delete user message to recipient: {:?}",
+                        user.id
+                    ))?;
             }
         }
+
+        Ok(())
     }
 
-    async fn user_joined(&mut self, user_id: Uuid, server_id: Uuid) {
+    #[tracing::instrument(
+        name = "Handle user joined broker event",
+        skip(self, user_id, server_id)
+    )]
+    async fn user_joined(&mut self, user_id: Uuid, server_id: Uuid) -> anyhow::Result<()> {
         // Send the new server to the joining user
-        self.new_server(user_id, server_id).await;
+        self.new_server(user_id, server_id).await?;
 
         // Send the new user to the existing users on the server
-        self.new_user(user_id, server_id).await;
+        self.new_user(user_id, server_id).await?;
+
+        Ok(())
     }
 
-    async fn delete_server(&mut self, server_id: Uuid) {
+    #[tracing::instrument(name = "Handle delete server broker event", skip(self, server_id))]
+    async fn delete_server(&mut self, server_id: Uuid) -> anyhow::Result<()> {
         // Send the deleted server to all websocket sessions, letting them reject it if necessary
-        for mut recipient in self.users.values().cloned() {
+        for (user_id, recipient) in &mut self.users {
             recipient
                 .act(WebSocketSessionMessage::DeleteServer(server_id))
                 .await
-                .unwrap();
+                .context(format!(
+                    "Error while sending message to recipient: {:?}",
+                    user_id
+                ))?;
         }
+
+        Ok(())
     }
 
-    async fn update_server(&mut self, server_id: Uuid) {
+    #[tracing::instrument(name = "Handle update server broker event", skip(self, server_id))]
+    async fn update_server(&mut self, server_id: Uuid) -> anyhow::Result<()> {
         // Get updated server response
         let server: ServerResponse = get_server_with_id(server_id, &self.db_pool)
             .await
-            .unwrap()
+            .context("Error while fetching server")?
             .into();
 
         // Get all users that are on the server and notify them about the updated server
-        let affected_users = get_users_on_server(server_id, &self.db_pool).await.unwrap();
+        let affected_users = get_users_on_server(server_id, &self.db_pool)
+            .await
+            .context("Error while fetching affected users")?;
 
         for user in &affected_users {
             if let Some(recipient) = self.users.get_mut(&user.id) {
                 recipient
                     .act(WebSocketSessionMessage::UpdateServer(server.clone()))
                     .await
-                    .unwrap();
+                    .context(format!(
+                        "Error while sending message to recipient: {:?}",
+                        user.id
+                    ))?;
             }
         }
+
+        Ok(())
     }
 }
 
@@ -235,6 +297,7 @@ impl Actor for WebSocketServer {
 
 #[async_trait]
 impl ActionHandler<IdentifyUser> for WebSocketServer {
+    #[tracing::instrument(name = "Handle identify user websocket message", skip(self, _ctx))]
     async fn handle(
         &mut self,
         mut msg: IdentifyUser,
@@ -246,14 +309,16 @@ impl ActionHandler<IdentifyUser> for WebSocketServer {
         let user_id = msg.user_id;
 
         // Get all servers for this user and inform their websocket session about them
-        let servers = get_servers_for_user(user_id, &self.db_pool).await.unwrap();
+        let servers = get_servers_for_user(user_id, &self.db_pool)
+            .await
+            .context("Error while fetching servers for user")?;
 
         msg.addr
             .act(WebSocketSessionMessage::Ready(
                 servers.iter().map(|x| x.id).collect(),
             ))
             .await
-            .expect("");
+            .context("Error while sending message to recipient")?;
 
         Ok(())
     }
@@ -261,6 +326,7 @@ impl ActionHandler<IdentifyUser> for WebSocketServer {
 
 #[async_trait]
 impl ActionHandler<WebSocketClose> for WebSocketServer {
+    #[tracing::instrument(name = "Handle websocket close message", skip(self, _ctx))]
     async fn handle(
         &mut self,
         msg: WebSocketClose,
@@ -274,28 +340,29 @@ impl ActionHandler<WebSocketClose> for WebSocketServer {
 
 #[async_trait]
 impl ActionHandler<BrokerEvent> for WebSocketServer {
+    #[tracing::instrument(name = "Handle new incoming broker event", skip(self, _ctx), fields(request_id = %uuid::Uuid::new_v4()))]
     async fn handle(
         &mut self,
         msg: BrokerEvent,
         _ctx: &mut Context<Self>,
     ) -> Result<(), anyhow::Error> {
         match msg {
-            BrokerEvent::NewChannel { channel_id } => self.new_channel(channel_id).await,
+            BrokerEvent::NewChannel { channel_id } => self.new_channel(channel_id).await?,
             BrokerEvent::NewServer { user_id, server_id } => {
-                self.new_server(user_id, server_id).await
+                self.new_server(user_id, server_id).await?
             }
             BrokerEvent::UserLeft { user_id, server_id } => {
-                self.user_left(user_id, server_id).await
+                self.user_left(user_id, server_id).await?
             }
             BrokerEvent::UserJoined { user_id, server_id } => {
-                self.user_joined(user_id, server_id).await
+                self.user_joined(user_id, server_id).await?
             }
-            BrokerEvent::DeleteServer { server_id } => self.delete_server(server_id).await,
-            BrokerEvent::UpdateServer { server_id } => self.update_server(server_id).await,
+            BrokerEvent::DeleteServer { server_id } => self.delete_server(server_id).await?,
+            BrokerEvent::UpdateServer { server_id } => self.update_server(server_id).await?,
             BrokerEvent::NewMessage {
                 channel_id,
                 message_id,
-            } => self.new_message(channel_id, message_id).await,
+            } => self.new_message(channel_id, message_id).await?,
         }
 
         Ok(())
