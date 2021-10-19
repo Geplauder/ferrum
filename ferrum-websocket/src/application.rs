@@ -116,7 +116,6 @@ async fn handle_connection(
     let mut session = System::spawn(WebSocketSession {
         connection: outgoing,
         user_id: None,
-        channels: HashSet::new(),
         servers: HashSet::new(),
         jwt: Jwt::new(jwt_secret),
         server,

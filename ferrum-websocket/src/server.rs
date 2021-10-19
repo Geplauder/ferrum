@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use ferrum_db::{
-    channels::queries::{get_channel_with_id, get_channels_for_server, get_channels_for_user},
+    channels::queries::{get_channel_with_id, get_channels_for_server},
     messages::queries::get_message_with_id,
     servers::queries::{get_server_with_id, get_servers_for_user},
     users::queries::{get_user_with_id, get_users_for_channel, get_users_on_server},
@@ -245,14 +245,12 @@ impl ActionHandler<IdentifyUser> for WebSocketServer {
 
         let user_id = msg.user_id;
 
-        // Get all channels and servers for this user and inform their websocket session about them
-        let channels = get_channels_for_user(user_id, &self.db_pool).await.unwrap();
+        // Get all servers for this user and inform their websocket session about them
         let servers = get_servers_for_user(user_id, &self.db_pool).await.unwrap();
 
         msg.addr
             .act(WebSocketSessionMessage::Ready(
                 servers.iter().map(|x| x.id).collect(),
-                channels.iter().map(|x| x.id).collect(),
             ))
             .await
             .expect("");
