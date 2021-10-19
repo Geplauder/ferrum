@@ -7,7 +7,7 @@ use ferrum_shared::{
 };
 use futures_util::StreamExt;
 use lapin::{
-    options::{BasicAckOptions, BasicConsumeOptions},
+    options::{BasicAckOptions, BasicConsumeOptions, QueueDeclareOptions},
     types::FieldTable,
     Connection, ConnectionProperties,
 };
@@ -70,6 +70,15 @@ impl Application {
 
         tokio::spawn(async move {
             let channel = ampq_connection.create_channel().await.unwrap();
+
+            channel
+                .queue_declare(
+                    &broker_queue,
+                    QueueDeclareOptions::default(),
+                    FieldTable::default(),
+                )
+                .await
+                .unwrap();
 
             let mut consumer = channel
                 .basic_consume(
