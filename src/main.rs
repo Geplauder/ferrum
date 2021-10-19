@@ -1,9 +1,9 @@
-use ferrum::{
-    application::Application,
+use ferrum::application::Application;
+
+use ferrum_shared::{
+    settings::get_settings,
     telemetry::{get_subscriber, init_subscriber},
 };
-
-use ferrum_shared::settings::get_settings;
 
 #[cfg(not(tarpaulin))]
 #[actix_web::main]

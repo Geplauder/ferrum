@@ -4,6 +4,7 @@ pub mod jwt;
 pub mod messages;
 pub mod servers;
 pub mod settings;
+pub mod telemetry;
 pub mod users;
 
 pub fn error_chain_fmt(
