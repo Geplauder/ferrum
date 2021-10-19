@@ -3,14 +3,12 @@ use std::time::Duration;
 use actix_http::{client::ConnectionIo, ws};
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use fake::Fake;
-use ferrum::{
-    application::Application as RestApplication,
-    telemetry::{get_subscriber, init_subscriber},
-};
+use ferrum::application::Application as RestApplication;
 use ferrum_shared::{
     broker::BrokerEvent,
     jwt::Jwt,
     settings::{get_db_pool, get_settings, DatabaseSettings, Settings},
+    telemetry::{get_subscriber, init_subscriber},
 };
 use ferrum_websocket::{
     application::Application as WebsocketApplication, messages::SerializedWebSocketMessage,

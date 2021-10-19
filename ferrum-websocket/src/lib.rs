@@ -6,6 +6,7 @@ mod server;
 
 use std::{collections::HashSet, iter::FromIterator};
 
+use anyhow::Context as AnyhowContext;
 use async_trait::async_trait;
 use ferrum_shared::jwt::Jwt;
 use futures_util::{stream::SplitSink, SinkExt};
@@ -49,6 +50,7 @@ impl StartedBy<System> for WebSocketSession {
 
 #[async_trait]
 impl Consumer<TungsteniteMessage> for WebSocketSession {
+    #[tracing::instrument(name = "Handle new incoming websocket message", skip(self, ctx), fields(request_id = %Uuid::new_v4(), user_id = ?self.user_id))]
     async fn handle(
         &mut self,
         message: TungsteniteMessage,
@@ -58,27 +60,26 @@ impl Consumer<TungsteniteMessage> for WebSocketSession {
         // In the future, we should probably move to binary messages to reduce overhead.
         match message {
             Ok(Message::Text(text)) => {
-                let message = match serde_json::from_str::<SerializedWebSocketMessage>(&text) {
-                    Ok(value) => value,
-                    Err(_) => return Err(anyhow::anyhow!("todo")),
-                };
+                let message = serde_json::from_str::<SerializedWebSocketMessage>(&text)
+                    .context("Failed to deserialize websocket message")?;
 
                 match message {
                     SerializedWebSocketMessage::Ping => {
                         // Respond to Ping with Pong
                         self.connection
                             .send(Message::Text(
-                                serde_json::to_string(&SerializedWebSocketMessage::Pong).unwrap(),
+                                serde_json::to_string(&SerializedWebSocketMessage::Pong)
+                                    .context("Failed to serialize Pong websocket message")?,
                             ))
                             .await
-                            .unwrap();
+                            .context("Failed to send Pong websocket message")?;
                     }
                     SerializedWebSocketMessage::Identify { bearer } => {
                         // Check if there are claims for the JWT, if so identify with the websocket server
-                        let claims = match self.jwt.get_claims(&bearer) {
-                            Some(value) => value,
-                            None => return Err(anyhow::anyhow!("todo")),
-                        };
+                        let claims = self
+                            .jwt
+                            .get_claims(&bearer)
+                            .context("Failed to get claims for bearer token")?;
 
                         let address = ctx.address();
 
@@ -89,7 +90,7 @@ impl Consumer<TungsteniteMessage> for WebSocketSession {
                                 addr: address.clone(),
                             })
                             .await
-                            .unwrap();
+                            .context("Failed to send IdentifyUser message to websocket server")?;
                     }
                     _ => (),
                 }
@@ -97,10 +98,16 @@ impl Consumer<TungsteniteMessage> for WebSocketSession {
             Ok(Message::Close(_reason)) => {
                 // If the user was identified, notify the websocket server about the closed session
                 if let Some(user_id) = self.user_id {
-                    self.server.act(WebSocketClose::new(user_id)).await.unwrap();
+                    self.server
+                        .act(WebSocketClose::new(user_id))
+                        .await
+                        .context("Failed to send WebSocketClose message to websocket server")?;
                 }
 
-                self.connection.close().await.unwrap();
+                self.connection
+                    .close()
+                    .await
+                    .context("Failed to close websocket stream")?;
                 ctx.stop();
             }
             _ => (),
@@ -122,6 +129,7 @@ impl StreamAcceptor<TungsteniteMessage> for WebSocketSession {
 
 #[async_trait]
 impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
+    #[tracing::instrument(name = "Handle outgoing websocket message", skip(self, _ctx), fields(request_id = %Uuid::new_v4(), user_id = ?self.user_id))]
     async fn handle(
         &mut self,
         msg: WebSocketSessionMessage,
@@ -134,30 +142,31 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
 
                 self.connection
                     .send(Message::Text(
-                        serde_json::to_string(&SerializedWebSocketMessage::Ready).unwrap(),
+                        serde_json::to_string(&SerializedWebSocketMessage::Ready)
+                            .context("Failed to serialize Ready websocket message")?,
                     ))
                     .await
-                    .unwrap();
+                    .context("Failed to send Rady websocket message")?;
             }
             WebSocketSessionMessage::AddMessage(message) => {
                 // Send the new message to the client
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&SerializedWebSocketMessage::NewMessage { message })
-                            .unwrap(),
+                            .context("Failed to serialize NewMessage websocket message")?,
                     ))
                     .await
-                    .unwrap();
+                    .context("Failed to send NewMessage websocket message")?;
             }
             WebSocketSessionMessage::AddChannel(channel) => {
                 // Send the new channel to the client
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&SerializedWebSocketMessage::NewChannel { channel })
-                            .unwrap(),
+                            .context("Failed to serialize NewChannel websocket message")?,
                     ))
                     .await
-                    .unwrap();
+                    .context("Failed to send AddChannel websocket message")?;
             }
             WebSocketSessionMessage::AddServer(server, channels, users) => {
                 // Store the new server and sent it to the client
@@ -169,10 +178,10 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                             channels,
                             users,
                         })
-                        .unwrap(),
+                        .context("Failed to serialize NewServer websocket message")?,
                     ))
                     .await
-                    .unwrap();
+                    .context("Failed to send AddServer websocket message")?;
             }
             WebSocketSessionMessage::AddUser(server_id, user) => {
                 // Send the new user to the client
@@ -182,10 +191,10 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                             server_id,
                             user,
                         })
-                        .unwrap(),
+                        .context("Failed to serialize NewUser websocket message")?,
                     ))
                     .await
-                    .unwrap();
+                    .context("Failed to send NewUser websocket message")?;
             }
             WebSocketSessionMessage::DeleteUser(user_id, server_id) => {
                 // Send the deleted/leaving user to the client
@@ -195,10 +204,10 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                             user_id,
                             server_id,
                         })
-                        .unwrap(),
+                        .context("Failed to serialize DeleteUser websocket message")?,
                     ))
                     .await
-                    .unwrap();
+                    .context("Failed to send DeleteUser websocket message")?;
             }
             WebSocketSessionMessage::DeleteServer(server_id) => {
                 // Try to remove the server from the users' servers, if it was successful notify the client about it
@@ -208,10 +217,10 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                             serde_json::to_string(&SerializedWebSocketMessage::DeleteServer {
                                 server_id,
                             })
-                            .unwrap(),
+                            .context("Failed to serialize DeleteServer websocket message")?,
                         ))
                         .await
-                        .unwrap();
+                        .context("Failed to send DeleteServer websocket message")?;
                 }
             }
             WebSocketSessionMessage::UpdateServer(server) => {
@@ -219,10 +228,10 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&SerializedWebSocketMessage::UpdateServer { server })
-                            .unwrap(),
+                            .context("Failed to serialize UpdateServer websocket message")?,
                     ))
                     .await
-                    .unwrap();
+                    .context("Failed to send UpdateServer websocket message")?;
             }
         }
 

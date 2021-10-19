@@ -82,13 +82,17 @@ impl Application {
                 .unwrap();
 
             while let Some(message) = consumer.next().await {
+                tracing::info_span!("message broker handler", request_id = %uuid::Uuid::new_v4());
+
                 let (_, delivery) = message.unwrap();
 
                 delivery.ack(BasicAckOptions::default()).await.unwrap();
 
                 let broker_event: BrokerEvent = serde_json::from_slice(&delivery.data).unwrap();
 
-                address.clone().act(broker_event).await.unwrap();
+                if let Err(error) = address.clone().act(broker_event).await {
+                    tracing::error!("Error while handling broker_event: {:?}", error);
+                }
             }
         });
 
@@ -102,6 +106,7 @@ impl Application {
     }
 }
 
+#[tracing::instrument(name = "Handle a new incoming connection", skip(stream, server, jwt_secret), fields(request_id = %uuid::Uuid::new_v4()))]
 async fn handle_connection(
     stream: TcpStream,
     server: Address<WebSocketServer>,
