@@ -788,50 +788,6 @@
       ]
     }
   },
-  "ec95642f7567f53fb525e7689d35aa3bf9a0376e40c8bfba6f1969871ef73131": {
-    "query": "\n        WITH server_query AS (SELECT servers.id as server_id\n            FROM users_servers\n            INNER JOIN servers ON servers.id = users_servers.server_id\n            WHERE users_servers.user_id = $1\n        )\n        SELECT channels.*\n        FROM channels\n        WHERE channels.server_id IN (SELECT server_id FROM server_query)\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Uuid"
-        },
-        {
-          "ordinal": 1,
-          "name": "server_id",
-          "type_info": "Uuid"
-        },
-        {
-          "ordinal": 2,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "updated_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 4,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "efb0457a3cd638fe2bfac62c4c58bd9e37e420a4ad4e3af477be2c0e611e0695": {
     "query": "\n        UPDATE users\n        SET password = $1\n        WHERE id = $2\n        ",
     "describe": {
