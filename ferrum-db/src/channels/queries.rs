@@ -39,29 +39,6 @@ pub async fn get_channels_for_server(
     .await
 }
 
-#[tracing::instrument(name = "Get channels for user", skip(user_id, pool))]
-pub async fn get_channels_for_user(
-    user_id: Uuid,
-    pool: &PgPool,
-) -> Result<Vec<ChannelModel>, sqlx::Error> {
-    sqlx::query_as!(
-        ChannelModel,
-        r#"
-        WITH server_query AS (SELECT servers.id as server_id
-            FROM users_servers
-            INNER JOIN servers ON servers.id = users_servers.server_id
-            WHERE users_servers.user_id = $1
-        )
-        SELECT channels.*
-        FROM channels
-        WHERE channels.server_id IN (SELECT server_id FROM server_query)
-        "#,
-        user_id
-    )
-    .fetch_all(pool)
-    .await
-}
-
 #[tracing::instrument(
     name = "Saving a new server channel to the database",
     skip(transaction, new_channel, server_id)
