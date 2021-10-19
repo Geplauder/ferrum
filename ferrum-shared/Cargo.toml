@@ -17,6 +17,12 @@ thiserror = "1.0.24"
 config = { version = "0.11", features = ["json"] }
 sqlx = { version = "0.5.1", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline"] }
 meio = "0.96.0"
+tracing = "0.1.19"
+tracing-actix-web = "0.4.0-beta.8"
+tracing-futures = "0.2.4"
+tracing-subscriber = { version = "0.2.12", features = ["registry", "env-filter"] }
+tracing-bunyan-formatter = "0.2.2"
+tracing-log = "0.1.1"
 
 [dev-dependencies]
 claim = "0.5.0"
