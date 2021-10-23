@@ -9,20 +9,20 @@ edition = "2018"
 serde = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "0.8", features = ["v4", "serde"] }
-actix-web = "4.0.0-beta.9"
-actix-http = "3.0.0-beta.10"
+actix-web = "4.0.0-beta.10"
+actix-http = "3.0.0-beta.11"
 jsonwebtoken = "7.2"
 futures = "0.3"
-thiserror = "1.0.24"
+thiserror = "1.0.30"
 config = { version = "0.11", features = ["json"] }
-sqlx = { version = "0.5.1", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline"] }
+sqlx = { version = "0.5.9", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline"] }
 meio = "0.96.0"
-tracing = "0.1.19"
-tracing-actix-web = "0.4.0-beta.8"
-tracing-futures = "0.2.4"
-tracing-subscriber = { version = "0.2.12", features = ["registry", "env-filter"] }
-tracing-bunyan-formatter = "0.2.2"
-tracing-log = "0.1.1"
+tracing = "0.1.29"
+tracing-actix-web = "0.4.0-beta.15"
+tracing-futures = "0.2.5"
+tracing-subscriber = { version = "0.2.25", features = ["registry", "env-filter", "json"] }
+tracing-bunyan-formatter = "0.2.6"
+tracing-log = "0.1.2"
 
 [dev-dependencies]
 claim = "0.5.0"
