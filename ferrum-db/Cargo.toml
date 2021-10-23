@@ -7,14 +7,14 @@ edition = "2018"
 
 [dependencies]
 ferrum-shared = { path = "../ferrum-shared" }
-sqlx = { version = "0.5.1", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline"] }
+sqlx = { version = "0.5.9", default-features = false, features = ["runtime-actix-rustls", "macros", "postgres", "uuid", "chrono", "migrate", "offline"] }
 validator = "0.14.0"
 serde = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "0.8", features = ["v4", "serde"] }
 argon2 = { version = "0.3", features = ["std"] }
-anyhow = "1.0.40"
-tracing = "0.1.19"
+anyhow = "1.0.44"
+tracing = "0.1.29"
 
 [dev-dependencies]
 fake = "~2.3.0"

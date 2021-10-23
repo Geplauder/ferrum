@@ -112,7 +112,6 @@ impl ResponseError for AuthorizationError {
 }
 
 impl FromRequest for AuthorizationService {
-    type Config = ();
     type Error = AuthorizationError;
     type Future = Ready<Result<AuthorizationService, Self::Error>>;
 
