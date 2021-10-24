@@ -21,6 +21,22 @@ pub async fn get_server_with_id(
     .await
 }
 
+#[tracing::instrument(name = "Get server for channel id", skip(channel_id, pool))]
+pub async fn get_server_for_channel_id(channel_id: Uuid, pool: &PgPool) -> Result<ServerModel, sqlx::Error> {
+    sqlx::query_as!(
+        ServerModel,
+        r#"
+            SELECT servers.*
+            FROM channels
+            INNER JOIN servers ON channels.server_id = servers.id
+            WHERE channels.id = $1
+        "#,
+        channel_id
+    )
+    .fetch_one(pool)
+    .await
+}
+
 #[tracing::instrument(
     name = "Saving a new server to the database",
     skip(transaction, new_server)
