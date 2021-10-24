@@ -10,6 +10,13 @@ pub struct NewChannel {
 }
 
 ///
+/// Contains validated data to update an existing channel.
+///
+pub struct UpdateChannel {
+    pub name: Option<ChannelName>,
+}
+
+///
 /// Model to fetch a channel from the database with.
 ///
 #[derive(Debug, Clone, sqlx::FromRow, serde::Serialize, serde::Deserialize)]
