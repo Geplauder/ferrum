@@ -124,6 +124,7 @@ fn run(
                 "/servers/{id}/channels",
                 web::post().to(servers::create_channel),
             )
+            .route("/servers/{id}/channels", web::delete().to(channels::delete))
             .route(
                 "/channels/{id}/messages",
                 web::get().to(channels::get_messages),

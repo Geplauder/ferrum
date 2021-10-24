@@ -62,3 +62,21 @@ pub async fn insert_channel(
     .fetch_one(transaction)
     .await
 }
+
+#[tracing::instrument(name = "Delete a existing channel from the database")]
+pub async fn delete_channel(
+    transaction: &mut Transaction<'_, Postgres>,
+    channel_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        DELETE FROM channels
+        WHERE channels.id = $1
+        "#,
+        channel_id
+    )
+    .execute(transaction)
+    .await?;
+
+    Ok(())
+}

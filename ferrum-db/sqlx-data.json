@@ -423,6 +423,50 @@
       "nullable": []
     }
   },
+  "8859195c1f07f3f461fb7008185a5ee0ab25386523c6d8b492d200271749078d": {
+    "query": "\n            SELECT servers.*\n            FROM channels\n            INNER JOIN servers ON channels.server_id = servers.id\n            WHERE channels.id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "owner_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "8a0fa61820727382ec64109253953ccc015abc1f771b79ba9f8e2319b36e90dc": {
     "query": "\n        SELECT *\n        FROM messages\n        WHERE messages.channel_id = $1\n        ",
     "describe": {
@@ -715,6 +759,18 @@
         false,
         false
       ]
+    }
+  },
+  "de9f4965c937dad6cdde326b06b6c6b55d38f6b3c9e598e229aed94716c03c6a": {
+    "query": "\n        DELETE FROM channels\n        WHERE channels.id = $1\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": []
     }
   },
   "e2340ccd0d869b3e144caf0d59c41118ec1626c097cbf396a33ea14327122589": {

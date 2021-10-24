@@ -65,7 +65,7 @@ pub async fn delete(
     transaction
         .commit()
         .await
-        .context("Failed to commit SQL transaction to store a new server.")?;
+        .context("Failed to commit SQL transaction to delete existing server.")?;
 
     // Notify websocket server about the deleted server
     broker.do_send(PublishBrokerEvent {
