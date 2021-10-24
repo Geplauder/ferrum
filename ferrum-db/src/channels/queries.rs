@@ -39,6 +39,28 @@ pub async fn get_channels_for_server(
     .await
 }
 
+#[tracing::instrument(name = "Update a existing channels' name", skip(pool, channel_id, name))]
+pub async fn update_channel_name(
+    pool: &PgPool,
+    channel_id: Uuid,
+    name: &ChannelName,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE channels
+        SET name = $1
+        WHERE id = $2
+        "#,
+        name.as_ref(),
+        channel_id,
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+
 #[tracing::instrument(
     name = "Saving a new server channel to the database",
     skip(transaction, new_channel, server_id)

@@ -57,6 +57,19 @@
       "nullable": []
     }
   },
+  "2fda78e3ba89aa54bcfc7bf8707b78ab2aed1edcf6cc79920f35ac0ebd97d4e5": {
+    "query": "\n        UPDATE channels\n        SET name = $1\n        WHERE id = $2\n        ",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      },
+      "nullable": []
+    }
+  },
   "367c4be408fc282be1bee6eeea972e3f93d4e23bd66ceb4510f83bb91dbcf900": {
     "query": "\n        INSERT INTO channels (id, server_id, name) VALUES ($1, $2, $3)\n        ",
     "describe": {
