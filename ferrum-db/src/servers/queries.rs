@@ -22,7 +22,10 @@ pub async fn get_server_with_id(
 }
 
 #[tracing::instrument(name = "Get server for channel id", skip(channel_id, pool))]
-pub async fn get_server_for_channel_id(channel_id: Uuid, pool: &PgPool) -> Result<ServerModel, sqlx::Error> {
+pub async fn get_server_for_channel_id(
+    channel_id: Uuid,
+    pool: &PgPool,
+) -> Result<ServerModel, sqlx::Error> {
     sqlx::query_as!(
         ServerModel,
         r#"
