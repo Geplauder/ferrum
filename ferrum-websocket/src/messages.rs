@@ -38,6 +38,8 @@ pub enum SerializedWebSocketMessage {
     DeleteUser { server_id: Uuid, user_id: Uuid },
     /// Sent to the client to inform them that they have no longer access to a server.
     DeleteServer { server_id: Uuid },
+    /// Sent to the client to inform them that they have no longer access to a channel.
+    DeleteChannel { channel_id: Uuid },
     /// Sent to the client to inform them about the updated server.
     UpdateServer { server: ServerResponse },
 }
@@ -61,6 +63,8 @@ pub enum WebSocketSessionMessage {
     AddUser(Uuid, UserResponse),
     /// Removes a server from the [`crate::WebSocketSession`] and tells it to notify the client about it.
     DeleteServer(Uuid),
+    /// Removes a channel from the [`crate::WebSocketSession`] and tells it to notify the client about it.
+    DeleteChannel(Uuid),
     /// Removes a channel from the [`crate::WebSocketSession`] and tells it to notify the client about it.
     DeleteUser(Uuid, Uuid),
     /// Tells the [`crate::WebSocketSession`] to notify the client about a updated server.

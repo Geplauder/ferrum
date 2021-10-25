@@ -255,6 +255,27 @@ impl WebSocketServer {
         Ok(())
     }
 
+    #[tracing::instrument(name = "Handle delete channel broker event", skip(self, channel_id))]
+    async fn delete_channel(&mut self, channel_id: Uuid) -> anyhow::Result<()> {
+        let affected_users = get_users_for_channel(channel_id, &self.db_pool)
+            .await
+            .context("Eror while fetching affected users")?;
+
+        for user in &affected_users {
+            if let Some(recipient) = self.users.get_mut(&user.id) {
+                recipient
+                    .act(WebSocketSessionMessage::DeleteChannel(channel_id))
+                    .await
+                    .context(format!(
+                        "Error while sending message to recipient: {:?}",
+                        user.id
+                    ))?;
+            }
+        }
+
+        Ok(())
+    }
+
     #[tracing::instrument(name = "Handle update server broker event", skip(self, server_id))]
     async fn update_server(&mut self, server_id: Uuid) -> anyhow::Result<()> {
         // Get updated server response
@@ -358,6 +379,7 @@ impl ActionHandler<BrokerEvent> for WebSocketServer {
                 self.user_joined(user_id, server_id).await?
             }
             BrokerEvent::DeleteServer { server_id } => self.delete_server(server_id).await?,
+            BrokerEvent::DeleteChannel { channel_id } => self.delete_channel(channel_id).await?,
             BrokerEvent::UpdateServer { server_id } => self.update_server(server_id).await?,
             BrokerEvent::NewMessage {
                 channel_id,
