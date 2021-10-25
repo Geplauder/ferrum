@@ -78,6 +78,7 @@ pub async fn delete(
     // Notify websocket about the deleted channel
     broker.do_send(PublishBrokerEvent {
         broker_event: BrokerEvent::DeleteChannel {
+            server_id: server.id,
             channel_id: *channel_id,
         },
     });
