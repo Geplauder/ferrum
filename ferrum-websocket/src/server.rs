@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Context as AnyhowContext;
 use async_trait::async_trait;
 use ferrum_db::{
-    channels::queries::{get_channel_with_id, get_channels_for_server},
+    channels::queries::{get_channel_with_id, get_channels_for_server, get_channels_for_user},
     messages::queries::get_message_with_id,
     servers::queries::{get_server_with_id, get_servers_for_user},
     users::queries::{get_user_with_id, get_users_for_channel, get_users_on_server},
@@ -257,20 +257,14 @@ impl WebSocketServer {
 
     #[tracing::instrument(name = "Handle delete channel broker event", skip(self, channel_id))]
     async fn delete_channel(&mut self, channel_id: Uuid) -> anyhow::Result<()> {
-        let affected_users = get_users_for_channel(channel_id, &self.db_pool)
-            .await
-            .context("Eror while fetching affected users")?;
-
-        for user in &affected_users {
-            if let Some(recipient) = self.users.get_mut(&user.id) {
-                recipient
-                    .act(WebSocketSessionMessage::DeleteChannel(channel_id))
-                    .await
-                    .context(format!(
-                        "Error while sending message to recipient: {:?}",
-                        user.id
-                    ))?;
-            }
+        for (user_id, recipient) in &mut self.users {
+            recipient
+                .act(WebSocketSessionMessage::DeleteChannel(channel_id))
+                .await
+                .context(format!(
+                    "Error while sending message to recipient: {:?}",
+                    user_id
+                ))?;
         }
 
         Ok(())
@@ -334,9 +328,14 @@ impl ActionHandler<IdentifyUser> for WebSocketServer {
             .await
             .context("Error while fetching servers for user")?;
 
+        let channels = get_channels_for_user(user_id, &self.db_pool)
+            .await
+            .context("Error while fetching channels for user")?;
+
         msg.addr
             .act(WebSocketSessionMessage::Ready(
                 servers.iter().map(|x| x.id).collect(),
+                channels.iter().map(|x| x.id).collect(),
             ))
             .await
             .context("Error while sending message to recipient")?;

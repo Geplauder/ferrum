@@ -131,6 +131,7 @@ async fn handle_connection(
         connection: outgoing,
         user_id: None,
         servers: HashSet::new(),
+        channels: HashSet::new(),
         jwt: Jwt::new(jwt_secret),
         server,
     });
