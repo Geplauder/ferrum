@@ -11,6 +11,7 @@ pub enum BrokerEvent {
     DeleteServer { server_id: Uuid },
     DeleteChannel { channel_id: Uuid },
     UpdateServer { server_id: Uuid },
+    UpdateChannel { channel_id: Uuid },
     NewMessage { channel_id: Uuid, message_id: Uuid },
 }
 

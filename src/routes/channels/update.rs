@@ -11,11 +11,11 @@ use ferrum_db::{
     },
     servers::queries::{get_server_for_channel_id, is_user_owner_of_server},
 };
-use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
+use ferrum_shared::{broker::BrokerEvent, error_chain_fmt, jwt::AuthorizationService};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::broker::Broker;
+use crate::broker::{Broker, PublishBrokerEvent};
 
 ///
 /// Contains the request body for updating a channel.
@@ -74,12 +74,12 @@ impl ResponseError for ChannelUpdateError {
     }
 }
 
-#[tracing::instrument(name = "Update existing channel", skip(body, pool, _broker, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument(name = "Update existing channel", skip(body, pool, broker, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn update(
     channel_id: web::Path<Uuid>,
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
-    _broker: web::Data<Addr<Broker>>,
+    broker: web::Data<Addr<Broker>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, ChannelUpdateError> {
     // Validate the request body
@@ -109,7 +109,12 @@ pub async fn update(
             .context("Failed to update channel name")?
     }
 
-    // TODO: Notify websocket about the deleted channel
+    // Notify websocket about the deleted channel
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::UpdateChannel {
+            channel_id: *channel_id,
+        },
+    });
 
     Ok(HttpResponse::Ok().finish())
 }

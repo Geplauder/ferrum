@@ -4,8 +4,8 @@
 //! results in certain [`ferrum_websocket::messages::SerializedWebSocketMessage`], depending
 //! on certain situations.
 
-pub mod delete_server;
 pub mod delete_channel;
+pub mod delete_server;
 pub mod new_channel;
 pub mod new_message;
 pub mod new_server;
