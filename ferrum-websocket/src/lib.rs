@@ -251,6 +251,18 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                     .await
                     .context("Failed to send UpdateServer websocket message")?;
             }
+            WebSocketSessionMessage::UpdateChannel(channel) => {
+                // Send the updated channel to the client
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&SerializedWebSocketMessage::UpdateChannel {
+                            channel,
+                        })
+                        .context("Failed to serialize UpdateChannel websocket message")?,
+                    ))
+                    .await
+                    .context("Failed to send UpdateChannel websocket message")?;
+            }
         }
 
         Ok(())

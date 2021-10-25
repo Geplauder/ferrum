@@ -42,6 +42,8 @@ pub enum SerializedWebSocketMessage {
     DeleteChannel { channel_id: Uuid },
     /// Sent to the client to inform them about the updated server.
     UpdateServer { server: ServerResponse },
+    /// Sent to the client to inform them about the updated channel.
+    UpdateChannel { channel: ChannelResponse },
 }
 
 impl Action for SerializedWebSocketMessage {}
@@ -69,6 +71,8 @@ pub enum WebSocketSessionMessage {
     DeleteUser(Uuid, Uuid),
     /// Tells the [`crate::WebSocketSession`] to notify the client about a updated server.
     UpdateServer(ServerResponse),
+    /// Tells the [`crate::WebSocketSession`] to notify the client about a updated channel.
+    UpdateChannel(ChannelResponse),
 }
 
 impl Action for WebSocketSessionMessage {}
