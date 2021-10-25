@@ -1,7 +1,8 @@
 use actix_http::{encoding::Decoder, Payload};
+use ferrum_shared::broker::BrokerEvent;
 use uuid::Uuid;
 
-use crate::helpers::TestApplication;
+use crate::{assert_next_broker_meessage, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn delete_channel(
@@ -112,4 +113,25 @@ async fn delete_channel_returns_500_when_channel_id_is_not_found() {
 
     // Assert
     assert_eq!(500, response.status().as_u16());
+}
+
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
+async fn delete_channel_sends_delete_channel_broker_event() {
+    // Arrange
+
+    // Act
+    app.delete_channel(
+        app.test_server().default_channel_id.to_string(),
+        Some(app.test_user_token()),
+    )
+    .await;
+
+    // Assert
+    assert_next_broker_meessage!(
+        BrokerEvent::DeleteChannel { channel_id },
+        &mut app.consumer,
+        {
+            assert_eq!(app.test_server().default_channel_id, channel_id);
+        }
+    );
 }
