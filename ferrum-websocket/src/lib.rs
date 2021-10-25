@@ -223,6 +223,18 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                         .context("Failed to send DeleteServer websocket message")?;
                 }
             }
+            WebSocketSessionMessage::DeleteChannel(channel_id) => {
+                // Send the deleted channel to the client
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&SerializedWebSocketMessage::DeleteChannel {
+                            channel_id,
+                        })
+                        .context("Failed to serialize DeleteChannel websocket message")?,
+                    ))
+                    .await
+                    .context("Failed to send DeleteChannel websocket message")?;
+            }
             WebSocketSessionMessage::UpdateServer(server) => {
                 // Send the updated server to the client
                 self.connection

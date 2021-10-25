@@ -9,6 +9,7 @@ pub enum BrokerEvent {
     UserJoined { user_id: Uuid, server_id: Uuid },
     UserLeft { user_id: Uuid, server_id: Uuid },
     DeleteServer { server_id: Uuid },
+    DeleteChannel { channel_id: Uuid },
     UpdateServer { server_id: Uuid },
     NewMessage { channel_id: Uuid, message_id: Uuid },
 }

@@ -6,11 +6,11 @@ use ferrum_db::{
     channels::queries::delete_channel,
     servers::queries::{get_server_for_channel_id, is_user_owner_of_server},
 };
-use ferrum_shared::{error_chain_fmt, jwt::AuthorizationService};
+use ferrum_shared::{broker::BrokerEvent, error_chain_fmt, jwt::AuthorizationService};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::broker::Broker;
+use crate::broker::{Broker, PublishBrokerEvent};
 
 ///
 /// Possible errors that can occur on this route.
@@ -40,11 +40,11 @@ impl ResponseError for DeleteChannelError {
     }
 }
 
-#[tracing::instrument("Delete channel", skip(pool, _broker, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
+#[tracing::instrument("Delete channel", skip(pool, broker, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn delete(
     channel_id: web::Path<Uuid>,
     pool: web::Data<PgPool>,
-    _broker: web::Data<Addr<Broker>>,
+    broker: web::Data<Addr<Broker>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, DeleteChannelError> {
     // Get the server that the channel belongs to
@@ -75,7 +75,12 @@ pub async fn delete(
         .await
         .context("Failed to commit SQL transaction to delete existing channel.")?;
 
-    // TODO: Notify websocket about the deleted channel
+    // Notify websocket about the deleted channel
+    broker.do_send(PublishBrokerEvent {
+        broker_event: BrokerEvent::DeleteChannel {
+            channel_id: *channel_id,
+        },
+    });
 
     Ok(HttpResponse::Ok().finish())
 }
