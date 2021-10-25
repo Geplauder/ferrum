@@ -1,6 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
+use ferrum_shared::broker::BrokerEvent;
 
-use crate::helpers::TestApplication;
+use crate::{assert_next_broker_message, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn post_update_channel(
@@ -183,4 +184,29 @@ async fn update_with_empty_body_does_not_change_anything() {
     .expect("Failed to fetch saved channel");
 
     assert_eq!("general", saved_channel.name);
+}
+
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
+async fn update_sends_update_channel_broker_event() {
+    // Arrange
+    let body = serde_json::json!({
+        "name": "FooBar",
+    });
+
+    // Act
+    app.post_update_channel(
+        app.test_server().default_channel_id.to_string(),
+        &body,
+        Some(app.test_user_token()),
+    )
+    .await;
+
+    // Assert
+    assert_next_broker_message!(
+        BrokerEvent::UpdateChannel { channel_id },
+        &mut app.consumer,
+        {
+            assert_eq!(app.test_server().default_channel_id, channel_id);
+        }
+    );
 }

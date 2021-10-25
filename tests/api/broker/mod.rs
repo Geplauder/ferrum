@@ -10,5 +10,6 @@ pub mod new_channel;
 pub mod new_message;
 pub mod new_server;
 pub mod update_server;
+pub mod update_channel;
 pub mod user_joined;
 pub mod user_left;

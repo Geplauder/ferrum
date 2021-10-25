@@ -1,7 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
 use ferrum_shared::broker::BrokerEvent;
 
-use crate::{assert_next_broker_meessage, helpers::TestApplication};
+use crate::{assert_next_broker_message, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn put_join_server(
@@ -131,7 +131,7 @@ async fn join_sends_new_server_and_new_user_broker_events() {
     .await;
 
     // Assert
-    assert_next_broker_meessage!(
+    assert_next_broker_message!(
         BrokerEvent::UserJoined { user_id, server_id },
         &mut app.consumer,
         {

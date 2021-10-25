@@ -2,7 +2,7 @@ use actix_http::{encoding::Decoder, Payload};
 use ferrum_shared::broker::BrokerEvent;
 use uuid::Uuid;
 
-use crate::{assert_next_broker_meessage, helpers::TestApplication};
+use crate::{assert_next_broker_message, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn post_create_server_channel(
@@ -231,7 +231,7 @@ async fn create_channel_sends_new_channel_broker_event() {
     .await;
 
     // Assert
-    assert_next_broker_meessage!(
+    assert_next_broker_message!(
         BrokerEvent::NewChannel { channel_id: _ },
         &mut app.consumer,
         {}

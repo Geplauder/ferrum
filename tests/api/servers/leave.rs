@@ -2,7 +2,7 @@ use actix_http::{encoding::Decoder, Payload};
 use claim::assert_err;
 use ferrum_shared::broker::BrokerEvent;
 
-use crate::{assert_next_broker_meessage, helpers::TestApplication};
+use crate::{assert_next_broker_message, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn delete_leave_server(
@@ -158,7 +158,7 @@ async fn leave_sends_user_left_broker_event() {
     )
     .await;
 
-    assert_next_broker_meessage!(
+    assert_next_broker_message!(
         BrokerEvent::UserJoined {
             server_id: _,
             user_id: _
@@ -175,7 +175,7 @@ async fn leave_sends_user_left_broker_event() {
     .await;
 
     // Assert
-    assert_next_broker_meessage!(
+    assert_next_broker_message!(
         BrokerEvent::UserLeft { server_id, user_id },
         &mut app.consumer,
         {

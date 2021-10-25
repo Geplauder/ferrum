@@ -1,7 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
 use ferrum_shared::broker::BrokerEvent;
 
-use crate::{assert_next_broker_meessage, helpers::TestApplication};
+use crate::{assert_next_broker_message, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn post_create_server(
@@ -180,7 +180,7 @@ async fn create_sends_new_server_broker_event() {
         .await;
 
     // Assert
-    assert_next_broker_meessage!(
+    assert_next_broker_message!(
         BrokerEvent::NewServer {
             server_id: _,
             user_id
