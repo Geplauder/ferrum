@@ -24,6 +24,7 @@ async fn delete_channel_broker_event_sends_delete_channel_websocket_message_to_u
     publish_broker_message(
         &app,
         BrokerEvent::DeleteChannel {
+            server_id: app.test_server().id,
             channel_id: app.test_server().default_channel_id,
         },
     )
@@ -31,9 +32,13 @@ async fn delete_channel_broker_event_sends_delete_channel_websocket_message_to_u
 
     // Assert
     assert_next_websocket_message!(
-        SerializedWebSocketMessage::DeleteChannel { channel_id },
+        SerializedWebSocketMessage::DeleteChannel {
+            server_id,
+            channel_id
+        },
         &mut connection,
         {
+            assert_eq!(app.test_server().id, server_id);
             assert_eq!(app.test_server().default_channel_id, channel_id);
         }
     );

@@ -128,9 +128,13 @@ async fn delete_channel_sends_delete_channel_broker_event() {
 
     // Assert
     assert_next_broker_message!(
-        BrokerEvent::DeleteChannel { channel_id },
+        BrokerEvent::DeleteChannel {
+            server_id,
+            channel_id
+        },
         &mut app.consumer,
         {
+            assert_eq!(app.test_server().id, server_id);
             assert_eq!(app.test_server().default_channel_id, channel_id);
         }
     );

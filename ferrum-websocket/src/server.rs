@@ -255,11 +255,16 @@ impl WebSocketServer {
         Ok(())
     }
 
-    #[tracing::instrument(name = "Handle delete channel broker event", skip(self, channel_id))]
-    async fn delete_channel(&mut self, channel_id: Uuid) -> anyhow::Result<()> {
+    #[tracing::instrument(
+        name = "Handle delete channel broker event",
+        skip(self, server_id, channel_id)
+    )]
+    async fn delete_channel(&mut self, server_id: Uuid, channel_id: Uuid) -> anyhow::Result<()> {
         for (user_id, recipient) in &mut self.users {
             recipient
-                .act(WebSocketSessionMessage::DeleteChannel(channel_id))
+                .act(WebSocketSessionMessage::DeleteChannel(
+                    server_id, channel_id,
+                ))
                 .await
                 .context(format!(
                     "Error while sending message to recipient: {:?}",
@@ -406,7 +411,10 @@ impl ActionHandler<BrokerEvent> for WebSocketServer {
                 self.user_joined(user_id, server_id).await?
             }
             BrokerEvent::DeleteServer { server_id } => self.delete_server(server_id).await?,
-            BrokerEvent::DeleteChannel { channel_id } => self.delete_channel(channel_id).await?,
+            BrokerEvent::DeleteChannel {
+                server_id,
+                channel_id,
+            } => self.delete_channel(server_id, channel_id).await?,
             BrokerEvent::UpdateServer { server_id } => self.update_server(server_id).await?,
             BrokerEvent::UpdateChannel { channel_id } => self.update_channel(channel_id).await?,
             BrokerEvent::NewMessage {
