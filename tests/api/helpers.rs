@@ -92,7 +92,7 @@ macro_rules! assert_no_next_websocket_message {
 }
 
 #[macro_export]
-macro_rules! assert_next_broker_meessage {
+macro_rules! assert_next_broker_message {
     ($type:pat, $consumer:expr, $callback:tt) => {
         let message = crate::helpers::get_next_ampq_message($consumer).await;
 

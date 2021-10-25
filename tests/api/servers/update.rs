@@ -1,7 +1,7 @@
 use actix_http::{encoding::Decoder, Payload};
 use ferrum_shared::broker::BrokerEvent;
 
-use crate::{assert_next_broker_meessage, helpers::TestApplication};
+use crate::{assert_next_broker_message, helpers::TestApplication};
 
 impl TestApplication {
     pub async fn post_update_server(
@@ -198,7 +198,7 @@ async fn update_sends_update_server_broker_event() {
     .await;
 
     // Assert
-    assert_next_broker_meessage!(
+    assert_next_broker_message!(
         BrokerEvent::UpdateServer { server_id },
         &mut app.consumer,
         {
