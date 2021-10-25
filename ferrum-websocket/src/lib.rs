@@ -34,6 +34,7 @@ pub struct WebSocketSession {
     pub user_id: Option<Uuid>,
     pub server: Address<WebSocketServer>,
     pub servers: HashSet<Uuid>,
+    pub channels: HashSet<Uuid>,
     pub jwt: Jwt,
 }
 
@@ -136,9 +137,10 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
         _ctx: &mut Context<Self>,
     ) -> Result<(), anyhow::Error> {
         match msg {
-            WebSocketSessionMessage::Ready(servers) => {
-                // Store the servers and inform the client that it is now ready
+            WebSocketSessionMessage::Ready(servers, channels) => {
+                // Store the servers and channels and inform the client that it is now ready
                 self.servers = HashSet::from_iter(servers.iter().cloned());
+                self.channels = HashSet::from_iter(channels.iter().cloned());
 
                 self.connection
                     .send(Message::Text(
@@ -159,7 +161,9 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                     .context("Failed to send NewMessage websocket message")?;
             }
             WebSocketSessionMessage::AddChannel(channel) => {
-                // Send the new channel to the client
+                // Store the new channel and sent it to the client
+                self.channels.insert(channel.id);
+
                 self.connection
                     .send(Message::Text(
                         serde_json::to_string(&SerializedWebSocketMessage::NewChannel { channel })
@@ -225,15 +229,17 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
             }
             WebSocketSessionMessage::DeleteChannel(channel_id) => {
                 // Send the deleted channel to the client
-                self.connection
-                    .send(Message::Text(
-                        serde_json::to_string(&SerializedWebSocketMessage::DeleteChannel {
-                            channel_id,
-                        })
-                        .context("Failed to serialize DeleteChannel websocket message")?,
-                    ))
-                    .await
-                    .context("Failed to send DeleteChannel websocket message")?;
+                if self.channels.remove(&channel_id) {
+                    self.connection
+                        .send(Message::Text(
+                            serde_json::to_string(&SerializedWebSocketMessage::DeleteChannel {
+                                channel_id,
+                            })
+                            .context("Failed to serialize DeleteChannel websocket message")?,
+                        ))
+                        .await
+                        .context("Failed to send DeleteChannel websocket message")?;
+                }
             }
             WebSocketSessionMessage::UpdateServer(server) => {
                 // Send the updated server to the client

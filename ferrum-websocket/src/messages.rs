@@ -51,8 +51,8 @@ impl Action for SerializedWebSocketMessage {}
 ///
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WebSocketSessionMessage {
-    /// Tells the [`crate::WebSocketSession`] to which servers it belongs.
-    Ready(Vec<Uuid>),
+    /// Tells the [`crate::WebSocketSession`] to which servers and channels it belongs.
+    Ready(Vec<Uuid>, Vec<Uuid>),
     /// Tells the [`crate::WebSocketSession`] to notify the client about a new message.
     AddMessage(MessageResponse),
     /// Adds a channel to the [`crate::WebSocketSession`] and tells it to notify the client about it.
