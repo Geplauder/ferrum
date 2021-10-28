@@ -112,7 +112,7 @@ fn run(
             .route("/servers", web::post().to(servers::create))
             .route("/servers/{id}", web::get().to(servers::get))
             .route("/servers/{id}", web::post().to(servers::update))
-            .route("/servers/{id}", web::put().to(servers::join))
+            .route("/servers/{code}", web::put().to(servers::join))
             .route("/servers/{id}", web::delete().to(servers::delete))
             .route("/servers/{id}/users", web::get().to(servers::get_users))
             .route("/servers/{id}/users", web::delete().to(servers::leave))

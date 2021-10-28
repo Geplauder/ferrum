@@ -6,12 +6,12 @@ use crate::{assert_next_broker_message, helpers::TestApplication};
 impl TestApplication {
     pub async fn put_join_server(
         &self,
-        server_id: String,
+        code: String,
         bearer: Option<String>,
     ) -> awc::ClientResponse<Decoder<Payload>> {
         let mut client = self
             .http_client()
-            .put(&format!("{}/servers/{}", &self.address, server_id));
+            .put(&format!("{}/servers/{}", &self.address, code));
 
         if let Some(bearer) = bearer {
             client = client.bearer_auth(bearer);
@@ -28,7 +28,7 @@ async fn join_returns_200_for_valid_request() {
     // Act
     let response = app
         .put_join_server(
-            app.test_server().id.to_string(),
+            app.test_server().default_invite_code,
             Some(app.test_user_token()),
         )
         .await;
@@ -38,12 +38,25 @@ async fn join_returns_200_for_valid_request() {
 }
 
 #[ferrum_macros::test(strategy = "UserAndOtherServer")]
+async fn join_returns_400_when_code_does_not_exist() {
+    // Arrange
+
+    // Act
+    let response = app
+        .put_join_server("foo".to_string(), Some(app.test_user_token()))
+        .await;
+
+    // Assert
+    assert_eq!(400, response.status().as_u16());
+}
+
+#[ferrum_macros::test(strategy = "UserAndOtherServer")]
 async fn join_persists_the_new_user_server_entry() {
     // Arrange
 
     // Act
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
@@ -73,7 +86,7 @@ async fn join_fails_if_there_is_a_database_error() {
     // Act
     let response = app
         .put_join_server(
-            app.test_server().id.to_string(),
+            app.test_server().default_invite_code,
             Some(app.test_user_token()),
         )
         .await;
@@ -86,7 +99,7 @@ async fn join_fails_if_there_is_a_database_error() {
 async fn join_returns_203_when_user_is_already_joined() {
     // Arrange
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
@@ -94,7 +107,7 @@ async fn join_returns_203_when_user_is_already_joined() {
     // Act
     let response = app
         .put_join_server(
-            app.test_server().id.to_string(),
+            app.test_server().default_invite_code,
             Some(app.test_user_token()),
         )
         .await;
@@ -110,7 +123,7 @@ async fn join_returns_401_for_missing_or_invalid_bearer_token() {
     for token in [None, Some("foo".to_string())] {
         // Act
         let response = app
-            .put_join_server(app.test_server().id.to_string(), token)
+            .put_join_server(app.test_server().default_invite_code, token)
             .await;
 
         // Assert
@@ -125,7 +138,7 @@ async fn join_sends_new_server_and_new_user_broker_events() {
 
     // Act
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
@@ -140,5 +153,3 @@ async fn join_sends_new_server_and_new_user_broker_events() {
         }
     );
 }
-
-// TODO: Add test for invalid server_id

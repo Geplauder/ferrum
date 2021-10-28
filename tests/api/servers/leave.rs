@@ -26,7 +26,7 @@ impl TestApplication {
 async fn leave_returns_200_for_valid_request() {
     // Arrange
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
@@ -47,7 +47,7 @@ async fn leave_returns_200_for_valid_request() {
 async fn leave_removes_users_servers_entry_from_the_database() {
     // Arrange
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
@@ -75,7 +75,7 @@ async fn leave_removes_users_servers_entry_from_the_database() {
 async fn leave_fails_if_there_is_a_database_error() {
     // Arrange
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
@@ -117,7 +117,7 @@ async fn leave_returns_400_when_user_is_not_on_the_server() {
 async fn leave_returns_401_for_missing_or_invalid_bearer_token() {
     // Arrange
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
@@ -153,7 +153,7 @@ async fn leave_returns_400_when_user_is_owner_of_the_server() {
 async fn leave_sends_user_left_broker_event() {
     // Arrange
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;

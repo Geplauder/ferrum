@@ -529,6 +529,7 @@ pub struct TestServer {
     pub name: String,
     pub owner_id: Uuid,
     pub default_channel_id: Uuid,
+    pub default_invite_code: String,
 }
 
 impl TestServer {
@@ -538,6 +539,7 @@ impl TestServer {
             name: Uuid::new_v4().to_string(),
             owner_id,
             default_channel_id: Uuid::new_v4(),
+            default_invite_code: "foobar".to_string(),
         }
     }
 
@@ -565,6 +567,18 @@ impl TestServer {
         .expect("Failed to store server channel.");
     }
 
+    pub async fn add_invite(&self, id: Uuid, code: &str, pool: &PgPool) {
+        sqlx::query!(
+            "INSERT INTO server_invites (id, server_id, code) VALUES ($1, $2, $3)",
+            id,
+            self.id,
+            code
+        )
+        .execute(pool)
+        .await
+        .expect("Failed to store server invite.");
+    }
+
     async fn store(&self, pool: &PgPool) {
         sqlx::query!(
             "INSERT INTO servers (id, name, owner_id) VALUES ($1, $2, $3)",
@@ -577,6 +591,8 @@ impl TestServer {
         .expect("Failed to store test server.");
 
         self.add_channel(self.default_channel_id, "general", pool)
+            .await;
+        self.add_invite(Uuid::new_v4(), &self.default_invite_code, pool)
             .await;
         self.add_user(self.owner_id, pool).await;
     }
