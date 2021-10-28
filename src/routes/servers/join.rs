@@ -2,11 +2,12 @@ use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::servers::queries::add_user_to_server;
+use ferrum_db::{
+    server_invites::queries::get_server_invite_with_code, servers::queries::add_user_to_server,
+};
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::{broker::BrokerEvent, jwt::AuthorizationService};
 use sqlx::PgPool;
-use uuid::Uuid;
 
 use crate::broker::{Broker, PublishBrokerEvent};
 
@@ -15,9 +16,9 @@ use crate::broker::{Broker, PublishBrokerEvent};
 ///
 #[derive(thiserror::Error)]
 pub enum JoinError {
-    /// Invalid data was supplied in the request.
-    #[error("Server id has an invalid format!")]
-    ValidationError(#[from] uuid::Error),
+    /// Invite code does not exist.
+    #[error("Code does not exist")]
+    CodeNotFound,
     /// User is already member of this server.
     #[error("User is already member of that server")]
     AlreadyJoinedError,
@@ -35,7 +36,7 @@ impl std::fmt::Debug for JoinError {
 impl ResponseError for JoinError {
     fn status_code(&self) -> actix_http::StatusCode {
         match self {
-            JoinError::ValidationError(_) => StatusCode::BAD_REQUEST,
+            JoinError::CodeNotFound => StatusCode::BAD_REQUEST,
             JoinError::AlreadyJoinedError => StatusCode::NO_CONTENT,
             JoinError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         }
@@ -44,18 +45,22 @@ impl ResponseError for JoinError {
 
 #[tracing::instrument(name = "Join server", skip(pool, auth, broker), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn join(
-    server_id: web::Path<Uuid>,
+    code: web::Path<String>,
     pool: web::Data<PgPool>,
     broker: web::Data<Addr<Broker>>,
     auth: AuthorizationService,
 ) -> Result<HttpResponse, JoinError> {
+    let server_invite = get_server_invite_with_code(&code, &pool)
+        .await
+        .map_err(|_| JoinError::CodeNotFound)?;
+
     let mut transaction = pool
         .begin()
         .await
         .context("Failed to acquire a postgres connection from the pool")?;
 
     // Try to add the user to the server, return already joined error if the user is already on it
-    match add_user_to_server(&mut transaction, auth.claims.id, *server_id).await {
+    match add_user_to_server(&mut transaction, auth.claims.id, server_invite.server_id).await {
         Ok(_) => Ok(()),
         Err(error) => {
             if error.as_database_error().unwrap().code().unwrap() == "23505" {
@@ -78,7 +83,7 @@ pub async fn join(
     broker.do_send(PublishBrokerEvent {
         broker_event: BrokerEvent::UserJoined {
             user_id: auth.claims.id,
-            server_id: *server_id,
+            server_id: server_invite.server_id,
         },
     });
 

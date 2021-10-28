@@ -26,7 +26,7 @@ async fn current_user_servers_returns_200_for_valid_bearer_token() {
 
     // Todo: Improve this
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
@@ -51,7 +51,7 @@ async fn current_user_servers_returns_401_for_missing_or_invalid_bearer_token() 
 
     // Todo: Improve this
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
@@ -71,7 +71,7 @@ async fn current_user_servers_fails_if_there_is_a_database_error() {
 
     // Todo: Improve this
     app.put_join_server(
-        app.test_server().id.to_string(),
+        app.test_server().default_invite_code,
         Some(app.test_user_token()),
     )
     .await;
