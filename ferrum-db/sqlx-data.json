@@ -297,6 +297,50 @@
       "nullable": []
     }
   },
+  "55649ff4c4ae23b36d69f5d83f7f18a7671afe3ac3ee240dfdb1874f4ea4d6e9": {
+    "query": "\n        SELECT *\n        FROM server_invites\n        WHERE server_invites.code = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "server_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "code",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "5c423a9cd5866ce580445d8571fce3998f1aef67570e8a3ef42bcfbde7f42566": {
     "query": "\n        UPDATE users\n        SET username = $1\n        WHERE id = $2\n        ",
     "describe": {
@@ -828,6 +872,52 @@
       },
       "nullable": [
         false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "e8f9a15717c612608cd8bfff9f7e42eafb28ad4fa28b9cff3403c246581c38cb": {
+    "query": "\n        INSERT INTO server_invites (id, server_id, code)\n        VALUES ($1, $2, $3)\n        RETURNING *\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "server_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "code",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Text"
+        ]
+      },
+      "nullable": [
         false,
         false,
         false,
