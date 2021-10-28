@@ -1,0 +1,11 @@
+CREATE TABLE server_invites (
+    id UUID PRIMARY KEY,
+    server_id UUID NOT NULL REFERENCES servers(id) ON DELETE CASCADE,
+    code TEXT NOT NULL UNIQUE,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE TRIGGER update_timestamp_server_invites BEFORE UPDATE
+ON server_invites FOR EACH ROW EXECUTE PROCEDURE
+set_updated_at_column();
