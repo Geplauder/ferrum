@@ -102,6 +102,31 @@ async fn create_also_creates_default_server_channel() {
 }
 
 #[ferrum_macros::test(strategy = "User")]
+async fn create_also_creates_default_server_invite() {
+    // Arrange
+    let body = serde_json::json!({
+        "name": "foobar",
+    });
+
+    // Act
+    app.post_create_server(body, Some(app.test_user_token()))
+        .await;
+
+    // Assert
+    let saved_server_invite = sqlx::query!("SELECT server_id FROM server_invites")
+        .fetch_one(&app.db_pool)
+        .await
+        .expect("Failed to fetch saved default server invite.");
+
+    let saved_server = sqlx::query!("SELECT id FROM servers",)
+        .fetch_one(&app.db_pool)
+        .await
+        .expect("Failed to fetch saved server");
+
+    assert_eq!(saved_server.id, saved_server_invite.server_id);
+}
+
+#[ferrum_macros::test(strategy = "User")]
 async fn create_fails_if_there_is_a_database_error() {
     // Arrange
     let body = serde_json::json!({
