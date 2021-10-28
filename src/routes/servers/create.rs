@@ -4,12 +4,16 @@ use actix::Addr;
 use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
 use anyhow::Context;
-use ferrum_db::servers::{
-    models::{NewServer, ServerName},
-    queries::{add_default_channel_to_server, add_user_to_server, insert_server},
+use ferrum_db::{
+    server_invites::queries::{get_server_invite_with_code, insert_server_invite},
+    servers::{
+        models::{NewServer, ServerName},
+        queries::{add_default_channel_to_server, add_user_to_server, insert_server},
+    },
 };
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::{broker::BrokerEvent, jwt::AuthorizationService};
+use rand::{distributions::Alphanumeric, Rng};
 use sqlx::PgPool;
 
 use crate::broker::{Broker, PublishBrokerEvent};
@@ -87,6 +91,25 @@ pub async fn create(
     add_default_channel_to_server(&mut transaction, server.id)
         .await
         .context("Failed to insert default server channel to the database.")?;
+
+    // Generate a random 8-character alphanumeric string and
+    // check if there already exists a invite with that code.
+    let code = loop {
+        let code = rand::thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(8)
+            .map(char::from)
+            .collect::<String>();
+
+        if get_server_invite_with_code(&code, &pool).await.is_err() {
+            break code;
+        }
+    };
+
+    // Add default server invite
+    insert_server_invite(&mut transaction, server.id, code)
+        .await
+        .context("Failed to insert default server invite to the database.")?;
 
     // Add the owner to the server
     add_user_to_server(&mut transaction, auth.claims.id, server.id)
