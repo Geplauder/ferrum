@@ -1024,6 +1024,50 @@
       ]
     }
   },
+  "fa8bf5852029f86dafd0a7bfd2143a751791a99f0e8c52f28f10d11375127643": {
+    "query": "\n        SELECT *\n        FROM server_invites\n        WHERE server_invites.server_id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "server_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "code",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 3,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 4,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "faa000e9c341eed90687fe4dacf5cd8dfa0c96e34ccfb6619c056be1df553236": {
     "query": "\n        SELECT servers.*\n        FROM users_servers\n        INNER JOIN servers ON users_servers.server_id = servers.id\n        WHERE users_servers.user_id = $1\n        ",
     "describe": {

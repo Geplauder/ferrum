@@ -21,6 +21,24 @@ pub async fn get_server_invite_with_code(
     .await
 }
 
+#[tracing::instrument(name = "Get server invites for server", skip(server_id, pool))]
+pub async fn get_server_invites_for_server(
+    server_id: Uuid,
+    pool: &PgPool,
+) -> Result<Vec<ServerInviteModel>, sqlx::Error> {
+    sqlx::query_as!(
+        ServerInviteModel,
+        r#"
+        SELECT *
+        FROM server_invites
+        WHERE server_invites.server_id = $1
+        "#,
+        server_id,
+    )
+    .fetch_all(pool)
+    .await
+}
+
 #[tracing::instrument(
     name = "Save a new server invite to the database",
     skip(transaction, server_id, code)
