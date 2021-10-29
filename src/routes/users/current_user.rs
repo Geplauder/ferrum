@@ -1,5 +1,5 @@
+use actix_http::StatusCode;
 use actix_web::{web, HttpResponse, ResponseError};
-use anyhow::Context;
 use ferrum_db::users::queries::get_user_with_id;
 pub use ferrum_shared::error_chain_fmt;
 use ferrum_shared::{jwt::AuthorizationService, users::UserResponse};
@@ -10,9 +10,9 @@ use sqlx::PgPool;
 ///
 #[derive(thiserror::Error)]
 pub enum UsersError {
-    /// An unexpected error has occoured while processing the request.
-    #[error(transparent)]
-    UnexpectedError(#[from] anyhow::Error),
+    /// No user for the id was found
+    #[error("Unauthorized")]
+    UnauthorizedError,
 }
 
 impl std::fmt::Debug for UsersError {
@@ -21,7 +21,11 @@ impl std::fmt::Debug for UsersError {
     }
 }
 
-impl ResponseError for UsersError {}
+impl ResponseError for UsersError {
+    fn status_code(&self) -> actix_http::StatusCode {
+        StatusCode::UNAUTHORIZED
+    }
+}
 
 #[tracing::instrument(name = "Get current user information", skip(pool, auth), fields(user_id = %auth.claims.id, user_email = %auth.claims.email))]
 pub async fn current_user(
@@ -31,7 +35,7 @@ pub async fn current_user(
     // Get the user data for the currently authenticated user and return it, if found.
     let user_data: UserResponse = get_user_with_id(auth.claims.id, &pool)
         .await
-        .context("Failed to retrieve stored user.")?
+        .map_err(|_| UsersError::UnauthorizedError)?
         .into();
 
     Ok(HttpResponse::Ok().json(user_data))
