@@ -1,7 +1,7 @@
 use ferrum::application::Application;
 
 use ferrum_shared::{
-    settings::get_settings,
+    settings::{get_db_pool, get_settings},
     telemetry::{get_subscriber, init_subscriber},
 };
 
@@ -12,6 +12,15 @@ async fn main() -> std::io::Result<()> {
     init_subscriber(subscriber);
 
     let settings = get_settings().expect("Failed to read settings");
+
+    {
+        let db_pool = get_db_pool(&settings.database).await.unwrap();
+        sqlx::migrate!("./ferrum-db/migrations")
+            .run(&db_pool)
+            .await
+            .unwrap();
+    }
+
     let application = Application::build(settings).await?;
 
     application.run_until_stopped().await?;
