@@ -45,10 +45,9 @@ async fn current_user_returns_401_for_missing_or_invalid_bearer_token() {
 }
 
 #[ferrum_macros::test(strategy = "User")]
-async fn current_user_fails_if_there_is_a_database_error() {
+async fn current_user_returns_401_if_the_user_does_not_exist_in_the_database() {
     // Arrange
-
-    sqlx::query!("ALTER TABLE users DROP COLUMN email;")
+    sqlx::query!("DELETE FROM users WHERE id = $1", app.test_user().id)
         .execute(&app.db_pool)
         .await
         .unwrap();
@@ -57,5 +56,5 @@ async fn current_user_fails_if_there_is_a_database_error() {
     let response = app.get_users(Some(app.test_user_token())).await;
 
     // Assert
-    assert_eq!(500, response.status().as_u16());
+    assert_eq!(401, response.status().as_u16());
 }
