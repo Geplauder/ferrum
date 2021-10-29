@@ -3,6 +3,7 @@ pub mod channels;
 pub mod jwt;
 pub mod messages;
 pub mod servers;
+pub mod server_invites;
 pub mod settings;
 pub mod telemetry;
 pub mod users;
