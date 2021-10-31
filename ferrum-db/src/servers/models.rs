@@ -49,13 +49,15 @@ impl ServerName {
     ///
     /// Parse a [`ServerName`] from a [`String`].
     ///
-    /// This ensures that it is fully validated.
+    /// This ensures that it is fully validated and trimmed.
     ///
     pub fn parse(value: String) -> Result<ServerName, String> {
-        if validator::validate_length(&value, Some(4), Some(64), None) {
-            Ok(Self(value))
+        let value = value.trim();
+
+        if validator::validate_length(value, Some(4), Some(64), None) {
+            Ok(Self(value.to_string()))
         } else {
-            Err(format!("{} is not a valid server name!", value))
+            Err(format!("{} is not a valid server name!", value.to_string()))
         }
     }
 }
