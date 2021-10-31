@@ -47,13 +47,18 @@ impl MessageContent {
     ///
     /// Parse a [`MessageContent`] from a [`String`].
     ///
-    /// This ensures that it is fully validated.
+    /// This ensures that it is fully validated and trimmed.
     ///
     pub fn parse(value: String) -> Result<MessageContent, String> {
-        if validator::validate_length(&value, Some(1), Some(1000), None) {
-            Ok(Self(value))
+        let value = value.trim();
+
+        if validator::validate_length(value, Some(1), Some(1000), None) {
+            Ok(Self(value.to_string()))
         } else {
-            Err(format!("{} is not a valid message content!", value))
+            Err(format!(
+                "{} is not a valid message content!",
+                value.to_string()
+            ))
         }
     }
 }

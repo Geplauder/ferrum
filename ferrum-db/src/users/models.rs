@@ -120,13 +120,15 @@ impl UserName {
     ///
     /// Parse a [UserName] from a [String].
     ///
-    /// This ensures that it is fully validated.
+    /// This ensures that it is fully validated and trimmed.
     ///
     pub fn parse(value: String) -> Result<UserName, String> {
-        if validator::validate_length(&value, Some(3), Some(32), None) {
-            Ok(Self(value))
+        let value = value.trim();
+
+        if validator::validate_length(value, Some(3), Some(32), None) {
+            Ok(Self(value.to_string()))
         } else {
-            Err(format!("{} is not a valid user name!", value))
+            Err(format!("{} is not a valid user name!", value.to_string()))
         }
     }
 }

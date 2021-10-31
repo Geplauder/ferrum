@@ -50,13 +50,18 @@ impl ChannelName {
     ///
     /// Parse a [`ChannelName`] from a [`String`].
     ///
-    /// This ensures that it is fully validated.
+    /// This ensures that it is fully validated and trimmed.
     ///
     pub fn parse(value: String) -> Result<ChannelName, String> {
-        if validator::validate_length(&value, Some(4), Some(32), None) {
-            Ok(Self(value))
+        let value = value.trim();
+
+        if validator::validate_length(value, Some(4), Some(32), None) {
+            Ok(Self(value.to_string()))
         } else {
-            Err(format!("{} is not a valid channel name!", value))
+            Err(format!(
+                "{} is not a valid channel name!",
+                value.to_string()
+            ))
         }
     }
 }
