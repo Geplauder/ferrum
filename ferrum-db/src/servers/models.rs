@@ -1,7 +1,7 @@
 use bitflags::bitflags;
 use chrono::{DateTime, Utc};
 use ferrum_shared::servers::ServerResponse;
-use sqlx::{postgres::PgTypeInfo, Database, Decode, Postgres, Type};
+use sqlx::{Database, Decode};
 use uuid::Uuid;
 
 ///
@@ -47,16 +47,6 @@ bitflags! {
     #[derive(serde::Serialize, serde::Deserialize)]
     pub struct ServerFlags: u32 {
         const VERIFIED = 0b0000_0000_0000_0001;
-    }
-}
-
-impl Type<Postgres> for ServerFlags {
-    fn type_info() -> PgTypeInfo {
-        <u32 as Type<Postgres>>::type_info()
-    }
-
-    fn compatible(ty: &PgTypeInfo) -> bool {
-        <u32 as Type<Postgres>>::compatible(ty)
     }
 }
 
