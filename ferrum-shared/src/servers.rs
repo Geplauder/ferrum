@@ -9,6 +9,7 @@ pub struct ServerResponse {
     pub id: Uuid,
     pub name: String,
     pub owner_id: Uuid,
+    pub flags: u32,
     pub updated_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
 }
