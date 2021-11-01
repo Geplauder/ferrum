@@ -40,11 +40,34 @@ impl From<ServerModel> for ServerResponse {
         }
     }
 }
-// Bitflags for verified server
+
 bitflags! {
-    #[derive(sqlx::Type, serde::Serialize, serde::Deserialize)]
+    #[derive(serde::Serialize, serde::Deserialize)]
     pub struct ServerFlags: u32 {
         const VERIFIED = 0b0000_0000_0000_0001;
+    }
+}
+
+impl Type<Postgres> for ServerFlags {
+    fn type_info() -> PgTypeInfo {
+        <u32 as Type<Postgres>>::type_info()
+    }
+
+    fn compatible(ty: &PgTypeInfo) -> bool {
+        <u32 as Type<Postgres>>::compatible(ty)
+    }
+}
+
+impl<'r, DB: Database> Decode<'r, DB> for ServerFlags
+where
+    u32: Decode<'r, DB>,
+{
+    fn decode(
+        value: <DB as sqlx::database::HasValueRef<'r>>::ValueRef,
+    ) -> Result<Self, sqlx::error::BoxDynError> {
+        let value = <u32 as Decode<DB>>::decode(value)?;
+
+        Ok(ServerFlags::from_bits_truncate(value))
     }
 }
 
