@@ -1,6 +1,7 @@
 use bitflags::bitflags;
 use chrono::{DateTime, Utc};
 use ferrum_shared::servers::ServerResponse;
+use sqlx::{postgres::PgTypeInfo, Database, Decode, Postgres, Type};
 use uuid::Uuid;
 
 ///
@@ -35,6 +36,7 @@ impl From<ServerModel> for ServerResponse {
             id: val.id,
             name: val.name,
             owner_id: val.owner_id,
+            flags: val.flags.bits,
             updated_at: val.updated_at,
             created_at: val.created_at,
         }
