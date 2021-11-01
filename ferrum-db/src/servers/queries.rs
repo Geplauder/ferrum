@@ -3,6 +3,8 @@ use uuid::Uuid;
 
 use super::models::*;
 
+// TODO: Find a better way for the "SELECT *" queries, maybe macros?
+
 #[tracing::instrument(name = "Get server with id", skip(server_id, pool))]
 pub async fn get_server_with_id(
     server_id: Uuid,
@@ -11,7 +13,7 @@ pub async fn get_server_with_id(
     sqlx::query_as!(
         ServerModel,
         r#"
-        SELECT *
+        SELECT id, name, owner_id, flags as "flags: ServerFlags", updated_at, created_at
         FROM servers
         WHERE servers.id = $1
         "#,
@@ -29,7 +31,7 @@ pub async fn get_server_for_channel_id(
     sqlx::query_as!(
         ServerModel,
         r#"
-            SELECT servers.*
+            SELECT servers.id, servers.name, servers.owner_id, servers.flags as "flags: ServerFlags", servers.updated_at, servers.created_at
             FROM channels
             INNER JOIN servers ON channels.server_id = servers.id
             WHERE channels.id = $1
@@ -54,7 +56,7 @@ pub async fn insert_server(
         r#"
         INSERT INTO servers (id, name, owner_id)
         VALUES ($1, $2, $3)
-        RETURNING *
+        RETURNING id, name, owner_id, flags as "flags: ServerFlags", updated_at, created_at
         "#,
         Uuid::new_v4(),
         new_server.name.as_ref(),
@@ -174,7 +176,7 @@ pub async fn get_servers_for_user(
     sqlx::query_as!(
         ServerModel,
         r#"
-        SELECT servers.*
+        SELECT servers.id, servers.name, servers.owner_id, servers.flags as "flags: ServerFlags", servers.updated_at, servers.created_at
         FROM users_servers
         INNER JOIN servers ON users_servers.server_id = servers.id
         WHERE users_servers.user_id = $1

@@ -1,3 +1,4 @@
+use bitflags::bitflags;
 use chrono::{DateTime, Utc};
 use ferrum_shared::servers::ServerResponse;
 use uuid::Uuid;
@@ -23,6 +24,7 @@ pub struct ServerModel {
     pub id: Uuid,
     pub name: String,
     pub owner_id: Uuid,
+    pub flags: ServerFlags,
     pub updated_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
 }
@@ -36,6 +38,13 @@ impl From<ServerModel> for ServerResponse {
             updated_at: val.updated_at,
             created_at: val.created_at,
         }
+    }
+}
+// Bitflags for verified server
+bitflags! {
+    #[derive(sqlx::Type, serde::Serialize, serde::Deserialize)]
+    pub struct ServerFlags: u32 {
+        const VERIFIED = 0b0000_0000_0000_0001;
     }
 }
 
