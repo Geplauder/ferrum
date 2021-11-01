@@ -1,7 +1,7 @@
 {
   "db": "PostgreSQL",
-  "06a4c0c57b7ba376aca30177ebc29694a8fc9f56125cacee950499d2aef3e35d": {
-    "query": "\n        SELECT *\n        FROM servers\n        WHERE servers.id = $1\n        ",
+  "0e3b200379847a186d22ef6be43aff7e8187ed06f28d38b1a4a2ad5e1b805b4c": {
+    "query": "\n        SELECT id, name, owner_id, flags as \"flags: ServerFlags\", updated_at, created_at\n        FROM servers\n        WHERE servers.id = $1\n        ",
     "describe": {
       "columns": [
         {
@@ -21,11 +21,16 @@
         },
         {
           "ordinal": 3,
+          "name": "flags: ServerFlags",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 4,
           "name": "updated_at",
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
+          "ordinal": 5,
           "name": "created_at",
           "type_info": "Timestamptz"
         }
@@ -36,6 +41,57 @@
         ]
       },
       "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "2028f8e3e48f4ff1df832bc02bde518d6056f8c689730ac854535c2b2bc09189": {
+    "query": "\n        SELECT servers.id, servers.name, servers.owner_id, servers.flags as \"flags: ServerFlags\", servers.updated_at, servers.created_at\n        FROM users_servers\n        INNER JOIN servers ON users_servers.server_id = servers.id\n        WHERE users_servers.user_id = $1\n        ",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Text"
+        },
+        {
+          "ordinal": 2,
+          "name": "owner_id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 3,
+          "name": "flags: ServerFlags",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 4,
+          "name": "updated_at",
+          "type_info": "Timestamptz"
+        },
+        {
+          "ordinal": 5,
+          "name": "created_at",
+          "type_info": "Timestamptz"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
         false,
         false,
         false,
@@ -480,8 +536,8 @@
       "nullable": []
     }
   },
-  "8859195c1f07f3f461fb7008185a5ee0ab25386523c6d8b492d200271749078d": {
-    "query": "\n            SELECT servers.*\n            FROM channels\n            INNER JOIN servers ON channels.server_id = servers.id\n            WHERE channels.id = $1\n        ",
+  "8938601acf876b4019fa446e39b9ccf59ab701c1bd67e381d07071fda405f395": {
+    "query": "\n            SELECT servers.id, servers.name, servers.owner_id, servers.flags as \"flags: ServerFlags\", servers.updated_at, servers.created_at\n            FROM channels\n            INNER JOIN servers ON channels.server_id = servers.id\n            WHERE channels.id = $1\n        ",
     "describe": {
       "columns": [
         {
@@ -501,11 +557,16 @@
         },
         {
           "ordinal": 3,
+          "name": "flags: ServerFlags",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 4,
           "name": "updated_at",
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
+          "ordinal": 5,
           "name": "created_at",
           "type_info": "Timestamptz"
         }
@@ -516,6 +577,7 @@
         ]
       },
       "nullable": [
+        false,
         false,
         false,
         false,
@@ -728,8 +790,8 @@
       ]
     }
   },
-  "c10be16f33535a12e225029376052b36b26a0d129280d98230b7953a7b0e470c": {
-    "query": "\n        INSERT INTO servers (id, name, owner_id)\n        VALUES ($1, $2, $3)\n        RETURNING *\n        ",
+  "ca8bd0c3d00f43bdbdf95110c1b8a72c83c525ac7bf950bf372d20bb7305c6e3": {
+    "query": "\n        INSERT INTO servers (id, name, owner_id)\n        VALUES ($1, $2, $3)\n        RETURNING id, name, owner_id, flags as \"flags: ServerFlags\", updated_at, created_at\n        ",
     "describe": {
       "columns": [
         {
@@ -749,11 +811,16 @@
         },
         {
           "ordinal": 3,
+          "name": "flags: ServerFlags",
+          "type_info": "Int4"
+        },
+        {
+          "ordinal": 4,
           "name": "updated_at",
           "type_info": "Timestamptz"
         },
         {
-          "ordinal": 4,
+          "ordinal": 5,
           "name": "created_at",
           "type_info": "Timestamptz"
         }
@@ -766,6 +833,7 @@
         ]
       },
       "nullable": [
+        false,
         false,
         false,
         false,
@@ -1042,50 +1110,6 @@
           "ordinal": 2,
           "name": "code",
           "type_info": "Text"
-        },
-        {
-          "ordinal": 3,
-          "name": "updated_at",
-          "type_info": "Timestamptz"
-        },
-        {
-          "ordinal": 4,
-          "name": "created_at",
-          "type_info": "Timestamptz"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
-  "faa000e9c341eed90687fe4dacf5cd8dfa0c96e34ccfb6619c056be1df553236": {
-    "query": "\n        SELECT servers.*\n        FROM users_servers\n        INNER JOIN servers ON users_servers.server_id = servers.id\n        WHERE users_servers.user_id = $1\n        ",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Uuid"
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": "Text"
-        },
-        {
-          "ordinal": 2,
-          "name": "owner_id",
-          "type_info": "Uuid"
         },
         {
           "ordinal": 3,
