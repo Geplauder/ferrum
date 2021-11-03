@@ -15,7 +15,7 @@ use meio::{ActionHandler, Actor, Address, Context, StartedBy, System};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::WebSocketSession;
+use crate::{messages::UserStartsTyping, WebSocketSession};
 
 use super::messages::{IdentifyUser, WebSocketClose, WebSocketSessionMessage};
 
@@ -372,6 +372,46 @@ impl ActionHandler<IdentifyUser> for WebSocketServer {
             ))
             .await
             .context("Error while sending message to recipient")?;
+
+        Ok(())
+    }
+}
+
+#[async_trait]
+impl ActionHandler<UserStartsTyping> for WebSocketServer {
+    #[tracing::instrument(name = "Handle identify user websocket message", skip(self, _ctx))]
+    async fn handle(
+        &mut self,
+        msg: UserStartsTyping,
+        _ctx: &mut Context<Self>,
+    ) -> Result<(), anyhow::Error> {
+        let typing_user: UserResponse = get_user_with_id(msg.user_id, &self.db_pool)
+            .await
+            .context("Error while fetching user")?
+            .into();
+
+        let affected_users = get_users_for_channel(msg.channel_id, &self.db_pool)
+            .await
+            .context("Error while fetching affected users")?;
+
+        for user in &affected_users {
+            if user.id == msg.user_id {
+                continue;
+            }
+
+            if let Some(recipient) = self.users.get_mut(&user.id) {
+                recipient
+                    .act(WebSocketSessionMessage::UserStartsTyping(
+                        typing_user.clone(),
+                        msg.channel_id,
+                    ))
+                    .await
+                    .context(format!(
+                        "Error while sending message to recipient: {:?}",
+                        user.id
+                    ))?;
+            }
+        }
 
         Ok(())
     }

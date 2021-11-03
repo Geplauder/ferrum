@@ -44,6 +44,13 @@ pub enum SerializedWebSocketMessage {
     UpdateServer { server: ServerResponse },
     /// Sent to the client to inform them about the updated channel.
     UpdateChannel { channel: ChannelResponse },
+    /// Sent from the client to inform the server about them starting to type a message.
+    StartTyping { channel_id: Uuid },
+    /// Sent to the client to inform them about a user starting to type a message.
+    UserStartsTyping {
+        user: UserResponse,
+        channel_id: Uuid,
+    },
 }
 
 impl Action for SerializedWebSocketMessage {}
@@ -73,6 +80,8 @@ pub enum WebSocketSessionMessage {
     UpdateServer(ServerResponse),
     /// Tells the [`crate::WebSocketSession`] to notify the client about a updated channel.
     UpdateChannel(ChannelResponse),
+    /// Tells the [`crate::WebSocketSession`] to notify the client about a user that is starting to type a message.
+    UserStartsTyping(UserResponse, Uuid),
 }
 
 impl Action for WebSocketSessionMessage {}
@@ -108,3 +117,11 @@ impl Action for IdentifyUser {}
 pub struct ReadyUser {
     pub channels: Vec<Uuid>,
 }
+
+#[derive(Debug)]
+pub struct UserStartsTyping {
+    pub user_id: Uuid,
+    pub channel_id: Uuid,
+}
+
+impl Action for UserStartsTyping {}
