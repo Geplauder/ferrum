@@ -11,7 +11,10 @@ use async_trait::async_trait;
 use ferrum_shared::jwt::Jwt;
 use futures_util::{stream::SplitSink, SinkExt};
 use meio::{ActionHandler, Actor, Address, Consumer, Context, StartedBy, StreamAcceptor, System};
-use messages::{IdentifyUser, SerializedWebSocketMessage, WebSocketClose, WebSocketSessionMessage};
+use messages::{
+    IdentifyUser, SerializedWebSocketMessage, UserStartsTyping, WebSocketClose,
+    WebSocketSessionMessage,
+};
 use tokio::net::TcpStream;
 use tokio_tungstenite::{tungstenite::Message, WebSocketStream};
 use uuid::Uuid;
@@ -92,6 +95,19 @@ impl Consumer<TungsteniteMessage> for WebSocketSession {
                             })
                             .await
                             .context("Failed to send IdentifyUser message to websocket server")?;
+                    }
+                    SerializedWebSocketMessage::StartTyping { channel_id } => {
+                        if let Some(user_id) = self.user_id {
+                            self.server
+                                .act(UserStartsTyping {
+                                    user_id,
+                                    channel_id,
+                                })
+                                .await
+                                .context(
+                                    "Failed to send UserStartsTyping message to websocket server",
+                                )?;
+                        }
                     }
                     _ => (),
                 }
@@ -263,6 +279,19 @@ impl ActionHandler<WebSocketSessionMessage> for WebSocketSession {
                     ))
                     .await
                     .context("Failed to send UpdateChannel websocket message")?;
+            }
+            WebSocketSessionMessage::UserStartsTyping(user, channel_id) => {
+                // Send the typing user to the client
+                self.connection
+                    .send(Message::Text(
+                        serde_json::to_string(&SerializedWebSocketMessage::UserStartsTyping {
+                            user,
+                            channel_id,
+                        })
+                        .context("Failed to serialize UserStartsTyping websocket message")?,
+                    ))
+                    .await
+                    .context("Failed to send UserStartsTyping websocket message")?;
             }
         }
 
