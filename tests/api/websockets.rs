@@ -1,11 +1,12 @@
 use actix_http::ws;
 use claim::assert_ok;
+use ferrum_db::servers::queries::add_user_to_server;
 use ferrum_websocket::messages::SerializedWebSocketMessage;
 use futures::SinkExt;
 
 use crate::{
     assert_next_websocket_message, assert_no_next_websocket_message,
-    helpers::{get_next_websocket_message, send_websocket_message},
+    helpers::{get_next_websocket_message, send_websocket_message, TestUser},
 };
 
 #[ferrum_macros::test(strategy = "User")]
@@ -113,4 +114,67 @@ async fn websocket_survives_malformed_messages() {
 
     // Assert
     assert!(response.status().is_success());
+}
+
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
+async fn websocket_start_typing_sends_user_starts_typing_message_to_other_users_in_channel() {
+    // Arrange
+    let other_user = TestUser::generate();
+    other_user.store(&app.db_pool).await;
+
+    let mut transaction = app.db_pool.begin().await.unwrap();
+    add_user_to_server(&mut transaction, other_user.id, app.test_server().id)
+        .await
+        .unwrap();
+    transaction.commit().await.unwrap();
+
+    let (_response, mut sender_connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
+
+    let (_response, mut receiver_connection) = app
+        .get_ready_websocket_connection(app.jwt.encode(other_user.id, other_user.email))
+        .await;
+
+    // Act
+    send_websocket_message(
+        &mut sender_connection,
+        SerializedWebSocketMessage::StartTyping {
+            channel_id: app.test_server().default_channel_id,
+        },
+    )
+    .await;
+
+    // Assert
+    assert_next_websocket_message!(
+        SerializedWebSocketMessage::UserStartsTyping {
+            user: typing_user,
+            channel_id
+        },
+        &mut receiver_connection,
+        {
+            assert_eq!(app.test_user().id, typing_user.id);
+            assert_eq!(app.test_server().default_channel_id, channel_id);
+        }
+    );
+}
+
+#[ferrum_macros::test(strategy = "UserAndOwnServer")]
+async fn websocket_start_typing_does_not_send_user_starts_typing_message_to_typing_user() {
+    // Arrange
+    let (_response, mut connection) = app
+        .get_ready_websocket_connection(app.test_user_token())
+        .await;
+
+    // Act
+    send_websocket_message(
+        &mut connection,
+        SerializedWebSocketMessage::StartTyping {
+            channel_id: app.test_server().default_channel_id,
+        },
+    )
+    .await;
+
+    // Assert
+    assert_no_next_websocket_message!(&mut connection);
 }
