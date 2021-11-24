@@ -163,7 +163,7 @@ async fn create_message_returns_400_when_data_is_missing() {
 async fn create_message_returns_400_when_data_is_invalid() {
     // Arrange
 
-    for data in ["", &(0..=1001).map(|_| "x").collect::<String>()] {
+    for data in ["", &(0..=2001).map(|_| "x").collect::<String>()] {
         let body = serde_json::json!({ "content": data });
 
         // Act

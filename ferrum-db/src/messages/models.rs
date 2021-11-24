@@ -52,7 +52,7 @@ impl MessageContent {
     pub fn parse(value: String) -> Result<MessageContent, String> {
         let value = value.trim();
 
-        if validator::validate_length(value, Some(1), Some(1000), None) {
+        if validator::validate_length(value, Some(1), Some(2000), None) {
             Ok(Self(value.to_string()))
         } else {
             Err(format!(
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn content_too_long_is_rejected() {
-        let content = (0..=1001).map(|_| "x").collect::<String>();
+        let content = (0..=2001).map(|_| "x").collect::<String>();
 
         assert_err!(MessageContent::parse(content));
     }
