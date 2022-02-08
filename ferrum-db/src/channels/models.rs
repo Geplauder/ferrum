@@ -58,10 +58,7 @@ impl ChannelName {
         if validator::validate_length(value, Some(4), Some(32), None) {
             Ok(Self(value.to_string()))
         } else {
-            Err(format!(
-                "{} is not a valid channel name!",
-                value.to_string()
-            ))
+            Err(format!("{} is not a valid channel name!", value))
         }
     }
 }

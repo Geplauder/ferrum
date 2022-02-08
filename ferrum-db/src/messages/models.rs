@@ -55,10 +55,7 @@ impl MessageContent {
         if validator::validate_length(value, Some(1), Some(2000), None) {
             Ok(Self(value.to_string()))
         } else {
-            Err(format!(
-                "{} is not a valid message content!",
-                value.to_string()
-            ))
+            Err(format!("{} is not a valid message content!", value))
         }
     }
 }

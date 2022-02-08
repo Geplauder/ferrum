@@ -9,7 +9,6 @@ use ferrum_shared::{
 };
 use lapin::{Connection, ConnectionProperties};
 use sqlx::PgPool;
-use tokio_amqp::LapinTokioExt;
 use tracing_actix_web::TracingLogger;
 
 use crate::{
@@ -46,7 +45,7 @@ impl Application {
 
         let ampq_connection = Connection::connect(
             &settings.broker.get_connection_string(),
-            ConnectionProperties::default().with_tokio(),
+            ConnectionProperties::default(), // Add executor?
         )
         .await
         .unwrap();

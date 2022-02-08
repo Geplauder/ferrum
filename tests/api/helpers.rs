@@ -1,7 +1,8 @@
 use std::time::Duration;
 
-use actix_http::{client::ConnectionIo, ws};
+use actix_http::ws;
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
+use awc::BoxedSocket;
 use fake::Fake;
 use ferrum::application::Application as RestApplication;
 use ferrum_shared::{
@@ -21,7 +22,8 @@ use lapin::{
 };
 use once_cell::sync::Lazy;
 use sqlx::{postgres::PgPoolOptions, types::Uuid, Connection, Executor, PgConnection, PgPool};
-use tokio_amqp::LapinTokioExt;
+
+// pub trait ConnectionIo: AsyncRead + AsyncWrite + Unpin + 'static {}
 
 ///
 /// This macro can be used to assert the next message a websocket
@@ -188,7 +190,7 @@ impl TestApplication {
         bearer: String,
     ) -> (
         awc::ClientResponse,
-        actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+        actix_codec::Framed<BoxedSocket, actix_http::ws::Codec>,
     ) {
         let (response, mut connection) = self.websocket().await;
 
@@ -206,7 +208,7 @@ impl TestApplication {
         &self,
     ) -> (
         awc::ClientResponse,
-        actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+        actix_codec::Framed<BoxedSocket, actix_http::ws::Codec>,
     ) {
         self.http_client()
             .ws(&self.ws_address)
@@ -398,7 +400,7 @@ pub async fn get_next_ampq_message(consumer: &mut Consumer) -> Option<BrokerEven
         () = timeout => return None,
     };
 
-    let (_, x) = x.unwrap().unwrap();
+    let x = x.unwrap().unwrap();
 
     Some(serde_json::from_slice(&x.data).unwrap())
 }
@@ -406,7 +408,7 @@ pub async fn get_next_ampq_message(consumer: &mut Consumer) -> Option<BrokerEven
 pub async fn get_ampq_connection(settings: &Settings) -> lapin::Connection {
     lapin::Connection::connect(
         &settings.broker.get_connection_string(),
-        lapin::ConnectionProperties::default().with_tokio(),
+        lapin::ConnectionProperties::default(), // Add executor?
     )
     .await
     .unwrap()
@@ -441,7 +443,7 @@ pub async fn publish_broker_message(app: &TestApplication, broker_event: BrokerE
             "",
             &app.settings.broker.queue,
             BasicPublishOptions::default(),
-            serde_json::to_vec(&broker_event).unwrap(),
+            &serde_json::to_vec(&broker_event).unwrap(),
             BasicProperties::default(),
         )
         .await
@@ -451,7 +453,7 @@ pub async fn publish_broker_message(app: &TestApplication, broker_event: BrokerE
 }
 
 pub async fn get_next_websocket_message(
-    connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+    connection: &mut actix_codec::Framed<BoxedSocket, actix_http::ws::Codec>,
 ) -> Option<SerializedWebSocketMessage> {
     let mut message = connection.next().fuse();
     let mut timeout = Box::pin(actix_rt::time::sleep(Duration::from_secs(5)).fuse());
@@ -473,7 +475,7 @@ pub async fn get_next_websocket_message(
 }
 
 pub async fn send_websocket_message(
-    connection: &mut actix_codec::Framed<Box<dyn ConnectionIo>, actix_http::ws::Codec>,
+    connection: &mut actix_codec::Framed<BoxedSocket, actix_http::ws::Codec>,
     message: SerializedWebSocketMessage,
 ) {
     connection
