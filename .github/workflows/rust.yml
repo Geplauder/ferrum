@@ -10,7 +10,7 @@ env:
   CARGO_TERM_COLOR: always
   APP_ENV: testing
   SQLX_VERSION: 0.5.10
-  SQLX_FEATURES: postgres
+  SQLX_FEATURES: native-tls,postgres
   TARPAULIN_TAG: c54ad80
 
 jobs:
@@ -45,7 +45,7 @@ jobs:
         with:
           path: |
             ~/.cargo/bin/sqlx
-          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}-${{ env.SQLX_FEATURES }}
+          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
         if: steps.cache-sqlx.outputs.cache-hit != 'true'
@@ -134,7 +134,7 @@ jobs:
         with:
           path: |
             ~/.cargo/bin/sqlx
-          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}-${{ env.SQLX_FEATURES }}
+          key: ${{ runner.os }}-sqlx-${{ env.SQLX_VERSION }}
       - name: Install sqlx-cli
         uses: actions-rs/cargo@v1
         if: steps.cache-sqlx.outputs.cache-hit != 'true'
