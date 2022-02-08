@@ -81,7 +81,7 @@ impl ServerName {
         if validator::validate_length(value, Some(4), Some(64), None) {
             Ok(Self(value.to_string()))
         } else {
-            Err(format!("{} is not a valid server name!", value.to_string()))
+            Err(format!("{} is not a valid server name!", value))
         }
     }
 }

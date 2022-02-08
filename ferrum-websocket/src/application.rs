@@ -93,7 +93,7 @@ impl Application {
             while let Some(message) = consumer.next().await {
                 tracing::info_span!("message broker handler", request_id = %uuid::Uuid::new_v4());
 
-                let (_, delivery) = message.unwrap();
+                let delivery = message.unwrap();
 
                 delivery.ack(BasicAckOptions::default()).await.unwrap();
 

@@ -128,7 +128,7 @@ impl UserName {
         if validator::validate_length(value, Some(3), Some(32), None) {
             Ok(Self(value.to_string()))
         } else {
-            Err(format!("{} is not a valid user name!", value.to_string()))
+            Err(format!("{} is not a valid user name!", value))
         }
     }
 }

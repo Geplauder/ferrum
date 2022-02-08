@@ -9,7 +9,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   APP_ENV: testing
-  SQLX_VERSION: 0.5.9
+  SQLX_VERSION: 0.5.10
   SQLX_FEATURES: postgres
   TARPAULIN_TAG: c54ad80
 

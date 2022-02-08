@@ -33,7 +33,7 @@ impl Handler<PublishBrokerEvent> for Broker {
                     "",
                     &queue,
                     BasicPublishOptions::default(),
-                    serialized_message,
+                    &serialized_message,
                     BasicProperties::default(),
                 )
                 .await
