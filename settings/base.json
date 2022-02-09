@@ -6,16 +6,16 @@
     },
     "database": {
         "username": "postgres",
-        "password": "password",
-        "host": "localhost",
-        "port": 5434,
+        "password": "postgres",
+        "host": "postgres",
+        "port": 5432,
         "database_name": "ferrum",
         "require_ssl": false
     },
     "broker": {
         "username": "guest",
         "password": "guest",
-        "host": "localhost",
+        "host": "rabbitmq",
         "port": 5672,
         "queue": "geplauder"
     }

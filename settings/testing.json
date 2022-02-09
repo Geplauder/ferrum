@@ -11,6 +11,10 @@
         "require_ssl": false
     },
     "broker": {
-        "queue": "geplauder_testing"
+        "username": "guest",
+        "password": "guest",
+        "host": "localhost",
+        "port": 5672,
+        "queue": "eplauder_testing"
     }
 }
