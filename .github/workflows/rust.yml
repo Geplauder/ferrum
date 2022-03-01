@@ -11,7 +11,7 @@ env:
   APP_ENV: testing
   SQLX_VERSION: 0.5.10
   SQLX_FEATURES: native-tls,postgres
-  TARPAULIN_TAG: c54ad80
+  TARPAULIN_TAG: a14a401
 
 jobs:
   test:
