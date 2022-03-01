@@ -57,10 +57,9 @@ impl Jwt {
     ///
     pub fn get_claims(&self, token: &str) -> Option<Claims> {
         // Validate without checking for expiration
-        let validation = Validation {
-            validate_exp: false,
-            ..Default::default()
-        };
+        let mut validation = Validation::new(jsonwebtoken::Algorithm::HS256);
+        validation.required_spec_claims.remove("exp");
+        validation.validate_exp = false;
 
         // Try to decode the JWT. Either returning the associated claims ore none, if decoding was not possible
         match jsonwebtoken::decode::<Claims>(
