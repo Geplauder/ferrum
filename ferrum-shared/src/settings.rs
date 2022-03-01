@@ -125,23 +125,25 @@ impl TryFrom<String> for Environment {
 /// This uses the current `APP_ENV` to dertermine the settings file to load.
 ///
 pub fn get_settings() -> Result<Settings, ConfigError> {
-    let mut settings = Config::default();
     let base_path = std::env::current_dir().expect("Error while getting current directory");
     let settings_directory = base_path.join("./settings");
-
-    settings.merge(config::File::from(settings_directory.join("base")).required(true))?;
 
     let environment: Environment = std::env::var("APP_ENV")
         .unwrap_or_else(|_| "local".into())
         .try_into()
         .expect("Failed to parse APP_ENV");
 
-    settings
-        .merge(config::File::from(settings_directory.join(environment.as_str())).required(true))?;
+    let builder = Config::builder()
+        .add_source(config::File::from(settings_directory.join("base")).required(true))
+        .add_source(
+            config::File::from(settings_directory.join(environment.as_str())).required(true),
+        )
+        .add_source(config::Environment::with_prefix("app").separator("__"));
 
-    settings.merge(config::Environment::with_prefix("app").separator("__"))?;
-
-    settings.try_into()
+    match builder.build() {
+        Ok(config) => config.try_deserialize(),
+        Err(error) => panic!("Error building config: {error:?}"),
+    }
 }
 
 ///
