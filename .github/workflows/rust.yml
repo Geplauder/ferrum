@@ -58,6 +58,9 @@ jobs:
             --features=${{ env.SQLX_FEATURES }}
             --no-default-features
             --locked
+      - name: Install latest nextest release
+        run: |
+          curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
 
       - name: Migrate database
         run: |
@@ -65,9 +68,13 @@ jobs:
           sqlx database create
           sqlx migrate run
 
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
+      - name: Run tests (1/2)
+        run: |
+          cargo nextest run --partition count:1/2
+
+      - name: Run tests (2/2)
+        run: |
+          cargo nextest run --partition count:2/2
 
   fmt:
     name: Rustfmt
